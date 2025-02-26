@@ -70,3 +70,16 @@ persistence:
   mongodb:
     enabled: true
     size: 10Gi
+
+# Add to values.yaml in the chart
+tasks:
+  checkAlerts:
+    enabled: true
+    schedule: "*/5 * * * *"  # Run every 5 minutes
+    resources:
+      limits:
+        cpu: 200m
+        memory: 256Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi

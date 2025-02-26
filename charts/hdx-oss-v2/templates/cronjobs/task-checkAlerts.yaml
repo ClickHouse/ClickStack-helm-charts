@@ -1,0 +1,37 @@
+{{- if .Values.tasks }}
+{{- if .Values.tasks.checkAlerts.enabled }}
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "hdx-oss.fullname" . }}-check-alerts
+  labels:
+    {{- include "hdx-oss.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.tasks.checkAlerts.schedule | quote }}
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            {{- include "hdx-oss.selectorLabels" . | nindent 12 }}
+            app.kubernetes.io/component: task
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: task
+              image: "{{ .Values.images.hdx.repository }}:{{ .Values.images.hdx.tag | default .Chart.AppVersion }}"
+              command: ["node", "/app/api/build/tasks/index.js", "check-alerts"]
+              envFrom:
+                - configMapRef:
+                    name: {{ include "hdx-oss.fullname" . }}-app-config
+              env:
+                - name: IS_DEV
+                  value: "false"
+                - name: OTEL_SERVICE_NAME
+                  value: "hdx-oss-task-check-alerts"
+              resources:
+                {{- toYaml .Values.tasks.checkAlerts.resources | nindent 16 }}
+{{- end }}
+{{- end }}

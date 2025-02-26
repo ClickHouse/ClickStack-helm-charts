@@ -114,6 +114,16 @@ hyperdx:
         key: API_KEY
 ```
 
+## Task Configuration
+
+By default, there is one task in the chart setup as a cronjob, responsible for checking whether alerts should fire. Here are its configuration options:
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `tasks.checkAlerts.enabled` | Enable the check-alerts task | `true` |
+| `tasks.checkAlerts.schedule` | Cron schedule for the check-alerts task | `*/5 * * * *` |
+| `tasks.checkAlerts.resources` | Resource requests and limits for the check-alerts task | See `values.yaml` |
+
 ## Upgrading the Chart
 
 To upgrade to a newer version:
