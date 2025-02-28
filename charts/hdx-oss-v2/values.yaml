@@ -75,7 +75,7 @@ persistence:
 tasks:
   checkAlerts:
     enabled: true
-    schedule: "*/5 * * * *"  # Run every 5 minutes
+    schedule: "*/1 * * * *"  # Runs every 1 minute
     resources:
       limits:
         cpu: 200m
