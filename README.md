@@ -121,7 +121,7 @@ By default, there is one task in the chart setup as a cronjob, responsible for c
 | Parameter | Description | Default |
 |-----------|-------------|---------|
 | `tasks.checkAlerts.enabled` | Enable the check-alerts task | `true` |
-| `tasks.checkAlerts.schedule` | Cron schedule for the check-alerts task | `*/5 * * * *` |
+| `tasks.checkAlerts.schedule` | Cron schedule for the check-alerts task | `*/1 * * * *` |
 | `tasks.checkAlerts.resources` | Resource requests and limits for the check-alerts task | See `values.yaml` |
 
 ## Upgrading the Chart
