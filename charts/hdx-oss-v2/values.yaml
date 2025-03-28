@@ -8,7 +8,7 @@ hyperdx:
   appPort: 3000
   appUrl: "http://localhost"
   logLevel: "info"
-  alertMode: "separate"
+  alertMode: "cron"
   usageStatsEnabled: true
   ingress:
     host: "localhost"  # Production domain
