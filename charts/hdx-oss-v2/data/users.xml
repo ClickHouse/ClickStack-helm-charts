@@ -25,6 +25,7 @@
         <app>
             <password>{{ .Values.clickhouse.config.users.appUserPassword }}</password>
             <networks>
+                <ip>10.0.0.0/8</ip>     <!-- Kubernetes cluster IP range -->
                 <host_regexp>.*\.svc\.cluster\.local$</host_regexp>
             </networks>
             <profile>readonly</profile>
