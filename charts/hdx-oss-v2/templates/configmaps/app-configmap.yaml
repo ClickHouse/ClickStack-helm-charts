@@ -17,4 +17,5 @@ data:
   NEXT_PUBLIC_SERVER_URL: "http://localhost:{{ .Values.hyperdx.apiPort }}"
   OTEL_SERVICE_NAME: "hdx-oss-api"
   REDIS_URL: "redis://{{ include "hdx-oss.fullname" . }}-redis:{{ .Values.redis.port }}"
-  USAGE_STATS_ENABLED: "{{ .Values.hyperdx.usageStatsEnabled | default true }}" 
+  USAGE_STATS_ENABLED: "{{ .Values.hyperdx.usageStatsEnabled | default true }}"
+  ALERT_MODE: "{{ .Values.hyperdx.alertMode }}"
