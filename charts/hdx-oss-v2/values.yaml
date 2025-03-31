@@ -8,7 +8,6 @@ hyperdx:
   appPort: 3000
   appUrl: "http://localhost"
   logLevel: "info"
-  alertCheckCron: false
   usageStatsEnabled: true
   ingress:
     host: "localhost"  # Production domain
@@ -72,8 +71,8 @@ persistence:
     enabled: true
     size: 10Gi
 
-# Add to values.yaml in the chart
 tasks:
+  enabled: false
   checkAlerts:
     schedule: "*/1 * * * *"  # Runs every 1 minute
     resources:

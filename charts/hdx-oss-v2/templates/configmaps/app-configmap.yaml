@@ -18,4 +18,4 @@ data:
   OTEL_SERVICE_NAME: "hdx-oss-api"
   REDIS_URL: "redis://{{ include "hdx-oss.fullname" . }}-redis:{{ .Values.redis.port }}"
   USAGE_STATS_ENABLED: "{{ .Values.hyperdx.usageStatsEnabled | default true }}"
-  ALERT_CHECK_CRON: "{{ .Values.hyperdx.alertCheckCron | default false }}"
+  CRON_IN_APP_DISABLED: "{{ .Values.tasks.enabled | default false }}"

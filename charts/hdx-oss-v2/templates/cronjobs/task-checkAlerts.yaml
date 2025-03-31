@@ -1,5 +1,4 @@
-{{- if .Values.tasks }}
-{{- if .Values.hyperdx.alertCheckCron }}
+{{- if .Values.tasks.enabled }}
 ---
 apiVersion: batch/v1
 kind: CronJob
@@ -33,5 +32,4 @@ spec:
                   value: "hdx-oss-task-check-alerts"
               resources:
                 {{- toYaml .Values.tasks.checkAlerts.resources | nindent 16 }}
-{{- end }}
 {{- end }}
