@@ -120,7 +120,7 @@ By default, there is one task in the chart setup as a cronjob, responsible for c
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `tasks.checkAlerts.enabled` | Enable the check-alerts task | `true` |
+| `hyperdx.alertCheckCron` | Enable the check-alerts task. By default, the hyperdx image will check for alerts. Change to true if you'd rather use a separate cron task. | `false` |
 | `tasks.checkAlerts.schedule` | Cron schedule for the check-alerts task | `*/1 * * * *` |
 | `tasks.checkAlerts.resources` | Resource requests and limits for the check-alerts task | See `values.yaml` |
 

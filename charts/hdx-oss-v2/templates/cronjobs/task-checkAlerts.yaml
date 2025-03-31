@@ -1,5 +1,5 @@
 {{- if .Values.tasks }}
-{{- if .Values.tasks.checkAlerts.enabled }}
+{{- if .Values.hyperdx.alertCheckCron }}
 ---
 apiVersion: batch/v1
 kind: CronJob
@@ -27,8 +27,8 @@ spec:
                 - configMapRef:
                     name: {{ include "hdx-oss.fullname" . }}-app-config
               env:
-                - name: IS_DEV
-                  value: "false"
+                - name: NODE_ENV
+                  value: "production"
                 - name: OTEL_SERVICE_NAME
                   value: "hdx-oss-task-check-alerts"
               resources:
