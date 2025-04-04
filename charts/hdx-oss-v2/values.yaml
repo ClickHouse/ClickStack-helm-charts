@@ -18,6 +18,7 @@ hyperdx:
     tls:
       enabled: false
       secretName: "hyperdx-tls"
+  replicas: 1
 
 mongodb:
   port: 27017
