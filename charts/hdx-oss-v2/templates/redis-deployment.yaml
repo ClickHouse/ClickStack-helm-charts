@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: redis
-          image: "{{ .Values.images.redis.repository }}:{{ .Values.images.redis.tag }}"
+          image: "{{ .Values.redis.image }}"
           ports:
             - containerPort: {{ .Values.redis.port }}
           volumeMounts:
@@ -42,4 +42,4 @@ spec:
       targetPort: {{ .Values.redis.port }}
   selector:
     {{- include "hdx-oss.selectorLabels" . | nindent 4 }}
-    app: redis 
+    app: redis

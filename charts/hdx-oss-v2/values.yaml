@@ -3,6 +3,7 @@ global:
   imagePullSecrets: []
 
 hyperdx:
+  image: "hyperdx/hyperdx:2-beta"
   apiKey: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
   apiPort: 8000
   appPort: 3000
@@ -20,12 +21,15 @@ hyperdx:
       secretName: "hyperdx-tls"
 
 mongodb:
+  image: "mongo:5.0.14-focal"
   port: 27017
 
 redis:
+  image: "redis:7.0.11-alpine"
   port: 6379
 
 clickhouse:
+  image: "clickhouse/clickhouse-server:24-alpine"
   port: 8123
   nativePort: 9000
   enabled: true
@@ -39,29 +43,13 @@ clickhouse:
       otelUserPassword: "otelcollectorpass"
 
 otel:
+  image: "hyperdx/hyperdx-otel-collector:2-beta"
   port: 13133
   nativePort: 24225
   grpcPort: 4317
   httpPort: 4318
   healthPort: 8888
   enabled: true
-
-images:
-  hdx:
-    repository: hyperdx/hyperdx
-    tag: 2-beta
-  redis:
-    repository: redis
-    tag: 7.0.11-alpine
-  mongodb:
-    repository: mongo
-    tag: 5.0.14-focal
-  otelCollector:
-    repository: hyperdx/hyperdx-otel-collector
-    tag: 2-beta
-  clickhouse:
-    repository: clickhouse/clickhouse-server
-    tag: head-alpine
 
 persistence:
   redis:

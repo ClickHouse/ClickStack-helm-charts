@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: mongodb
-          image: "{{ .Values.images.mongodb.repository }}:{{ .Values.images.mongodb.tag }}"
+          image: "{{ .Values.mongodb.image }}"
           ports:
             - containerPort: {{ .Values.mongodb.port }}
           volumeMounts:
@@ -42,4 +42,4 @@ spec:
       targetPort: {{ .Values.mongodb.port }}
   selector:
     {{- include "hdx-oss.selectorLabels" . | nindent 4 }}
-    app: mongodb 
+    app: mongodb

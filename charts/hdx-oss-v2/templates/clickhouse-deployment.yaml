@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
         - name: clickhouse
-          image: "{{ .Values.images.clickhouse.repository }}:{{ .Values.images.clickhouse.tag }}"
+          image: "{{ .Values.clickhouse.image }}"
           ports:
             - containerPort: {{ .Values.clickhouse.port }}
             - containerPort: {{ .Values.clickhouse.nativePort }}
@@ -66,7 +66,7 @@ spec:
       name: native
   selector:
     {{- include "hdx-oss.selectorLabels" . | nindent 4 }}
-    app: clickhouse 
+    app: clickhouse
 ---
 apiVersion: v1
 kind: ConfigMap
