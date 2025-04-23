@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "hdx-oss.fullname" . }}-app
+  labels:
+    {{- include "hdx-oss.labels" . | nindent 4 }}
+spec:
+  type: LoadBalancer
+  ports:
+    - port: {{ .Values.hyperdx.appPort }}
+      targetPort: {{ .Values.hyperdx.appPort }}
+      name: app
+  selector:
+    {{- include "hdx-oss.selectorLabels" . | nindent 4 }}
+    app: {{ include "hdx-oss.fullname" . }} 

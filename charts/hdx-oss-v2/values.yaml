@@ -10,7 +10,20 @@ hyperdx:
   appUrl: "http://localhost"
   logLevel: "info"
   usageStatsEnabled: true
+  annotations: {}
+    # myAnnotation: "myValue"
+  labels: {}
+    # myLabel: "myValue"
+  env: []
+    # - name: CLICKHOUSE_USER
+    #   value: abc
+    # - name: test
+    #   valueFrom:
+    #     secretKeyRef:
+    #       name: some-secret
+    #       key: some-key
   ingress:
+    enabled: false
     host: "localhost"  # Production domain
     proxyBodySize: "100m"
     proxyConnectTimeout: "60"

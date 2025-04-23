@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "hdx-oss.fullname" . }}-app
+  labels:
+    {{- include "hdx-oss.labels" . | nindent 4 }}
+    app: {{ include "hdx-oss.fullname" . }}
+    {{- if .Values.hyperdx.labels }}
+    {{- with .Values.hyperdx.labels }}
+    {{- toYaml . | nindent 4 }} 
+    {{- end -}}
+    {{- end }}
+spec:
+  replicas: {{ .Values.hyperdx.replicas | default 1 }}
+  selector:
+    matchLabels:
+      {{- include "hdx-oss.selectorLabels" . | nindent 6 }}
+      app: {{ include "hdx-oss.fullname" . }}
+  template:
+    metadata:
+      labels:
+        {{- include "hdx-oss.selectorLabels" . | nindent 8 }}
+        app: {{ include "hdx-oss.fullname" . }}
+      annotations:
+      {{- if .Values.hyperdx.annotations }}
+        {{- with .Values.hyperdx.annotations }}
+        {{- toYaml . | nindent 8 }} 
+        {{- end -}}
+      {{- end }}
+    spec:
+      initContainers:
+        - name: wait-for-mongodb
+          image: busybox
+          command: ['sh', '-c', 'until nc -z {{ include "hdx-oss.fullname" . }}-mongodb {{ .Values.mongodb.port }}; do echo waiting for mongodb; sleep 2; done;']
+      containers:
+        - name: app
+          image: "{{ .Values.hyperdx.image }}"
+          ports:
+            - name: app-port
+              containerPort: {{ .Values.hyperdx.appPort }}
+            - name: api-port
+              containerPort: {{ .Values.hyperdx.apiPort }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "hdx-oss.fullname" . }}-app-config
+          env:
+            - name: HYPERDX_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "hdx-oss.fullname" . }}-app-secrets
+                  key: api-key
+            {{- with .Values.hyperdx.env }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
