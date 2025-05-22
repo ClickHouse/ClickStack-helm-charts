@@ -1,0 +1,51 @@
+suite: Test Helper Templates
+templates:
+  - hyperdx-deployment.yaml
+tests:
+  - it: should render helper name correctly
+    asserts:
+      - matchRegex:
+          path: metadata.name
+          pattern: .*-hdx-oss-v2-app$
+          
+  - it: should render helper name with nameOverride when provided
+    set:
+      nameOverride: custom-name
+    asserts:
+      - matchRegex:
+          path: metadata.name
+          pattern: .*-custom-name-app$
+          
+  - it: should render helper name with fullnameOverride when provided
+    set:
+      fullnameOverride: direct-override
+    asserts:
+      - equal:
+          path: metadata.name
+          value: direct-override-app
+          
+  - it: should render common labels correctly
+    asserts:
+      - isSubset:
+          path: metadata.labels
+          content:
+            helm.sh/chart: hdx-oss-v2-0.3.1
+      - isSubset:
+          path: metadata.labels
+          content:
+            app.kubernetes.io/name: hdx-oss-v2
+      - isSubset:
+          path: metadata.labels
+          content:
+            app.kubernetes.io/instance: RELEASE-NAME
+      - isSubset:
+          path: metadata.labels
+          content:
+            app.kubernetes.io/managed-by: Helm
+          
+  - it: should render chart version in labels when available
+    asserts:
+      - isSubset:
+          path: metadata.labels
+          content:
+            app.kubernetes.io/version: "1.0.0"

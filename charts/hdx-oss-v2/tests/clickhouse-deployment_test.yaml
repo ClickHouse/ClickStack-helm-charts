@@ -1,0 +1,36 @@
+suite: Test ClickHouse Deployment
+templates:
+  - clickhouse-deployment.yaml
+tests:
+  - it: should render expected kubernetes resources
+    set:
+      clickhouse:
+        image: clickhouse/clickhouse-server:24-alpine
+        port: 8123
+        nativePort: 9000
+        enabled: true
+        persistence:
+          enabled: true
+          dataSize: 10Gi
+          logSize: 5Gi
+    asserts:
+      - hasDocuments:
+          count: 6
+      - documentIndex: 0
+        isKind:
+          of: Deployment
+      - documentIndex: 1
+        isKind:
+          of: Service
+      - documentIndex: 2
+        isKind:
+          of: ConfigMap
+      - documentIndex: 3
+        isKind:
+          of: ConfigMap
+      - documentIndex: 4
+        isKind:
+          of: PersistentVolumeClaim
+      - documentIndex: 5
+        isKind:
+          of: PersistentVolumeClaim 

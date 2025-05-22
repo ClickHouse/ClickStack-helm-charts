@@ -38,10 +38,6 @@ mongodb:
   image: "mongo:5.0.14-focal"
   port: 27017
 
-redis:
-  image: "redis:7.0.11-alpine"
-  port: 6379
-
 clickhouse:
   image: "clickhouse/clickhouse-server:24-alpine"
   port: 8123
@@ -66,9 +62,6 @@ otel:
   enabled: true
 
 persistence:
-  redis:
-    enabled: true
-    size: 10Gi
   mongodb:
     enabled: true
     size: 10Gi

@@ -1,0 +1,18 @@
+suite: Test MongoDB Deployment
+templates:
+  - mongodb-deployment.yaml
+tests:
+  - it: should render both deployment and service
+    set:
+      mongodb:
+        image: mongo:5.0.14-focal
+        port: 27017
+    asserts:
+      - hasDocuments:
+          count: 2
+      - documentIndex: 0
+        isKind:
+          of: Deployment
+      - documentIndex: 1
+        isKind:
+          of: Service 

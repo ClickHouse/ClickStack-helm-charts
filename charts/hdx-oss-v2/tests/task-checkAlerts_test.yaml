@@ -1,0 +1,72 @@
+suite: Test Check Alerts CronJob
+templates:
+  - cronjobs/task-checkAlerts.yaml
+tests:
+  - it: should not render when tasks are disabled
+    set:
+      tasks:
+        enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0
+          
+  - it: should render correctly when tasks are enabled
+    set:
+      tasks:
+        enabled: true
+        checkAlerts:
+          schedule: "*/5 * * * *"
+          resources:
+            limits:
+              cpu: 300m
+              memory: 300Mi
+            requests:
+              cpu: 150m
+              memory: 150Mi
+      hyperdx:
+        image: hyperdx/hyperdx:2-beta
+    asserts:
+      - isKind:
+          of: CronJob
+      - equal:
+          path: spec.schedule
+          value: "*/5 * * * *"
+      - equal:
+          path: spec.jobTemplate.spec.template.spec.containers[0].image
+          value: hyperdx/hyperdx:2-beta
+      - equal:
+          path: spec.jobTemplate.spec.template.spec.containers[0].command
+          value: ["node", "/app/api/build/tasks/index.js", "check-alerts"]
+      - isSubset:
+          path: spec.jobTemplate.spec.template.spec.containers[0].resources
+          content:
+            limits:
+              cpu: 300m
+              memory: 300Mi
+            requests:
+              cpu: 150m
+              memory: 150Mi
+      - isSubset:
+          path: spec.jobTemplate.spec.template.spec.containers[0].envFrom[0]
+          content:
+            configMapRef:
+              name: RELEASE-NAME-hdx-oss-v2-app-config
+      - contains:
+          path: spec.jobTemplate.spec.template.spec.containers[0].env
+          content:
+            name: NODE_ENV
+            value: "production"
+      - contains:
+          path: spec.jobTemplate.spec.template.spec.containers[0].env
+          content:
+            name: OTEL_SERVICE_NAME
+            value: "hdx-oss-task-check-alerts"
+            
+  - it: should use default schedule when not provided
+    set:
+      tasks:
+        enabled: true
+    asserts:
+      - equal:
+          path: spec.schedule
+          value: "*/1 * * * *"

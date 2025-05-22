@@ -1,0 +1,36 @@
+suite: Test Persistent Volume Claims
+templates:
+  - claims/persistent-volume-claims.yaml
+tests:
+  - it: should render mongodb pvc correctly when enabled
+    set:
+      persistence:
+        mongodb:
+          enabled: true
+          size: 10Gi
+      global:
+        storageClass: standard
+    asserts:
+      - isKind:
+          of: PersistentVolumeClaim
+      - matchRegex:
+          path: metadata.name
+          pattern: -mongodb$
+      - equal:
+          path: spec.resources.requests.storage
+          value: 10Gi
+      - equal:
+          path: spec.storageClassName
+          value: standard
+      - equal:
+          path: spec.accessModes[0]
+          value: ReadWriteOnce
+          
+  - it: should not render mongodb pvc when disabled
+    set:
+      persistence:
+        mongodb:
+          enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0 

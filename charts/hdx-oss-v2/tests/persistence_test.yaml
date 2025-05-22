@@ -1,0 +1,33 @@
+suite: Test Persistence Settings
+templates:
+  - claims/persistent-volume-claims.yaml
+tests:
+  - it: should use correct mongodb PVC name and size
+    set:
+      global:
+        storageClass: "custom-storage-class"
+      persistence:
+        mongodb:
+          enabled: true
+          size: 15Gi
+    asserts:
+      - isKind:
+          of: PersistentVolumeClaim
+      - matchRegex:
+          path: metadata.name
+          pattern: .*-mongodb$
+      - equal:
+          path: spec.storageClassName
+          value: custom-storage-class
+      - equal:
+          path: spec.resources.requests.storage
+          value: 15Gi
+
+  - it: should not create PVCs when persistence is disabled
+    set:
+      persistence:
+        mongodb:
+          enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0

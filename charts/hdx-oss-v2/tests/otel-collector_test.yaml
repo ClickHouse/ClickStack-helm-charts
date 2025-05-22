@@ -1,0 +1,31 @@
+suite: Test OTEL Collector Deployment
+templates:
+  - otel-collector-deployment.yaml
+tests:
+  - it: should render both deployment and service when enabled
+    set:
+      otel:
+        image: hyperdx/hyperdx-otel-collector:2-beta
+        port: 13133
+        nativePort: 24225
+        grpcPort: 4317
+        httpPort: 4318
+        healthPort: 8888
+        enabled: true
+    asserts:
+      - hasDocuments:
+          count: 2
+      - documentIndex: 0
+        isKind:
+          of: Deployment
+      - documentIndex: 1
+        isKind:
+          of: Service
+          
+  - it: should not render otel collector when disabled
+    set:
+      otel:
+        enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0 

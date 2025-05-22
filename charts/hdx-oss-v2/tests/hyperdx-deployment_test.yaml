@@ -1,0 +1,88 @@
+suite: Test HyperDX Deployment
+templates:
+  - hyperdx-deployment.yaml
+tests:
+  - it: should render deployment correctly with default values
+    asserts:
+      - isKind:
+          of: Deployment
+      - equal:
+          path: spec.replicas
+          value: 1
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: hyperdx/hyperdx:2-beta
+      - equal:
+          path: spec.template.spec.containers[0].ports[0].containerPort
+          value: 3000
+      - equal:
+          path: spec.template.spec.containers[0].ports[1].containerPort
+          value: 8000
+      - isSubset:
+          path: spec.template.spec.containers[0].envFrom[0]
+          content:
+            configMapRef:
+              name: RELEASE-NAME-hdx-oss-v2-app-config
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: HYPERDX_API_KEY
+            valueFrom:
+              secretKeyRef:
+                key: api-key
+                name: RELEASE-NAME-hdx-oss-v2-app-secrets
+
+  - it: should set custom replicas when provided
+    set:
+      hyperdx:
+        replicas: 3
+    asserts:
+      - equal:
+          path: spec.replicas
+          value: 3
+
+  - it: should add custom annotations when provided
+    set:
+      hyperdx:
+        annotations:
+          prometheus.io/scrape: "true"
+          prometheus.io/port: "3000"
+    asserts:
+      - isSubset:
+          path: spec.template.metadata.annotations
+          content:
+            prometheus.io/scrape: "true"
+            prometheus.io/port: "3000"
+            
+  - it: should add custom labels when provided
+    set:
+      hyperdx:
+        labels:
+          environment: production
+          team: platform
+    asserts:
+      - isSubset:
+          path: metadata.labels
+          content:
+            environment: production
+            team: platform
+            
+  - it: should add custom environment variables when provided
+    set:
+      hyperdx:
+        env:
+          - name: CUSTOM_ENV
+            value: "test-value"
+          - name: ANOTHER_ENV
+            value: "another-value"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CUSTOM_ENV
+            value: "test-value"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: ANOTHER_ENV
+            value: "another-value"

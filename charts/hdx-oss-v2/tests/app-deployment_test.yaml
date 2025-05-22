@@ -1,0 +1,46 @@
+suite: Test HyperDX App Deployment
+templates:
+  - hyperdx-deployment.yaml
+tests:
+  - it: should render the app deployment correctly
+    set:
+      hyperdx:
+        image: hyperdx/hyperdx:2-beta
+        apiKey: test-api-key
+        appPort: 3000
+        apiPort: 8000
+        replicas: 1
+      mongodb:
+        port: 27017
+    asserts:
+      - isKind:
+          of: Deployment
+      - equal:
+          path: spec.replicas
+          value: 1
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: hyperdx/hyperdx:2-beta
+      - matchRegex:
+          path: metadata.name
+          pattern: -app$
+      - contains:
+          path: spec.template.spec.containers[0].ports
+          content:
+            name: app-port
+            containerPort: 3000
+      - contains:
+          path: spec.template.spec.containers[0].ports
+          content:
+            name: api-port
+            containerPort: 8000
+  
+  - it: should scale replicas when specified
+    set:
+      hyperdx:
+        image: hyperdx/hyperdx:2-beta
+        replicas: 3
+    asserts:
+      - equal:
+          path: spec.replicas
+          value: 3 

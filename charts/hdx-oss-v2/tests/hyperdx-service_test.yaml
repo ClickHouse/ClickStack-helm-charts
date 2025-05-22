@@ -1,0 +1,38 @@
+suite: Test HyperDX Service
+templates:
+  - hyperdx-service.yaml
+tests:
+  - it: should render service correctly with default values
+    asserts:
+      - isKind:
+          of: Service
+      - equal:
+          path: spec.type
+          value: LoadBalancer
+      - equal:
+          path: spec.ports[0].port
+          value: 3000
+      - equal:
+          path: spec.ports[0].targetPort
+          value: 3000
+      - equal:
+          path: spec.ports[0].name
+          value: app
+  
+  - it: should use custom port when provided
+    set:
+      hyperdx:
+        appPort: 4000
+    asserts:
+      - equal:
+          path: spec.ports[0].port
+          value: 4000
+      - equal:
+          path: spec.ports[0].targetPort
+          value: 4000
+
+  - it: should have correct selector labels
+    asserts:
+      - matchRegex:
+          path: spec.selector.app
+          pattern: ^RELEASE-NAME-hdx-oss-v2$
