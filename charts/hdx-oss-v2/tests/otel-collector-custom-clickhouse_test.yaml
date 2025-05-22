@@ -1,0 +1,38 @@
+suite: test OTEL collector with custom clickhouse endpoint
+templates:
+  - otel-collector-deployment.yaml
+tests:
+  - it: should use default Clickhouse endpoint when not specified
+    set:
+      otel:
+        enabled: true
+    asserts:
+      - documentIndex: 0
+        isKind:
+          of: Deployment
+      - documentIndex: 0
+        equal:
+          path: spec.template.spec.containers[0].env[0].name
+          value: CLICKHOUSE_SERVER_ENDPOINT
+      - documentIndex: 0
+        matchRegex:
+          path: spec.template.spec.containers[0].env[0].value
+          pattern: ".*-clickhouse:[0-9]+"
+
+  - it: should use custom Clickhouse endpoint when specified
+    set:
+      otel:
+        enabled: true
+        clickhouseEndpoint: "my-custom-clickhouse:9000"
+    asserts:
+      - documentIndex: 0
+        isKind:
+          of: Deployment
+      - documentIndex: 0
+        equal:
+          path: spec.template.spec.containers[0].env[0].name
+          value: CLICKHOUSE_SERVER_ENDPOINT
+      - documentIndex: 0
+        equal:
+          path: spec.template.spec.containers[0].env[0].value
+          value: "my-custom-clickhouse:9000"

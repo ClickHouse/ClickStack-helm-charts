@@ -29,7 +29,7 @@ spec:
             - containerPort: {{ .Values.otel.healthPort }}
           env:
             - name: CLICKHOUSE_SERVER_ENDPOINT
-              value: "{{ include "hdx-oss.fullname" . }}-clickhouse:{{ .Values.clickhouse.nativePort }}"
+              value: "{{ .Values.otel.clickhouseEndpoint | default (printf "%s-clickhouse:%v" (include "hdx-oss.fullname" .) .Values.clickhouse.nativePort) }}"
             - name: HYPERDX_LOG_LEVEL
               value: {{ .Values.hyperdx.logLevel }}
             - name: CLICKHOUSE_USER
