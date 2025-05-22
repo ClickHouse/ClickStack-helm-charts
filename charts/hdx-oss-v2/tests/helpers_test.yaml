@@ -29,7 +29,7 @@ tests:
       - isSubset:
           path: metadata.labels
           content:
-            helm.sh/chart: hdx-oss-v2-0.3.1
+            helm.sh/chart: hdx-oss-v2-0.4.0
       - isSubset:
           path: metadata.labels
           content:
