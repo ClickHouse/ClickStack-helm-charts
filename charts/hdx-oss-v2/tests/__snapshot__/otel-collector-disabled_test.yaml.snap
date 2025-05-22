@@ -27,7 +27,7 @@ should render OTEL collector with custom ports:
         spec:
           containers:
             - env:
-                - name: CLICKHOUSE_SERVER_ENDPOINT
+                - name: CLICKHOUSE_ENDPOINT
                   value: RELEASE-NAME-hdx-oss-v2-clickhouse:9000
                 - name: HYPERDX_LOG_LEVEL
                   value: info

@@ -13,11 +13,11 @@ tests:
       - documentIndex: 0
         equal:
           path: spec.template.spec.containers[0].env[0].name
-          value: CLICKHOUSE_SERVER_ENDPOINT
+          value: CLICKHOUSE_ENDPOINT
       - documentIndex: 0
         matchRegex:
           path: spec.template.spec.containers[0].env[0].value
-          pattern: ".*-clickhouse:[0-9]+"
+          pattern: "tcp://.*-clickhouse:[0-9]+\\?dial_timeout=10s"
 
   - it: should use custom Clickhouse endpoint when specified
     set:
@@ -31,7 +31,7 @@ tests:
       - documentIndex: 0
         equal:
           path: spec.template.spec.containers[0].env[0].name
-          value: CLICKHOUSE_SERVER_ENDPOINT
+          value: CLICKHOUSE_ENDPOINT
       - documentIndex: 0
         equal:
           path: spec.template.spec.containers[0].env[0].value

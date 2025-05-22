@@ -60,8 +60,8 @@ otel:
   httpPort: 4318
   healthPort: 8888
   enabled: true
-  # Specify a custom Clickhouse endpoint if not using the built-in Clickhouse
-  # clickhouseEndpoint: "my-external-clickhouse:9000"
+  # Clickhouse endpoint - defaults to built-in Clickhouse service
+  clickhouseEndpoint: ""
 
 persistence:
   mongodb:
