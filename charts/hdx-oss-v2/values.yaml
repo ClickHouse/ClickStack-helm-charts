@@ -165,9 +165,14 @@ clickhouse:
     users:
       appUserPassword: "hyperdx"
       otelUserPassword: "otelcollectorpass"
-    # Network CIDR for Kubernetes cluster (adjust for your cluster). Ensures connections are locked down to intra cluster only.
-    # Common values: "10.0.0.0/8" (most k8s), "192.168.0.0/16" (OrbStack), "172.16.0.0/12" (some clouds)
-    clusterCidr: "10.0.0.0/8"
+    # Network CIDRs for Kubernetes cluster access control
+    # These CIDRs ensure ClickHouse connections are locked down to intra-cluster only
+    # For PRODUCTION: Remove development CIDRs and keep only your cluster's specific CIDR
+    # For DEVELOPMENT: Multiple common CIDRs are included for convenience
+    clusterCidrs:
+      - "10.0.0.0/8"        # Most Kubernetes clusters (including GKE, EKS, AKS)
+      - "172.16.0.0/12"     # Some cloud providers and Docker Desktop
+      - "192.168.0.0/16"    # OrbStack, Minikube, and local development
 
 otel:
   image: "hyperdx/hyperdx-otel-collector:2-beta"

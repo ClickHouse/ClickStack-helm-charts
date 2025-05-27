@@ -25,7 +25,13 @@
         <app>
             <password>{{ .Values.clickhouse.config.users.appUserPassword }}</password>
             <networks>
-                <ip>{{ .Values.clickhouse.config.clusterCidr }}</ip>     <!-- Kubernetes cluster IP range -->
+                {{- if .Values.clickhouse.config.clusterCidrs }}
+                {{- range .Values.clickhouse.config.clusterCidrs }}
+                <ip>{{ . }}</ip>
+                {{- end }}
+                {{- else }}
+                <ip>10.0.0.0/8</ip>  <!-- Default fallback -->
+                {{- end }}
                 <host_regexp>.*\.svc\.cluster\.local$</host_regexp>
             </networks>
             <profile>readonly</profile>
@@ -39,7 +45,13 @@
         <otelcollector>
             <password>{{ .Values.clickhouse.config.users.otelUserPassword }}</password>
             <networks>
-                <ip>{{ .Values.clickhouse.config.clusterCidr }}</ip>     <!-- Kubernetes cluster IP range -->
+                {{- if .Values.clickhouse.config.clusterCidrs }}
+                {{- range .Values.clickhouse.config.clusterCidrs }}
+                <ip>{{ . }}</ip>
+                {{- end }}
+                {{- else }}
+                <ip>10.0.0.0/8</ip>  <!-- Default fallback -->
+                {{- end }}
                 <host_regexp>.*\.svc\.cluster\.local$</host_regexp>
             </networks>
             <profile>default</profile>
