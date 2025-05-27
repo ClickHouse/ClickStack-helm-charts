@@ -16,50 +16,125 @@ hyperdx:
   labels: {}
     # myLabel: "myValue"
   env: []
-    # DEFAULT_CONNECTIONS: Configure via external secrets (contains sensitive credentials)
-    # Create your secret first, then reference it:
-    # kubectl create secret generic hyperdx-connections \
-    #   --from-literal=connections-json='[{"name":"Local ClickHouse","host":"clickhouse:8123","username":"default","password":"default"}]'
-    # 
-    # Then reference the secret:
-    # - name: DEFAULT_CONNECTIONS
-    #   valueFrom:
-    #     secretKeyRef:
-    #       name: hyperdx-connections
-    #       key: connections-json
-    
-    # DEFAULT_SOURCES: Configure via external secrets or plain values
-    # For non-sensitive source configurations, you can use plain values:
-    # - name: DEFAULT_SOURCES
-    #   value: |
-    #     [
-    #       {
-    #         "name": "HyperDX Logs",
-    #         "kind": "log",
-    #         "connection": "Local ClickHouse",
-    #         "from": {
-    #           "databaseName": "default",
-    #           "tableName": "logs"
-    #         },
-    #         "timestampValueExpression": "timestamp",
-    #         "displayedTimestampValueExpression": "timestamp",
-    #         "bodyExpression": "body",
-    #         "severityTextExpression": "severity_text",
-    #         "serviceNameExpression": "service_name",
-    #         "resourceAttributesExpression": "resource",
-    #         "traceIdExpression": "trace_id",
-    #         "spanIdExpression": "span_id"
-    #       }
-    #     ]
-    #
-    # Or use secrets for consistency:
-    # - name: DEFAULT_SOURCES
-    #   valueFrom:
-    #     secretKeyRef:
-    #       name: hyperdx-sources  
-    #       key: sources-json
-    # See https://github.com/hyperdxio/hyperdx/blob/v2/packages/api/docs/auto_provision/AUTO_PROVISION.md
-    # for more information on how to configure these values.
+    # Additional environment variables can be configured here
+    # This is preserved for backward compatibility and advanced use cases
+
+  # Default connections and sources (ENABLED BY DEFAULT)
+  # Set to empty string to disable: defaultConnections: ""
+  defaultConnections: |
+    [
+      {
+        "name": "Local ClickHouse",
+        "host": "{{ include "hdx-oss.fullname" . }}-clickhouse",
+        "port": 8123,
+        "username": "app",
+        "password": "{{ .Values.clickhouse.config.users.appUserPassword }}"
+      }
+    ]
+
+  # Set to empty string to disable: defaultSources: ""
+  defaultSources: |
+    [
+      {
+        "from": {
+          "databaseName": "default",
+          "tableName": "otel_logs"
+        },
+        "kind": "log",
+        "timestampValueExpression": "TimestampTime",
+        "name": "Logs",
+        "displayedTimestampValueExpression": "Timestamp",
+        "implicitColumnExpression": "Body",
+        "serviceNameExpression": "ServiceName",
+        "bodyExpression": "Body",
+        "eventAttributesExpression": "LogAttributes",
+        "resourceAttributesExpression": "ResourceAttributes",
+        "defaultTableSelectExpression": "Timestamp,ServiceName,SeverityText,Body",
+        "severityTextExpression": "SeverityText",
+        "traceIdExpression": "TraceId",
+        "spanIdExpression": "SpanId",
+        "connection": "Local ClickHouse",
+        "traceSourceId": "Traces",
+        "sessionSourceId": "Sessions",
+        "metricSourceId": "Metrics"
+      },
+      {
+        "from": {
+          "databaseName": "default",
+          "tableName": "otel_traces"
+        },
+        "kind": "trace",
+        "timestampValueExpression": "Timestamp",
+        "name": "Traces",
+        "displayedTimestampValueExpression": "Timestamp",
+        "implicitColumnExpression": "SpanName",
+        "serviceNameExpression": "ServiceName",
+        "bodyExpression": "SpanName",
+        "eventAttributesExpression": "SpanAttributes",
+        "resourceAttributesExpression": "ResourceAttributes",
+        "defaultTableSelectExpression": "Timestamp,ServiceName,StatusCode,round(Duration/1e6),SpanName",
+        "traceIdExpression": "TraceId",
+        "spanIdExpression": "SpanId",
+        "durationExpression": "Duration",
+        "durationPrecision": 9,
+        "parentSpanIdExpression": "ParentSpanId",
+        "spanNameExpression": "SpanName",
+        "spanKindExpression": "SpanKind",
+        "statusCodeExpression": "StatusCode",
+        "statusMessageExpression": "StatusMessage",
+        "connection": "Local ClickHouse",
+        "logSourceId": "Logs",
+        "sessionSourceId": "Sessions",
+        "metricSourceId": "Metrics"
+      },
+      {
+        "from": {
+          "databaseName": "default",
+          "tableName": ""
+        },
+        "kind": "metric",
+        "timestampValueExpression": "TimeUnix",
+        "name": "Metrics",
+        "resourceAttributesExpression": "ResourceAttributes",
+        "metricTables": {
+          "gauge": "otel_metrics_gauge",
+          "histogram": "otel_metrics_histogram",
+          "sum": "otel_metrics_sum",
+          "_id": "682586a8b1f81924e628e808",
+          "id": "682586a8b1f81924e628e808"
+        },
+        "connection": "Local ClickHouse",
+        "logSourceId": "Logs",
+        "traceSourceId": "Traces",
+        "sessionSourceId": "Sessions"
+      },
+      {
+        "from": {
+          "databaseName": "default",
+          "tableName": "hyperdx_sessions"
+        },
+        "kind": "session",
+        "timestampValueExpression": "TimestampTime",
+        "name": "Sessions",
+        "displayedTimestampValueExpression": "Timestamp",
+        "implicitColumnExpression": "Body",
+        "serviceNameExpression": "ServiceName",
+        "bodyExpression": "Body",
+        "eventAttributesExpression": "LogAttributes",
+        "resourceAttributesExpression": "ResourceAttributes",
+        "defaultTableSelectExpression": "Timestamp,ServiceName,SeverityText,Body",
+        "severityTextExpression": "SeverityText",
+        "traceIdExpression": "TraceId",
+        "spanIdExpression": "SpanId",
+        "connection": "Local ClickHouse",
+        "logSourceId": "Logs",
+        "traceSourceId": "Traces",
+        "metricSourceId": "Metrics"
+      }
+    ]
+  
+  # See https://github.com/hyperdxio/hyperdx/blob/v2/packages/api/docs/auto_provision/AUTO_PROVISION.md
+  # for detailed configuration options
 
   ingress:
     enabled: false
@@ -90,6 +165,9 @@ clickhouse:
     users:
       appUserPassword: "hyperdx"
       otelUserPassword: "otelcollectorpass"
+    # Network CIDR for Kubernetes cluster (adjust for your cluster). Ensures connections are locked down to intra cluster only.
+    # Common values: "10.0.0.0/8" (most k8s), "192.168.0.0/16" (OrbStack), "172.16.0.0/12" (some clouds)
+    clusterCidr: "10.0.0.0/8"
 
 otel:
   image: "hyperdx/hyperdx-otel-collector:2-beta"
@@ -100,7 +178,7 @@ otel:
   healthPort: 8888
   enabled: true
   # Clickhouse endpoint - defaults to built-in Clickhouse service
-  clickhouseEndpoint: ""
+  clickhouseEndpoint:
 
 persistence:
   mongodb:

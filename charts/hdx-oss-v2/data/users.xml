@@ -25,7 +25,7 @@
         <app>
             <password>{{ .Values.clickhouse.config.users.appUserPassword }}</password>
             <networks>
-                <ip>10.0.0.0/8</ip>     <!-- Kubernetes cluster IP range -->
+                <ip>{{ .Values.clickhouse.config.clusterCidr }}</ip>     <!-- Kubernetes cluster IP range -->
                 <host_regexp>.*\.svc\.cluster\.local$</host_regexp>
             </networks>
             <profile>readonly</profile>
@@ -39,12 +39,13 @@
         <otelcollector>
             <password>{{ .Values.clickhouse.config.users.otelUserPassword }}</password>
             <networks>
+                <ip>{{ .Values.clickhouse.config.clusterCidr }}</ip>     <!-- Kubernetes cluster IP range -->
                 <host_regexp>.*\.svc\.cluster\.local$</host_regexp>
             </networks>
             <profile>default</profile>
             <quota>default</quota>
             <grants>
-                <query>GRANT SELECT,INSERT,SHOW ON default.*</query>
+                <query>GRANT SELECT,INSERT,CREATE,SHOW ON default.*</query>
             </grants>
         </otelcollector>
     </users>

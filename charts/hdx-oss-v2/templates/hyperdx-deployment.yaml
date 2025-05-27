@@ -49,6 +49,14 @@ spec:
                 secretKeyRef:
                   name: {{ include "hdx-oss.fullname" . }}-app-secrets
                   key: api-key
+            {{- if .Values.hyperdx.defaultConnections }}
+            - name: DEFAULT_CONNECTIONS
+              value: {{ tpl .Values.hyperdx.defaultConnections . | quote }}
+            {{- end }}
+            {{- if .Values.hyperdx.defaultSources }}
+            - name: DEFAULT_SOURCES
+              value: {{ tpl .Values.hyperdx.defaultSources . | quote }}
+            {{- end }}
             {{- with .Values.hyperdx.env }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
