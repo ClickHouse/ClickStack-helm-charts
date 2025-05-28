@@ -12,6 +12,8 @@ hyperdx:
   appUrl: "http://localhost"
   logLevel: "info"
   usageStatsEnabled: true
+  # Endpoint to send hyperdx logs/traces/metrics to.Defaults to the chart's otel collector endpoint.
+  otelExporterEndpoint: http://{{ include "hdx-oss.fullname" . }}-otel-collector:{{ .Values.otel.httpPort }}
   annotations: {}
     # myAnnotation: "myValue"
   labels: {}
