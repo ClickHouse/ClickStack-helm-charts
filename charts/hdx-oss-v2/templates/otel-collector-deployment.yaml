@@ -32,8 +32,17 @@ spec:
               value: "{{ .Values.otel.clickhouseEndpoint | default (printf "tcp://%s-clickhouse:%v?dial_timeout=10s" (include "hdx-oss.fullname" .) .Values.clickhouse.nativePort) }}"
             - name: CLICKHOUSE_SERVER_ENDPOINT
               value: "{{ .Values.otel.clickhouseEndpoint | default (printf "%s-clickhouse:%v" (include "hdx-oss.fullname" .) .Values.clickhouse.nativePort) }}"
+            {{- if .Values.clickhouse.prometheus.enabled }}
+            - name: CLICKHOUSE_PROMETHEUS_METRICS_ENDPOINT
+              value: "{{ .Values.otel.clickhousePrometheusEndpoint | default (printf "%s-clickhouse:%v" (include "hdx-oss.fullname" .) .Values.clickhouse.prometheus.port ) }}"
+            {{- end }}
             - name: HYPERDX_LOG_LEVEL
               value: {{ .Values.hyperdx.logLevel }}
+            - name: HYPERDX_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "hdx-oss.fullname" . }}-app-secrets
+                  key: api-key
             - name: CLICKHOUSE_USER
               value: "otelcollector"
             - name: CLICKHOUSE_PASSWORD
