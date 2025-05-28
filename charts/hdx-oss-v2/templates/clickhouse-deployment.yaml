@@ -64,6 +64,11 @@ spec:
     - port: {{ .Values.clickhouse.nativePort }}
       targetPort: {{ .Values.clickhouse.nativePort }}
       name: native
+    {{- if .Values.clickhouse.prometheus.enabled }}
+    - port: {{ .Values.clickhouse.prometheus.port }}
+      targetPort: {{ .Values.clickhouse.prometheus.port }}
+      name: prometheus
+    {{- end }}
   selector:
     {{- include "hdx-oss.selectorLabels" . | nindent 4 }}
     app: clickhouse

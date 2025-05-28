@@ -36,6 +36,8 @@ spec:
             - name: CLICKHOUSE_PROMETHEUS_METRICS_ENDPOINT
               value: "{{ .Values.otel.clickhousePrometheusEndpoint | default (printf "%s-clickhouse:%v" (include "hdx-oss.fullname" .) .Values.clickhouse.prometheus.port ) }}"
             {{- end }}
+            - name: OPAMP_SERVER_URL
+              value: {{ .Values.otel.opampServerUrl | default (printf "%s-app:%v" (include "hdx-oss.fullname" .) .Values.hyperdx.opampPort ) }}
             - name: HYPERDX_LOG_LEVEL
               value: {{ .Values.hyperdx.logLevel }}
             - name: HYPERDX_API_KEY

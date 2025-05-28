@@ -18,3 +18,4 @@ data:
   OTEL_SERVICE_NAME: "hdx-oss-api"
   USAGE_STATS_ENABLED: "{{ .Values.hyperdx.usageStatsEnabled | default true }}"
   CRON_IN_APP_DISABLED: "{{ .Values.tasks.enabled | default false }}"
+  OPAMP_PORT: "{{ .Values.hyperdx.opampPort }}"
