@@ -28,4 +28,252 @@ tests:
         enabled: false
     asserts:
       - hasDocuments:
-          count: 0 
+          count: 0
+
+  - it: should render environment variables correctly with default values
+    set:
+      otel:
+        enabled: true
+        image: hyperdx/hyperdx-otel-collector:2-beta
+      hyperdx:
+        logLevel: info
+      clickhouse:
+        nativePort: 9000
+        prometheus:
+          enabled: true
+          port: 9363
+          endpoint: "/metrics"
+        config:
+          users:
+            otelUserPassword: test-password
+    release:
+      name: test-release
+    asserts:
+      - documentIndex: 0
+        isKind:
+          of: Deployment
+      - documentIndex: 0
+        contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CLICKHOUSE_ENDPOINT
+            value: "tcp://test-release-hdx-oss-v2-clickhouse:9000?dial_timeout=10s"
+      - documentIndex: 0
+        contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CLICKHOUSE_SERVER_ENDPOINT
+            value: "test-release-hdx-oss-v2-clickhouse:9000"
+      - documentIndex: 0
+        contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CLICKHOUSE_PROMETHEUS_METRICS_ENDPOINT
+            value: "test-release-hdx-oss-v2-clickhouse:9363"
+      - documentIndex: 0
+        contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: HYPERDX_LOG_LEVEL
+            value: info
+      - documentIndex: 0
+        contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CLICKHOUSE_USER
+            value: "otelcollector"
+      - documentIndex: 0
+        contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CLICKHOUSE_PASSWORD
+            value: test-password
+
+  - it: should render environment variables correctly with custom clickhouse endpoint
+    set:
+      otel:
+        enabled: true
+        image: hyperdx/hyperdx-otel-collector:2-beta
+        clickhouseEndpoint: "tcp://custom-clickhouse:9000"
+      hyperdx:
+        logLevel: debug
+      clickhouse:
+        prometheus:
+          enabled: true
+          port: 9363
+          endpoint: "/metrics"
+        config:
+          users:
+            otelUserPassword: custom-password
+    release:
+      name: custom-release
+    asserts:
+      - documentIndex: 0
+        isKind:
+          of: Deployment
+      - documentIndex: 0
+        contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CLICKHOUSE_ENDPOINT
+            value: "tcp://custom-clickhouse:9000"
+      - documentIndex: 0
+        contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CLICKHOUSE_SERVER_ENDPOINT
+            value: "tcp://custom-clickhouse:9000"
+      - documentIndex: 0
+        contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CLICKHOUSE_PROMETHEUS_METRICS_ENDPOINT
+            value: "custom-release-hdx-oss-v2-clickhouse:9363"
+      - documentIndex: 0
+        contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: HYPERDX_LOG_LEVEL
+            value: debug
+
+  - it: should render service ports correctly
+    set:
+      otel:
+        enabled: true
+        port: 13133
+        nativePort: 24225
+        grpcPort: 4317
+        httpPort: 4318
+        healthPort: 8888
+    asserts:
+      - documentIndex: 1
+        isKind:
+          of: Service
+      - documentIndex: 1
+        contains:
+          path: spec.ports
+          content:
+            port: 13133
+            targetPort: 13133
+            name: health
+      - documentIndex: 1
+        contains:
+          path: spec.ports
+          content:
+            port: 24225
+            targetPort: 24225
+            name: fluentd
+      - documentIndex: 1
+        contains:
+          path: spec.ports
+          content:
+            port: 4317
+            targetPort: 4317
+            name: otlp-grpc
+      - documentIndex: 1
+        contains:
+          path: spec.ports
+          content:
+            port: 4318
+            targetPort: 4318
+            name: otlp-http
+      - documentIndex: 1
+        contains:
+          path: spec.ports
+          content:
+            port: 8888
+            targetPort: 8888
+            name: metrics
+
+  - it: should render container ports correctly
+    set:
+      otel:
+        enabled: true
+        port: 13133
+        nativePort: 24225
+        grpcPort: 4317
+        httpPort: 4318
+        healthPort: 8888
+    asserts:
+      - documentIndex: 0
+        isKind:
+          of: Deployment
+      - documentIndex: 0
+        contains:
+          path: spec.template.spec.containers[0].ports
+          content:
+            containerPort: 13133
+      - documentIndex: 0
+        contains:
+          path: spec.template.spec.containers[0].ports
+          content:
+            containerPort: 24225
+      - documentIndex: 0
+        contains:
+          path: spec.template.spec.containers[0].ports
+          content:
+            containerPort: 4317
+      - documentIndex: 0
+        contains:
+          path: spec.template.spec.containers[0].ports
+          content:
+            containerPort: 4318
+      - documentIndex: 0
+        contains:
+          path: spec.template.spec.containers[0].ports
+          content:
+            containerPort: 8888
+
+  - it: should render environment variables with custom prometheus endpoint
+    set:
+      otel:
+        enabled: true
+        image: hyperdx/hyperdx-otel-collector:2-beta
+        clickhousePrometheusEndpoint: "external-clickhouse:8080/custom-metrics"
+      hyperdx:
+        logLevel: info
+      clickhouse:
+        prometheus:
+          enabled: true
+          port: 9363
+          endpoint: "/metrics"
+        config:
+          users:
+            otelUserPassword: test-password
+    release:
+      name: test-release
+    asserts:
+      - documentIndex: 0
+        isKind:
+          of: Deployment
+      - documentIndex: 0
+        contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CLICKHOUSE_PROMETHEUS_METRICS_ENDPOINT
+            value: "external-clickhouse:8080/custom-metrics"
+
+  - it: should not render prometheus endpoint when disabled
+    set:
+      otel:
+        enabled: true
+        image: hyperdx/hyperdx-otel-collector:2-beta
+      hyperdx:
+        logLevel: info
+      clickhouse:
+        prometheus:
+          enabled: false
+        config:
+          users:
+            otelUserPassword: test-password
+    release:
+      name: test-release
+    asserts:
+      - documentIndex: 0
+        isKind:
+          of: Deployment
+      - documentIndex: 0
+        notContains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CLICKHOUSE_PROMETHEUS_METRICS_ENDPOINT

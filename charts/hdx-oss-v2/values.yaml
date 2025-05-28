@@ -161,6 +161,10 @@ clickhouse:
     enabled: true
     dataSize: 10Gi
     logSize: 5Gi
+  prometheus:
+    enabled: true
+    port: 9363
+    endpoint: "/metrics"
   config:
     users:
       appUserPassword: "hyperdx"
@@ -182,8 +186,14 @@ otel:
   httpPort: 4318
   healthPort: 8888
   enabled: true
-  # Clickhouse endpoint - defaults to built-in Clickhouse service
+  # Clickhouse endpoint - defaults to chart's Clickhouse service. Customize if you want to use a different Clickhouse service.
+  # Leave empty if you want to use the chart's Clickhouse service.
+  # Example: clickhouseEndpoint: "tcp://custom-clickhouse-service:9000"
   clickhouseEndpoint:
+  # Clickhouse Prometheus endpoint - defaults to chart's Clickhouse prometheus service. Customize if you want to use a different Clickhouse prometheus service. 
+  # Leave empty if prometheus is disabled.
+  # Example: clickhousePrometheusEndpoint: "http://custom-clickhouse-service:9363"
+  clickhousePrometheusEndpoint:
 
 persistence:
   mongodb:
