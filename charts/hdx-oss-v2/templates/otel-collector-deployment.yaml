@@ -40,6 +40,8 @@ spec:
               value: {{ .Values.otel.opampServerUrl | default (printf "http://%s-app:%v" (include "hdx-oss.fullname" .) .Values.hyperdx.opampPort ) }}
             - name: HYPERDX_LOG_LEVEL
               value: {{ .Values.hyperdx.logLevel }}
+            - name: HYPERDX_OTEL_EXPORTER_CLICKHOUSE_DATABASE
+              value: {{ .Values.hyperdx.clickhouseDatabase | default "default" }}
             - name: HYPERDX_API_KEY
               valueFrom:
                 secretKeyRef:

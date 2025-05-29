@@ -40,6 +40,8 @@ spec:
               containerPort: {{ .Values.hyperdx.appPort }}
             - name: api-port
               containerPort: {{ .Values.hyperdx.apiPort }}
+            - name: opamp-port
+              containerPort: {{ .Values.hyperdx.opampPort }}
           envFrom:
             - configMapRef:
                 name: {{ include "hdx-oss.fullname" . }}-app-config

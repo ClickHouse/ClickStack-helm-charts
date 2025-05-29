@@ -10,6 +10,9 @@ spec:
     - port: {{ .Values.hyperdx.appPort }}
       targetPort: {{ .Values.hyperdx.appPort }}
       name: app
+    - port: {{ .Values.hyperdx.opampPort }}
+      targetPort: {{ .Values.hyperdx.opampPort }}
+      name: opamp
   selector:
     {{- include "hdx-oss.selectorLabels" . | nindent 4 }}
     app: {{ include "hdx-oss.fullname" . }} 

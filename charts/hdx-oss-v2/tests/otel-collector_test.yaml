@@ -308,3 +308,52 @@ tests:
           content:
             name: OPAMP_SERVER_URL
             value: "https://custom-opamp-server:8080"
+
+  - it: should use default clickhouse database when not specified
+    set:
+      otel:
+        enabled: true
+        image: hyperdx/hyperdx-otel-collector:2-beta
+      hyperdx:
+        logLevel: info
+      clickhouse:
+        config:
+          users:
+            otelUserPassword: test-password
+    release:
+      name: test-release
+    asserts:
+      - documentIndex: 0
+        isKind:
+          of: Deployment
+      - documentIndex: 0
+        contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: HYPERDX_OTEL_EXPORTER_CLICKHOUSE_DATABASE
+            value: "default"
+
+  - it: should use custom clickhouse database when specified
+    set:
+      otel:
+        enabled: true
+        image: hyperdx/hyperdx-otel-collector:2-beta
+      hyperdx:
+        logLevel: info
+        clickhouseDatabase: "custom_db"
+      clickhouse:
+        config:
+          users:
+            otelUserPassword: test-password
+    release:
+      name: test-release
+    asserts:
+      - documentIndex: 0
+        isKind:
+          of: Deployment
+      - documentIndex: 0
+        contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: HYPERDX_OTEL_EXPORTER_CLICKHOUSE_DATABASE
+            value: "custom_db"

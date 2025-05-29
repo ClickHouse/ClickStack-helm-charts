@@ -14,6 +14,8 @@ hyperdx:
   usageStatsEnabled: true
   # Endpoint to send hyperdx logs/traces/metrics to.Defaults to the chart's otel collector endpoint.
   otelExporterEndpoint: http://{{ include "hdx-oss.fullname" . }}-otel-collector:{{ .Values.otel.httpPort }}
+  # Clickhouse database to send logs/traces/metrics to. Defaults to "default"
+  clickhouseDatabase: "default"
   annotations: {}
     # myAnnotation: "myValue"
   labels: {}

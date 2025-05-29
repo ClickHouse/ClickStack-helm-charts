@@ -36,3 +36,27 @@ tests:
       - matchRegex:
           path: spec.selector.app
           pattern: ^RELEASE-NAME-hdx-oss-v2$
+
+  - it: should expose OpAMP port with default values
+    asserts:
+      - equal:
+          path: spec.ports[1].port
+          value: 4320
+      - equal:
+          path: spec.ports[1].targetPort
+          value: 4320
+      - equal:
+          path: spec.ports[1].name
+          value: opamp
+  
+  - it: should use custom OpAMP port when provided
+    set:
+      hyperdx:
+        opampPort: 5320
+    asserts:
+      - equal:
+          path: spec.ports[1].port
+          value: 5320
+      - equal:
+          path: spec.ports[1].targetPort
+          value: 5320

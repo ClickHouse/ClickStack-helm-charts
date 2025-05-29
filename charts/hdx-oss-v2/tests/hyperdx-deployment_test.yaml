@@ -18,6 +18,9 @@ tests:
       - equal:
           path: spec.template.spec.containers[0].ports[1].containerPort
           value: 8000
+      - equal:
+          path: spec.template.spec.containers[0].ports[2].containerPort
+          value: 4320
       - isSubset:
           path: spec.template.spec.containers[0].envFrom[0]
           content:
@@ -86,3 +89,21 @@ tests:
           content:
             name: ANOTHER_ENV
             value: "another-value"
+
+  - it: should expose OpAMP container port with default values
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].ports[2].containerPort
+          value: 4320
+      - equal:
+          path: spec.template.spec.containers[0].ports[2].name
+          value: opamp-port
+  
+  - it: should use custom OpAMP port when provided
+    set:
+      hyperdx:
+        opampPort: 5320
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].ports[2].containerPort
+          value: 5320
