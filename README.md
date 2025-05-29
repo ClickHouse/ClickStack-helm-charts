@@ -65,6 +65,37 @@ ingress:
           pathType: ImplementationSpecific
 ```
 
+## Post-Installation: Configuring Telemetry API Key
+
+After successfully deploying HyperDX, you'll need to configure the API key to enable the app's telemetry data collection:
+
+1. **Access your HyperDX instance** via the configured ingress or service endpoint
+2. **Log into the HyperDX dashboard** and navigate to Team settings to generate or retrieve your API key
+3. **Update your deployment** with the API key using one of the following methods:
+
+### Method 1: Update via Helm upgrade with values file
+
+Add the API key to your `values.yaml`:
+
+```yaml
+hyperdx:
+  apiKey: "your-api-key-here"
+```
+
+Then upgrade your deployment:
+
+```sh
+helm upgrade my-hyperdx hyperdx/hdx-oss-v2 -f values.yaml
+```
+
+### Method 2: Update via Helm upgrade with --set flag
+
+```sh
+helm upgrade my-hyperdx hyperdx/hdx-oss-v2 --set hyperdx.apiKey="your-api-key-here"
+```
+
+**Note:** The chart automatically creates a Kubernetes secret (`<release-name>-app-secrets`) with your API key. No additional secret configuration is needed unless you want to use an external secret.
+
 ## Using Secrets
 
 For handling sensitive data such as API keys or database credentials, use Kubernetes secrets. The HyperDX Helm charts provide default secret files that you can modify and apply to your cluster.
