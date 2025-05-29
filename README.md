@@ -94,6 +94,12 @@ helm upgrade my-hyperdx hyperdx/hdx-oss-v2 -f values.yaml
 helm upgrade my-hyperdx hyperdx/hdx-oss-v2 --set hyperdx.apiKey="your-api-key-here"
 ```
 
+**Important:** After updating the API key, you need to restart the pods to pick up the new configuration:
+
+```sh
+kubectl rollout restart deployment my-hyperdx-hdx-oss-v2-app my-hyperdx-hdx-oss-v2-otel-collector
+```
+
 **Note:** The chart automatically creates a Kubernetes secret (`<release-name>-app-secrets`) with your API key. No additional secret configuration is needed unless you want to use an external secret.
 
 ## Using Secrets
