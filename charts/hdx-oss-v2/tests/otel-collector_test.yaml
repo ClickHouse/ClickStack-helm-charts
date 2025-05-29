@@ -88,6 +88,12 @@ tests:
           content:
             name: CLICKHOUSE_PASSWORD
             value: test-password
+      - documentIndex: 0
+        contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: OPAMP_SERVER_URL
+            value: http://test-release-hdx-oss-v2-app:4320
 
   - it: should render environment variables correctly with custom clickhouse endpoint
     set:
@@ -277,3 +283,28 @@ tests:
           path: spec.template.spec.containers[0].env
           content:
             name: CLICKHOUSE_PROMETHEUS_METRICS_ENDPOINT
+
+  - it: should render OPAMP_SERVER_URL with custom value when specified
+    set:
+      otel:
+        enabled: true
+        image: hyperdx/hyperdx-otel-collector:2-beta
+        opampServerUrl: "https://custom-opamp-server:8080"
+      hyperdx:
+        logLevel: info
+      clickhouse:
+        config:
+          users:
+            otelUserPassword: test-password
+    release:
+      name: test-release
+    asserts:
+      - documentIndex: 0
+        isKind:
+          of: Deployment
+      - documentIndex: 0
+        contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: OPAMP_SERVER_URL
+            value: "https://custom-opamp-server:8080"
