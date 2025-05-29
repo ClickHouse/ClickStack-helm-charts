@@ -31,3 +31,17 @@ tests:
     asserts:
       - hasDocuments:
           count: 0
+
+  - it: should omit storageClassName when global.storageClass is empty string
+    set:
+      global:
+        storageClass: ""
+      persistence:
+        mongodb:
+          enabled: true
+          size: 10Gi
+    asserts:
+      - isKind:
+          of: PersistentVolumeClaim
+      - isNull:
+          path: spec.storageClassName

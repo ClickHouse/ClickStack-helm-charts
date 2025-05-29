@@ -1,7 +1,7 @@
 global:
   imageRegistry: ""
   imagePullSecrets: []
-  storageClassName: []
+  storageClassName: "local-path"
 
 hyperdx:
   image: "hyperdx/hyperdx:2-beta"
