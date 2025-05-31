@@ -12,8 +12,15 @@ hyperdx:
   appUrl: "http://localhost"
   logLevel: "info"
   usageStatsEnabled: true
-  # Endpoint to send hyperdx logs/traces/metrics to.Defaults to the chart's otel collector endpoint.
-  otelExporterEndpoint: http://{{ include "hdx-oss.fullname" . }}-otel-collector:{{ .Values.otel.httpPort }}
+  otel:
+    # Endpoint to send hyperdx logs/traces/metrics to.Defaults to the chart's otel collector endpoint.
+    globalEndpoint: http://{{ include "hdx-oss.fullname" . }}-otel-collector:{{ .Values.otel.httpPort }}
+    # -- Endpoint URL for log data only
+    logsEndpoint: ""
+    # -- Endpoint URL for metric data only
+    metricsEndpoint: ""
+    # -- Endpoint URL for trace data only
+    tracesEndpoint: ""
   # Clickhouse database to send logs/traces/metrics to. Defaults to "default"
   clickhouseDatabase: "default"
   annotations: {}
@@ -137,7 +144,7 @@ hyperdx:
         "metricSourceId": "Metrics"
       }
     ]
-  
+
   # See https://github.com/hyperdxio/hyperdx/blob/v2/packages/api/docs/auto_provision/AUTO_PROVISION.md
   # for detailed configuration options
 
@@ -199,7 +206,7 @@ otel:
   # Leave empty if you want to use the chart's Clickhouse service.
   # Example: clickhouseEndpoint: "tcp://custom-clickhouse-service:9000"
   clickhouseEndpoint:
-  # Clickhouse Prometheus endpoint - defaults to chart's Clickhouse prometheus service. Customize if you want to use a different Clickhouse prometheus service. 
+  # Clickhouse Prometheus endpoint - defaults to chart's Clickhouse prometheus service. Customize if you want to use a different Clickhouse prometheus service.
   # Leave empty if prometheus is disabled.
   # Example: clickhousePrometheusEndpoint: "http://custom-clickhouse-service:9363"
   clickhousePrometheusEndpoint:
