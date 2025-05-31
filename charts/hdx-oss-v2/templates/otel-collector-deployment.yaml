@@ -5,6 +5,7 @@ metadata:
   name: {{ include "hdx-oss.fullname" . }}-otel-collector
   labels:
     {{- include "hdx-oss.labels" . | nindent 4 }}
+    {{- include "hdx-oss.otel.labels" . | nindent 4 }}
     app: otel-collector
 spec:
   replicas: 1
@@ -16,6 +17,7 @@ spec:
     metadata:
       labels:
         {{- include "hdx-oss.selectorLabels" . | nindent 8 }}
+        {{- include "hdx-oss.otel.labels" . | nindent 8 }}
         app: otel-collector
     spec:
       containers:
@@ -58,6 +60,7 @@ metadata:
   name: {{ include "hdx-oss.fullname" . }}-otel-collector
   labels:
     {{- include "hdx-oss.labels" . | nindent 4 }}
+    {{- include "hdx-oss.otel.labels" . | nindent 4 }}
 spec:
   ports:
     - port: {{ .Values.otel.port }}

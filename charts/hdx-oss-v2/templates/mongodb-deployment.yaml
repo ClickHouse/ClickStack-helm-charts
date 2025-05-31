@@ -4,6 +4,7 @@ metadata:
   name: {{ include "hdx-oss.fullname" . }}-mongodb
   labels:
     {{- include "hdx-oss.labels" . | nindent 4 }}
+    {{- include "hdx-oss.mongodb.labels" . | nindent 4 }}
     app: mongodb
 spec:
   replicas: 1
@@ -15,6 +16,7 @@ spec:
     metadata:
       labels:
         {{- include "hdx-oss.selectorLabels" . | nindent 8 }}
+        {{- include "hdx-oss.mongodb.labels" . | nindent 8 }}
         app: mongodb
     spec:
       containers:
@@ -36,6 +38,7 @@ metadata:
   name: {{ include "hdx-oss.fullname" . }}-mongodb
   labels:
     {{- include "hdx-oss.labels" . | nindent 4 }}
+    {{- include "hdx-oss.mongodb.labels" . | nindent 4 }}
 spec:
   ports:
     - port: {{ .Values.mongodb.port }}

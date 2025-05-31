@@ -4,10 +4,11 @@ metadata:
   name: {{ include "hdx-oss.fullname" . }}-app
   labels:
     {{- include "hdx-oss.labels" . | nindent 4 }}
+    {{- include "hdx-oss.hyperdx.labels" . | nindent 4 }}
     app: {{ include "hdx-oss.fullname" . }}
     {{- if .Values.hyperdx.labels }}
     {{- with .Values.hyperdx.labels }}
-    {{- toYaml . | nindent 4 }} 
+    {{- toYaml . | nindent 4 }}
     {{- end -}}
     {{- end }}
 spec:
@@ -20,11 +21,12 @@ spec:
     metadata:
       labels:
         {{- include "hdx-oss.selectorLabels" . | nindent 8 }}
+        {{- include "hdx-oss.hyperdx.labels" . | nindent 8 }}
         app: {{ include "hdx-oss.fullname" . }}
       annotations:
       {{- if .Values.hyperdx.annotations }}
         {{- with .Values.hyperdx.annotations }}
-        {{- toYaml . | nindent 8 }} 
+        {{- toYaml . | nindent 8 }}
         {{- end -}}
       {{- end }}
     spec:

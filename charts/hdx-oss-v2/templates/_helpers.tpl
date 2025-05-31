@@ -38,6 +38,7 @@ helm.sh/chart: {{ include "hdx-oss.chart" . }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
+app.kubernetes.io/part-of: hyperdx
 {{- end }}
 
 {{/*
@@ -46,4 +47,32 @@ Selector labels
 {{- define "hdx-oss.selectorLabels" -}}
 app.kubernetes.io/name: {{ include "hdx-oss.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
-{{- end }} 
+{{- end }}
+
+{{/*
+Hyperdx component
+*/}}
+{{- define "hdx-oss.hyperdx.labels" -}}
+app.kubernetes.io/component: hyperdx
+{{- end }}
+
+{{/*
+Hyperdx component
+*/}}
+{{- define "hdx-oss.clickhouse.labels" -}}
+app.kubernetes.io/component: clickhouse
+{{- end }}
+
+{{/*
+MongoDB component
+*/}}
+{{- define "hdx-oss.mongodb.labels" -}}
+app.kubernetes.io/component: mongo
+{{- end }}
+
+{{/*
+OpenTelemetry Collector component
+*/}}
+{{- define "hdx-oss.otel.labels" -}}
+app.kubernetes.io/component: opentelemetry
+{{- end }}

@@ -4,6 +4,7 @@ metadata:
   name: {{ include "hdx-oss.fullname" . }}-app-config
   labels:
     {{- include "hdx-oss.labels" . | nindent 4 }}
+    {{- include "hdx-oss.hyperdx.labels" . | nindent 4 }}
 data:
   APP_PORT: {{ .Values.hyperdx.appPort | quote }}
   API_PORT: {{ .Values.hyperdx.apiPort | quote }}

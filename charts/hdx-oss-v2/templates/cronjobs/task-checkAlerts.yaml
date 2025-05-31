@@ -6,6 +6,7 @@ metadata:
   name: {{ include "hdx-oss.fullname" . }}-check-alerts
   labels:
     {{- include "hdx-oss.labels" . | nindent 4 }}
+    {{- include "hdx-oss.hyperdx.labels" . | nindent 4 }}
 spec:
   schedule: {{ .Values.tasks.checkAlerts.schedule | quote }}
   concurrencyPolicy: Forbid

@@ -5,6 +5,7 @@ metadata:
   name: {{ include "hdx-oss.fullname" . }}-app-ingress
   labels:
     {{- include "hdx-oss.labels" . | nindent 4 }}
+    {{- include "hdx-oss.hyperdx.labels" . | nindent 4 }}
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /$1
     nginx.ingress.kubernetes.io/use-regex: "true"

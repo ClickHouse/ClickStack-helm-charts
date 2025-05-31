@@ -5,6 +5,7 @@ metadata:
   name: {{ include "hdx-oss.fullname" . }}-clickhouse
   labels:
     {{- include "hdx-oss.labels" . | nindent 4 }}
+    {{- include "hdx-oss.clickhouse.labels" . | nindent 4 }}
     app: clickhouse
 spec:
   replicas: 1
@@ -16,6 +17,7 @@ spec:
     metadata:
       labels:
         {{- include "hdx-oss.selectorLabels" . | nindent 8 }}
+        {{- include "hdx-oss.clickhouse.labels" . | nindent 8 }}
         app: clickhouse
     spec:
       containers:
@@ -56,6 +58,7 @@ metadata:
   name: {{ include "hdx-oss.fullname" . }}-clickhouse
   labels:
     {{- include "hdx-oss.labels" . | nindent 4 }}
+    {{- include "hdx-oss.clickhouse.labels" . | nindent 4 }}
 spec:
   ports:
     - port: {{ .Values.clickhouse.port }}
@@ -79,6 +82,7 @@ metadata:
   name: {{ include "hdx-oss.fullname" . }}-clickhouse-config
   labels:
     {{- include "hdx-oss.labels" . | nindent 4 }}
+    {{- include "hdx-oss.clickhouse.labels" . | nindent 4 }}
 data:
   config.xml: |-
     {{- tpl (.Files.Get "data/config.xml") . | nindent 4 }}
@@ -90,6 +94,7 @@ metadata:
   name: {{ include "hdx-oss.fullname" . }}-clickhouse-users
   labels:
     {{- include "hdx-oss.labels" . | nindent 4 }}
+    {{- include "hdx-oss.clickhouse.labels" . | nindent 4 }}
 data:
   users.xml: |-
     {{- tpl (.Files.Get "data/users.xml") . | nindent 4 }}
@@ -102,6 +107,7 @@ metadata:
   name: {{ include "hdx-oss.fullname" . }}-clickhouse-data
   labels:
     {{- include "hdx-oss.labels" . | nindent 4 }}
+    {{- include "hdx-oss.clickhouse.labels" . | nindent 4 }}
 spec:
   accessModes:
     - ReadWriteOnce
@@ -118,6 +124,7 @@ metadata:
   name: {{ include "hdx-oss.fullname" . }}-clickhouse-logs
   labels:
     {{- include "hdx-oss.labels" . | nindent 4 }}
+    {{- include "hdx-oss.clickhouse.labels" . | nindent 4 }}
 spec:
   accessModes:
     - ReadWriteOnce

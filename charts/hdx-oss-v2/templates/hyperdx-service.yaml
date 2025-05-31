@@ -4,6 +4,7 @@ metadata:
   name: {{ include "hdx-oss.fullname" . }}-app
   labels:
     {{- include "hdx-oss.labels" . | nindent 4 }}
+    {{- include "hdx-oss.hyperdx.labels" . | nindent 4 }}
 spec:
   type: LoadBalancer
   ports:
@@ -15,4 +16,4 @@ spec:
       name: opamp
   selector:
     {{- include "hdx-oss.selectorLabels" . | nindent 4 }}
-    app: {{ include "hdx-oss.fullname" . }} 
+    app: {{ include "hdx-oss.fullname" . }}
