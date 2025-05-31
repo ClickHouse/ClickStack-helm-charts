@@ -60,7 +60,7 @@ app.kubernetes.io/component: hyperdx
 {{- end }}
 
 {{/*
-Hyperdx component
+clickHouse component
 */}}
 {{- define "hdx-oss.clickhouse.labels" -}}
 app.kubernetes.io/component: clickhouse
