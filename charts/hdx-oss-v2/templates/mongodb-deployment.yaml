@@ -15,7 +15,7 @@ spec:
   template:
     metadata:
       labels:
-        {{- include "hdx-oss.selectorLabels" . | nindent 8 }}
+        {{- include "hdx-oss.labels" . | nindent 8 }}
         {{- include "hdx-oss.mongodb.labels" . | nindent 8 }}
         app: mongodb
     spec:
