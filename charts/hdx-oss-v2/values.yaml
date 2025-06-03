@@ -198,6 +198,8 @@ otel:
   # Leave empty if you want to use the chart's Clickhouse service.
   # Example: clickhouseEndpoint: "tcp://custom-clickhouse-service:9000"
   clickhouseEndpoint:
+  clickhouseUser: "otelcollector"
+  clickhousePassword:
   # Clickhouse Prometheus endpoint - defaults to chart's Clickhouse prometheus service. Customize if you want to use a different Clickhouse prometheus service. 
   # Leave empty if prometheus is disabled.
   # Example: clickhousePrometheusEndpoint: "http://custom-clickhouse-service:9363"
