@@ -357,3 +357,35 @@ tests:
           content:
             name: HYPERDX_OTEL_EXPORTER_CLICKHOUSE_DATABASE
             value: "custom_db"
+
+  - it: should use custom clickhouse credentials when specified
+    set:
+      otel:
+        enabled: true
+        image: hyperdx/hyperdx-otel-collector:2-beta
+        clickhouseUser: "custom-user"
+        clickhousePassword: "custom-password"
+      hyperdx:
+        logLevel: info
+      clickhouse:
+        config:
+          users:
+            otelUserPassword: default-password
+    release:
+      name: test-release
+    asserts:
+      - documentIndex: 0
+        isKind:
+          of: Deployment
+      - documentIndex: 0
+        contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CLICKHOUSE_USER
+            value: "custom-user"
+      - documentIndex: 0
+        contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CLICKHOUSE_PASSWORD
+            value: "custom-password"
