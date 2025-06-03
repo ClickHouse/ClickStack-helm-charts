@@ -11,6 +11,7 @@
     "update-chart-versions": "node scripts/update-chart-versions.js"
   },
   "dependencies": {
-    "@changesets/cli": "^2.29.4"
+    "@changesets/cli": "^2.29.4",
+    "js-yaml": "^4.1.0"
   }
 }
