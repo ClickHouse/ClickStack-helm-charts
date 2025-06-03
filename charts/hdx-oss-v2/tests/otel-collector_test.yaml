@@ -338,9 +338,9 @@ tests:
       otel:
         enabled: true
         image: hyperdx/hyperdx-otel-collector:2-beta
+        clickhouseDatabase: "custom_db"
       hyperdx:
         logLevel: info
-        clickhouseDatabase: "custom_db"
       clickhouse:
         config:
           users:

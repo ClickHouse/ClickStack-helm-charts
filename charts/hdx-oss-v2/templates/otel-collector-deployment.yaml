@@ -41,7 +41,7 @@ spec:
             - name: HYPERDX_LOG_LEVEL
               value: {{ .Values.hyperdx.logLevel }}
             - name: HYPERDX_OTEL_EXPORTER_CLICKHOUSE_DATABASE
-              value: {{ .Values.hyperdx.clickhouseDatabase | default "default" }}
+              value: {{ .Values.otel.clickhouseDatabase | default "default" }}
             - name: HYPERDX_API_KEY
               valueFrom:
                 secretKeyRef:

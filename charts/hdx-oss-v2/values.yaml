@@ -14,8 +14,6 @@ hyperdx:
   usageStatsEnabled: true
   # Endpoint to send hyperdx logs/traces/metrics to.Defaults to the chart's otel collector endpoint.
   otelExporterEndpoint: http://{{ include "hdx-oss.fullname" . }}-otel-collector:{{ .Values.otel.httpPort }}
-  # Clickhouse database to send logs/traces/metrics to. Defaults to "default"
-  clickhouseDatabase: "default"
   annotations: {}
     # myAnnotation: "myValue"
   labels: {}
@@ -204,6 +202,8 @@ otel:
   # Leave empty if prometheus is disabled.
   # Example: clickhousePrometheusEndpoint: "http://custom-clickhouse-service:9363"
   clickhousePrometheusEndpoint:
+  # Clickhouse database to send logs/traces/metrics to. Defaults to "default"
+  clickhouseDatabase: "default"
 
 persistence:
   mongodb:
