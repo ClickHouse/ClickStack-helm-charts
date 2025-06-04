@@ -28,10 +28,12 @@ spec:
         {{- end -}}
       {{- end }}
     spec:
+      {{- if not .Values.persistence.mongodb.remote }}
       initContainers:
         - name: wait-for-mongodb
           image: busybox
           command: ['sh', '-c', 'until nc -z {{ include "hdx-oss.fullname" . }}-mongodb {{ .Values.mongodb.port }}; do echo waiting for mongodb; sleep 2; done;']
+      {{- end }}
       containers:
         - name: app
           image: "{{ .Values.hyperdx.image }}"

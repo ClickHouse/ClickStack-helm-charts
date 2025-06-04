@@ -204,10 +204,13 @@ otel:
   clickhousePrometheusEndpoint:
   # Clickhouse database to send logs/traces/metrics to. Defaults to "default"
   clickhouseDatabase: "default"
-
 persistence:
   mongodb:
     enabled: true
+    remote: true
+    endpoint: hyperdx-mongodb-svc
+    port: 27017
+    database: hyperdx
     size: 10Gi
 
 tasks:
