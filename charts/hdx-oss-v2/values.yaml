@@ -173,6 +173,7 @@ clickhouse:
     users:
       appUserPassword: "hyperdx"
       otelUserPassword: "otelcollectorpass"
+      otelUserName: "otelcollector"
     # Network CIDRs for Kubernetes cluster access control
     # These CIDRs ensure ClickHouse connections are locked down to intra-cluster only
     # For PRODUCTION: Remove development CIDRs and keep only your cluster's specific CIDR
@@ -198,7 +199,7 @@ otel:
   # Leave empty if you want to use the chart's Clickhouse service.
   # Example: clickhouseEndpoint: "tcp://custom-clickhouse-service:9000"
   clickhouseEndpoint:
-  clickhouseUser: "otelcollector"
+  clickhouseUser:
   clickhousePassword:
   # Clickhouse Prometheus endpoint - defaults to chart's Clickhouse prometheus service. Customize if you want to use a different Clickhouse prometheus service. 
   # Leave empty if prometheus is disabled.
