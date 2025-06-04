@@ -14,9 +14,13 @@ data:
   HYPERDX_LOG_LEVEL: "{{ .Values.hyperdx.logLevel }}"
   MINER_API_URL: "http://{{ include "hdx-oss.fullname" . }}-miner:5123"
   {{- if .Values.persistence.mongodb.remote }}
-  MONGO_URI: "mongodb://{{ .Values.persistence.mongodb.endpoint }}:{{ .Values.persistence.mongodb.port }}/{{ .Values.persistence.mongodb.database }}"
+    {{- if .Values.persistence.mongodb.auth.enabled }}
+  MONGO_URI: mongodb://{{ .Values.persistence.mongodb.auth.username }}:{{ .Values.persistence.mongodb.auth.password }}@{{ .Values.persistence.mongodb.endpoint }}:{{ .Values.persistence.mongodb.port }}/{{ .Values.persistence.mongodb.database }}?authSource={{ .Values.persistence.mongodb.auth.authSource }}
+    {{- else }}
+  MONGO_URI: mongodb://{{ .Values.persistence.mongodb.endpoint }}:{{ .Values.persistence.mongodb.port }}/{{ .Values.persistence.mongodb.database }}
+    {{- end }}
   {{- else }}
-  MONGO_URI: "mongodb://{{ include "hdx-oss.fullname" . }}-mongodb:{{ .Values.mongodb.port }}/hyperdx"
+  MONGO_URI: mongodb://{{ include "hdx-oss.fullname" . }}-mongodb:{{ .Values.mongodb.service.port }}/hyperdxv2
   {{- end }}
   NEXT_PUBLIC_SERVER_URL: "http://localhost:{{ .Values.hyperdx.apiPort }}"
   OTEL_SERVICE_NAME: "hdx-oss-api"

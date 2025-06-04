@@ -212,6 +212,11 @@ persistence:
     port: 27017
     database: hyperdx
     size: 10Gi
+    auth:
+      enabled: false
+      username: root
+      password: password
+      authSource: admin
 
 tasks:
   enabled: false
