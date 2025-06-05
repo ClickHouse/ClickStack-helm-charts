@@ -36,7 +36,8 @@ spec:
       {{- end }}
       containers:
         - name: app
-          image: "{{ .Values.hyperdx.image }}"
+          image: "{{ .Values.hyperdx.image.repository }}:{{ .Values.hyperdx.image.tag | default .Chart.appVersion }}"
+          imagePullPolicy: {{ .Values.hyperdx.image.pullPolicy }}
           ports:
             - name: app-port
               containerPort: {{ .Values.hyperdx.appPort }}

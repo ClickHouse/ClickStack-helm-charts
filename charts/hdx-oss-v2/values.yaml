@@ -4,7 +4,10 @@ global:
   storageClassName: "local-path"
 
 hyperdx:
-  image: "hyperdx/hyperdx:2-beta"
+  image:
+    repository: docker.hyperdx.io/hyperdx/hyperdx
+    tag: 
+    pullPolicy: IfNotPresent
   apiKey: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
   apiPort: 8000
   appPort: 3000
@@ -188,7 +191,10 @@ clickhouse:
       - "192.168.0.0/16"    # OrbStack, Minikube, and local development
 
 otel:
-  image: "hyperdx/hyperdx-otel-collector:2-beta"
+  image:
+    repository: docker.hyperdx.io/hyperdx/hyperdx-otel-collector
+    tag:
+    pullPolicy: IfNotPresent
   port: 13133
   nativePort: 24225
   grpcPort: 4317

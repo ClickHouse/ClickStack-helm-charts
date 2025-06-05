@@ -20,7 +20,8 @@ spec:
           restartPolicy: OnFailure
           containers:
             - name: task
-              image: "{{ .Values.hyperdx.image }}"
+              image: "{{ .Values.hyperdx.image.repository }}:{{ .Values.hyperdx.image.tag | default .Chart.appVersion }}"
+              imagePullPolicy: {{ .Values.hyperdx.image.pullPolicy }}
               command: ["node", "/app/api/build/tasks/index.js", "check-alerts"]
               envFrom:
                 - configMapRef:
