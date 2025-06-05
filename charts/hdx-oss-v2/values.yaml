@@ -156,6 +156,9 @@ mongodb:
   image: "mongo:5.0.14-focal"
   port: 27017
   enabled: true
+  persistence:
+    enabled: true
+    dataSize: 10Gi
 
 clickhouse:
   image: "clickhouse/clickhouse-server:24-alpine"
@@ -174,6 +177,7 @@ clickhouse:
     users:
       appUserPassword: "hyperdx"
       otelUserPassword: "otelcollectorpass"
+      otelUserName: "otelcollector"
     # Network CIDRs for Kubernetes cluster access control
     # These CIDRs ensure ClickHouse connections are locked down to intra-cluster only
     # For PRODUCTION: Remove development CIDRs and keep only your cluster's specific CIDR
@@ -199,16 +203,14 @@ otel:
   # Leave empty if you want to use the chart's Clickhouse service.
   # Example: clickhouseEndpoint: "tcp://custom-clickhouse-service:9000"
   clickhouseEndpoint:
+  clickhouseUser:
+  clickhousePassword:
   # Clickhouse Prometheus endpoint - defaults to chart's Clickhouse prometheus service. Customize if you want to use a different Clickhouse prometheus service. 
   # Leave empty if prometheus is disabled.
   # Example: clickhousePrometheusEndpoint: "http://custom-clickhouse-service:9363"
   clickhousePrometheusEndpoint:
   # Clickhouse database to send logs/traces/metrics to. Defaults to "default"
   clickhouseDatabase: "default"
-persistence:
-  mongodb:
-    enabled: true
-    size: 10Gi
 
 tasks:
   enabled: false

@@ -46,9 +46,19 @@ spec:
           configMap:
             name: {{ include "hdx-oss.fullname" . }}-clickhouse-users
         - name: data
+          {{- if .Values.clickhouse.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "hdx-oss.fullname" . }}-clickhouse-data
+          {{- else }}
           emptyDir: {}
+          {{- end }}
         - name: logs
+          {{- if .Values.clickhouse.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "hdx-oss.fullname" . }}-clickhouse-logs
+          {{- else }}
           emptyDir: {}
+          {{- end }}
 ---
 apiVersion: v1
 kind: Service

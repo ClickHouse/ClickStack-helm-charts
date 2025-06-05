@@ -25,3 +25,49 @@ tests:
     asserts:
       - hasDocuments:
           count: 0
+
+  - it: should use PVC when persistence is enabled
+    set:
+      mongodb:
+        enabled: true
+        persistence:
+          enabled: true
+    asserts:
+      - documentIndex: 0
+        isKind:
+          of: Deployment
+      - documentIndex: 0
+        equal:
+          path: spec.template.spec.volumes[0].name
+          value: mongodb-data
+      - documentIndex: 0
+        isNotNull:
+          path: spec.template.spec.volumes[0].persistentVolumeClaim
+      - documentIndex: 0
+        matchRegex:
+          path: spec.template.spec.volumes[0].persistentVolumeClaim.claimName
+          pattern: .*-mongodb$
+      - documentIndex: 0
+        isNull:
+          path: spec.template.spec.volumes[0].emptyDir
+
+  - it: should use emptyDir when persistence is disabled
+    set:
+      mongodb:
+        enabled: true
+        persistence:
+          enabled: false
+    asserts:
+      - documentIndex: 0
+        isKind:
+          of: Deployment
+      - documentIndex: 0
+        equal:
+          path: spec.template.spec.volumes[0].name
+          value: mongodb-data
+      - documentIndex: 0
+        isNotNull:
+          path: spec.template.spec.volumes[0].emptyDir
+      - documentIndex: 0
+        isNull:
+          path: spec.template.spec.volumes[0].persistentVolumeClaim

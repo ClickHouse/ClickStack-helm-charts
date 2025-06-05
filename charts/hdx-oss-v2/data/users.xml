@@ -42,8 +42,8 @@
                 <query>GRANT SELECT ON default.*</query>
             </grants>
         </app>
-        <otelcollector>
-            <password>{{ .Values.clickhouse.config.users.otelUserPassword }}</password>
+        <{{ .Values.otel.clickhouseUser | default .Values.clickhouse.config.users.otelUserName }}>
+            <password>{{ .Values.otel.clickhousePassword | default .Values.clickhouse.config.users.otelUserPassword }}</password>
             <networks>
                 {{- if .Values.clickhouse.config.clusterCidrs }}
                 {{- range .Values.clickhouse.config.clusterCidrs }}
@@ -59,7 +59,7 @@
             <grants>
                 <query>GRANT SELECT,INSERT,CREATE,SHOW ON default.*</query>
             </grants>
-        </otelcollector>
+        </{{ .Values.otel.clickhouseUser | default .Values.clickhouse.config.users.otelUserName }}>
     </users>
 
     <quotas>
