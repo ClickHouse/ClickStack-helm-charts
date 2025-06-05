@@ -28,7 +28,7 @@ spec:
         {{- end -}}
       {{- end }}
     spec:
-      {{- if not .Values.persistence.mongodb.remote }}
+      {{- if not .Values.hyperdx.mongoUri }}
       initContainers:
         - name: wait-for-mongodb
           image: busybox

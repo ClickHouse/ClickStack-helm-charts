@@ -13,12 +13,8 @@ data:
   HYPERDX_APP_URL: "{{ .Values.hyperdx.appUrl }}"
   HYPERDX_LOG_LEVEL: "{{ .Values.hyperdx.logLevel }}"
   MINER_API_URL: "http://{{ include "hdx-oss.fullname" . }}-miner:5123"
-  {{- if .Values.persistence.mongodb.remote }}
-    {{- if .Values.persistence.mongodb.auth.enabled }}
-  MONGO_URI: mongodb://{{ .Values.persistence.mongodb.auth.username }}:{{ .Values.persistence.mongodb.auth.password }}@{{ .Values.persistence.mongodb.endpoint }}:{{ .Values.persistence.mongodb.port }}/{{ .Values.persistence.mongodb.database }}?authSource={{ .Values.persistence.mongodb.auth.authSource }}
-    {{- else }}
-  MONGO_URI: mongodb://{{ .Values.persistence.mongodb.endpoint }}:{{ .Values.persistence.mongodb.port }}/{{ .Values.persistence.mongodb.database }}
-    {{- end }}
+  {{- if .Values.hyperdx.mongoUri }}
+  MONGO_URI: {{ .Values.hyperdx.mongoUri | quote }}
   {{- else }}
   MONGO_URI: mongodb://{{ include "hdx-oss.fullname" . }}-mongodb:{{ .Values.mongodb.service.port }}/hyperdxv2
   {{- end }}
