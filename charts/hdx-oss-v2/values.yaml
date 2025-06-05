@@ -14,7 +14,7 @@ hyperdx:
   usageStatsEnabled: true
   # Endpoint to send hyperdx logs/traces/metrics to.Defaults to the chart's otel collector endpoint.
   otelExporterEndpoint: http://{{ include "hdx-oss.fullname" . }}-otel-collector:{{ .Values.otel.httpPort }}
-  mongoUri: mongodb://root:root1234@mongo-uri:27017/hyperdx?authSource=admin
+  mongoUri: mongodb://{{ include "hdx-oss.fullname" . }}-mongodb:{{ .Values.mongodb.port }}/hyperdx
   annotations: {}
     # myAnnotation: "myValue"
   labels: {}

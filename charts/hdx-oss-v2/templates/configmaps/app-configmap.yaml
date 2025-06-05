@@ -13,11 +13,7 @@ data:
   HYPERDX_APP_URL: "{{ .Values.hyperdx.appUrl }}"
   HYPERDX_LOG_LEVEL: "{{ .Values.hyperdx.logLevel }}"
   MINER_API_URL: "http://{{ include "hdx-oss.fullname" . }}-miner:5123"
-  {{- if .Values.hyperdx.mongoUri }}
-  MONGO_URI: {{ .Values.hyperdx.mongoUri | quote }}
-  {{- else }}
-  MONGO_URI: mongodb://{{ include "hdx-oss.fullname" . }}-mongodb:{{ .Values.mongodb.service.port }}/hyperdxv2
-  {{- end }}
+  MONGO_URI: {{ .Values.hyperdx.mongoUri  |  default (printf ...) }}
   NEXT_PUBLIC_SERVER_URL: "http://localhost:{{ .Values.hyperdx.apiPort }}"
   OTEL_SERVICE_NAME: "hdx-oss-api"
   USAGE_STATS_ENABLED: "{{ .Values.hyperdx.usageStatsEnabled | default true }}"
