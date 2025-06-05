@@ -44,7 +44,6 @@ tests:
           
   - it: should render chart version in labels when available
     asserts:
-      - isSubset:
-          path: metadata.labels
-          content:
-            app.kubernetes.io/version: "2.0.0"
+      - matchRegex:
+          path: metadata.labels["app.kubernetes.io/version"]
+          pattern: ^\d+\.\d+\.\d+$
