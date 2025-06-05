@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
         - name: otel-collector
-          image: "{{ .Values.otel.image.repository }}:{{ .Values.otel.image.tag | default .Chart.appVersion }}"
+          image: "{{ .Values.otel.image.repository }}:{{ .Values.otel.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.otel.image.pullPolicy }}
           ports:
             - containerPort: {{ .Values.otel.port }}

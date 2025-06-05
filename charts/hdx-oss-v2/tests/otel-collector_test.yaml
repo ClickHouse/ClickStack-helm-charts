@@ -5,7 +5,9 @@ tests:
   - it: should render both deployment and service when enabled
     set:
       otel:
-        image: hyperdx/hyperdx-otel-collector:2-beta
+        image:
+          repository: hyperdx/hyperdx-otel-collector
+          tag: 2-beta
         port: 13133
         nativePort: 24225
         grpcPort: 4317
@@ -34,8 +36,13 @@ tests:
     set:
       otel:
         enabled: true
-        image: hyperdx/hyperdx-otel-collector:2-beta
+        image:
+          repository: hyperdx/hyperdx-otel-collector
+          tag: 2-beta
       hyperdx:
+        image:
+          repository: hyperdx/hyperdx
+          tag: 2-beta
         logLevel: info
       clickhouse:
         nativePort: 9000
@@ -99,9 +106,14 @@ tests:
     set:
       otel:
         enabled: true
-        image: hyperdx/hyperdx-otel-collector:2-beta
+        image:
+          repository: hyperdx/hyperdx-otel-collector
+          tag: 2-beta
         clickhouseEndpoint: "tcp://custom-clickhouse:9000"
       hyperdx:
+        image:
+          repository: hyperdx/hyperdx
+          tag: 2-beta
         logLevel: debug
       clickhouse:
         prometheus:
@@ -234,9 +246,14 @@ tests:
     set:
       otel:
         enabled: true
-        image: hyperdx/hyperdx-otel-collector:2-beta
+        image:
+          repository: hyperdx/hyperdx-otel-collector
+          tag: 2-beta
         clickhousePrometheusEndpoint: "external-clickhouse:8080/custom-metrics"
       hyperdx:
+        image:
+          repository: hyperdx/hyperdx
+          tag: 2-beta
         logLevel: info
       clickhouse:
         prometheus:
@@ -263,8 +280,13 @@ tests:
     set:
       otel:
         enabled: true
-        image: hyperdx/hyperdx-otel-collector:2-beta
+        image:
+          repository: hyperdx/hyperdx-otel-collector
+          tag: 2-beta
       hyperdx:
+        image:
+          repository: hyperdx/hyperdx
+          tag: 2-beta
         logLevel: info
       clickhouse:
         prometheus:
@@ -288,9 +310,14 @@ tests:
     set:
       otel:
         enabled: true
-        image: hyperdx/hyperdx-otel-collector:2-beta
+        image:
+          repository: hyperdx/hyperdx-otel-collector
+          tag: 2-beta
         opampServerUrl: "https://custom-opamp-server:8080"
       hyperdx:
+        image:
+          repository: hyperdx/hyperdx
+          tag: 2-beta
         logLevel: info
       clickhouse:
         config:
@@ -313,8 +340,13 @@ tests:
     set:
       otel:
         enabled: true
-        image: hyperdx/hyperdx-otel-collector:2-beta
+        image:
+          repository: hyperdx/hyperdx-otel-collector
+          tag: 2-beta
       hyperdx:
+        image:
+          repository: hyperdx/hyperdx
+          tag: 2-beta
         logLevel: info
       clickhouse:
         config:
@@ -337,9 +369,14 @@ tests:
     set:
       otel:
         enabled: true
-        image: hyperdx/hyperdx-otel-collector:2-beta
+        image:
+          repository: hyperdx/hyperdx-otel-collector
+          tag: 2-beta
         clickhouseDatabase: "custom_db"
       hyperdx:
+        image:
+          repository: hyperdx/hyperdx
+          tag: 2-beta
         logLevel: info
       clickhouse:
         config:
@@ -362,10 +399,15 @@ tests:
     set:
       otel:
         enabled: true
-        image: hyperdx/hyperdx-otel-collector:2-beta
+        image:
+          repository: hyperdx/hyperdx-otel-collector
+          tag: 2-beta
         clickhouseUser: "custom-user"
         clickhousePassword: "custom-password"
       hyperdx:
+        image:
+          repository: hyperdx/hyperdx
+          tag: 2-beta
         logLevel: info
       clickhouse:
         config:

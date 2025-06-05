@@ -24,7 +24,9 @@ tests:
               cpu: 150m
               memory: 150Mi
       hyperdx:
-        image: hyperdx/hyperdx:2-beta
+        image: 
+          repository: hyperdx/hyperdx
+          tag: 2-beta
     asserts:
       - isKind:
           of: CronJob

@@ -117,7 +117,7 @@ tests:
       hyperdx:
         env:
           - name: DEFAULT_SOURCES
-            value: |
+            value: |-
               [
                 {
                   "name": "HyperDX Logs",
@@ -134,7 +134,7 @@ tests:
           path: spec.template.spec.containers[0].env
           content:
             name: DEFAULT_SOURCES
-            value: |
+            value: |-
               [
                 {
                   "name": "HyperDX Logs",

@@ -11,7 +11,7 @@ tests:
           value: 1
       - equal:
           path: spec.template.spec.containers[0].image
-          value: hyperdx/hyperdx:2-beta
+          value: docker.hyperdx.io/hyperdx/hyperdx:2.0.0
       - equal:
           path: spec.template.spec.containers[0].ports[0].containerPort
           value: 3000
