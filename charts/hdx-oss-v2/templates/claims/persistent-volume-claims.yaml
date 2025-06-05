@@ -1,4 +1,4 @@
-{{- if .Values.persistence.mongodb.enabled }}
+{{- if .Values.mongodb.persistence.enabled }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -13,6 +13,6 @@ spec:
   {{- end }}
   resources:
     requests:
-      storage: {{ .Values.persistence.mongodb.size }}
+      storage: {{ .Values.mongodb.persistence.dataSize }}
 ---
 {{- end }}

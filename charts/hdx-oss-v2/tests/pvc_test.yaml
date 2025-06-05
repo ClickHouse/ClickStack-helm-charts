@@ -4,10 +4,10 @@ templates:
 tests:
   - it: should render mongodb pvc correctly when enabled
     set:
-      persistence:
-        mongodb:
+      mongodb:
+        persistence:
           enabled: true
-          size: 10Gi
+          dataSize: 10Gi
       global:
         storageClass: standard
     asserts:
@@ -28,8 +28,8 @@ tests:
           
   - it: should not render mongodb pvc when disabled
     set:
-      persistence:
-        mongodb:
+      mongodb:
+        persistence:
           enabled: false
     asserts:
       - hasDocuments:
@@ -37,10 +37,10 @@ tests:
 
   - it: should not include storageClassName when global.storageClass is empty
     set:
-      persistence:
-        mongodb:
+      mongodb:
+        persistence:
           enabled: true
-          size: 10Gi
+          dataSize: 10Gi
       global:
         storageClass: ""
     asserts:
@@ -51,10 +51,10 @@ tests:
 
   - it: should not include storageClassName when global.storageClass is not set
     set:
-      persistence:
-        mongodb:
+      mongodb:
+        persistence:
           enabled: true
-          size: 10Gi
+          dataSize: 10Gi
     asserts:
       - isKind:
           of: PersistentVolumeClaim

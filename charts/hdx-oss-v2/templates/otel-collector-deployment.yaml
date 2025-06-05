@@ -48,9 +48,9 @@ spec:
                   name: {{ include "hdx-oss.fullname" . }}-app-secrets
                   key: api-key
             - name: CLICKHOUSE_USER
-              value: "otelcollector"
+              value: {{ .Values.otel.clickhouseUser | default .Values.clickhouse.config.users.otelUserName }}
             - name: CLICKHOUSE_PASSWORD
-              value: {{ .Values.clickhouse.config.users.otelUserPassword }}
+              value: {{ .Values.otel.clickhousePassword | default .Values.clickhouse.config.users.otelUserPassword }}
 ---
 apiVersion: v1
 kind: Service

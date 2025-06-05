@@ -28,8 +28,12 @@ spec:
               mountPath: /data/db
       volumes:
         - name: mongodb-data
+          {{- if .Values.mongodb.persistence.enabled }}
           persistentVolumeClaim:
             claimName: {{ include "hdx-oss.fullname" . }}-mongodb
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
 ---
 apiVersion: v1
 kind: Service

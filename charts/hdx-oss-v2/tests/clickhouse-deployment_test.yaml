@@ -71,4 +71,78 @@ tests:
           path: spec.storageClassName
       - documentIndex: 5
         isNull:
-          path: spec.storageClassName 
+          path: spec.storageClassName
+
+  - it: should use PVCs when persistence is enabled
+    set:
+      clickhouse:
+        enabled: true
+        persistence:
+          enabled: true
+          dataSize: 10Gi
+          logSize: 5Gi
+    asserts:
+      - documentIndex: 0
+        isKind:
+          of: Deployment
+      - documentIndex: 0
+        equal:
+          path: spec.template.spec.volumes[2].name
+          value: data
+      - documentIndex: 0
+        isNotNull:
+          path: spec.template.spec.volumes[2].persistentVolumeClaim
+      - documentIndex: 0
+        matchRegex:
+          path: spec.template.spec.volumes[2].persistentVolumeClaim.claimName
+          pattern: .*-clickhouse-data$
+      - documentIndex: 0
+        isNull:
+          path: spec.template.spec.volumes[2].emptyDir
+      - documentIndex: 0
+        equal:
+          path: spec.template.spec.volumes[3].name
+          value: logs
+      - documentIndex: 0
+        isNotNull:
+          path: spec.template.spec.volumes[3].persistentVolumeClaim
+      - documentIndex: 0
+        matchRegex:
+          path: spec.template.spec.volumes[3].persistentVolumeClaim.claimName
+          pattern: .*-clickhouse-logs$
+      - documentIndex: 0
+        isNull:
+          path: spec.template.spec.volumes[3].emptyDir
+
+  - it: should use emptyDir when persistence is disabled
+    set:
+      clickhouse:
+        enabled: true
+        persistence:
+          enabled: false
+    asserts:
+      - hasDocuments:
+          count: 4
+      - documentIndex: 0
+        isKind:
+          of: Deployment
+      - documentIndex: 0
+        equal:
+          path: spec.template.spec.volumes[2].name
+          value: data
+      - documentIndex: 0
+        isNotNull:
+          path: spec.template.spec.volumes[2].emptyDir
+      - documentIndex: 0
+        isNull:
+          path: spec.template.spec.volumes[2].persistentVolumeClaim
+      - documentIndex: 0
+        equal:
+          path: spec.template.spec.volumes[3].name
+          value: logs
+      - documentIndex: 0
+        isNotNull:
+          path: spec.template.spec.volumes[3].emptyDir
+      - documentIndex: 0
+        isNull:
+          path: spec.template.spec.volumes[3].persistentVolumeClaim

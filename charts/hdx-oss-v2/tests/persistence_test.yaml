@@ -6,10 +6,10 @@ tests:
     set:
       global:
         storageClass: "custom-storage-class"
-      persistence:
-        mongodb:
+      mongodb:
+        persistence:
           enabled: true
-          size: 15Gi
+          dataSize: 15Gi
     asserts:
       - isKind:
           of: PersistentVolumeClaim
@@ -25,8 +25,8 @@ tests:
 
   - it: should not create PVCs when persistence is disabled
     set:
-      persistence:
-        mongodb:
+      mongodb:
+        persistence:
           enabled: false
     asserts:
       - hasDocuments:
@@ -36,10 +36,10 @@ tests:
     set:
       global:
         storageClass: ""
-      persistence:
-        mongodb:
+      mongodb:
+        persistence:
           enabled: true
-          size: 10Gi
+          dataSize: 10Gi
     asserts:
       - isKind:
           of: PersistentVolumeClaim
