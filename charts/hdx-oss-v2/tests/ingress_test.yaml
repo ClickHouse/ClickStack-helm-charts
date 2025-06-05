@@ -29,8 +29,29 @@ tests:
       - equal:
           path: spec.rules[0].host
           value: hyperdx.example.com
-      - matchSnapshot:
-          path: metadata.annotations
+      # Validate ingress annotations
+      - equal:
+          path: metadata.annotations["nginx.ingress.kubernetes.io/proxy-body-size"]
+          value: "100m"
+      - equal:
+          path: metadata.annotations["nginx.ingress.kubernetes.io/proxy-connect-timeout"]
+          value: "60"
+      - equal:
+          path: metadata.annotations["nginx.ingress.kubernetes.io/proxy-read-timeout"]
+          value: "60"
+      - equal:
+          path: metadata.annotations["nginx.ingress.kubernetes.io/proxy-send-timeout"]
+          value: "60"
+      - equal:
+          path: metadata.annotations["nginx.ingress.kubernetes.io/rewrite-target"]
+          value: "/$1"
+      - equal:
+          path: metadata.annotations["nginx.ingress.kubernetes.io/use-regex"]
+          value: "true"
+      # Validate chart version format without exact match
+      - matchRegex:
+          path: metadata.labels["helm.sh/chart"]
+          pattern: ^hdx-oss-v2-\d+\.\d+\.\d+$
           
   - it: should render ingress with TLS when enabled
     set:
