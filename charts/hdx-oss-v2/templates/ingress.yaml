@@ -16,8 +16,11 @@ metadata:
     nginx.ingress.kubernetes.io/proxy-connect-timeout: {{ .Values.hyperdx.ingress.proxyConnectTimeout | quote }}
     nginx.ingress.kubernetes.io/proxy-send-timeout: {{ .Values.hyperdx.ingress.proxySendTimeout | quote }}
     nginx.ingress.kubernetes.io/proxy-read-timeout: {{ .Values.hyperdx.ingress.proxyReadTimeout | quote }}
+    {{- with .Values.hyperdx.ingress.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
 spec:
-  ingressClassName: nginx
+  ingressClassName: {{ default "nginx" .Values.hyperdx.ingress.ingressClassName }}
   {{- if .Values.hyperdx.ingress.tls.enabled }}
   tls:
   - hosts:

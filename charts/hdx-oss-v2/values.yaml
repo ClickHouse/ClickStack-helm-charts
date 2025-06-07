@@ -147,6 +147,8 @@ hyperdx:
     proxyConnectTimeout: "60"
     proxySendTimeout: "60"
     proxyReadTimeout: "60"
+    ingressClassName: ""
+    annotations: {}
     tls:
       enabled: false
       secretName: "hyperdx-tls"
