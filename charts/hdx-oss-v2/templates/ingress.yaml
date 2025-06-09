@@ -35,4 +35,59 @@ spec:
                 name: {{ include "hdx-oss.fullname" . }}-app
                 port:
                   number: {{ .Values.hyperdx.appPort }}
+{{- range .Values.hyperdx.ingress.additionalIngresses}}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ printf "%s-%s" (include "hdx-oss.fullname" $) .name }}
+  labels:
+    {{- include "hdx-oss.labels" $ | nindent 4 }}
+  {{- if .annotations }}
+  {{- if not (kindIs "map" .annotations) }}
+  {{- fail "annotations must be a map of string key-value pairs" }}
+  {{- end }}
+  annotations:
+    {{- range $key, $value := .annotations }}
+    {{- printf "%s: %s" $key (tpl $value $ | quote) | nindent 4 }}
+    {{- end }}
+  {{- end }}
+spec:
+  {{- if .ingressClassName }}
+  ingressClassName: {{ .ingressClassName }}
+  {{- end -}}
+  {{- if .tls }}
+  tls:
+    {{- range .tls }}
+    {{- if not .hosts }}
+    {{- fail "TLS configuration must contain hosts property" }}
+    {{- end }}
+    - hosts:
+        {{- range .hosts }}
+        - {{ tpl . $ | quote }}
+        {{- end }}
+      {{- with .secretName }}
+      secretName: {{ . }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+  rules:
+    {{- range .hosts }}
+    - host: {{ tpl .host $ | quote }}
+      http:
+        paths:
+          {{- range .paths }}
+          {{- if or (not .path) (not .pathType) (not .port) }}
+          {{- fail "Each path in additional ingress must contain path, pathType, and port properties" }}
+          {{- end }}
+          - path: {{ .path }}
+            pathType: {{ .pathType }}
+            backend:
+              service:
+                name: {{ include "hdx-oss.fullname" $ }}
+                port:
+                  number: {{ .port }}
+          {{- end }}
+    {{- end }}
+{{- end }}
 {{- end }}

@@ -136,7 +136,7 @@ hyperdx:
         "metricSourceId": "Metrics"
       }
     ]
-  
+
   # See https://github.com/hyperdxio/hyperdx/blob/v2/packages/api/docs/auto_provision/AUTO_PROVISION.md
   # for detailed configuration options
 
@@ -150,6 +150,25 @@ hyperdx:
     tls:
       enabled: false
       secretName: "hyperdx-tls"
+
+    # Additional ingresses - these will only be rendered if the whole ingress object is enabled
+    # This should be used to expose other deployments/services from the helm chart on the cluster
+    # e.g. expose the OTEL collector.
+    additionalIngresses: []
+    # - name: otel-collector
+    #   annotations: {}
+    #   ingressClassName: nginx
+    #   hosts:
+    #     - host: collector.example.com
+    #       paths:
+    #         - path: /
+    #           pathType: Prefix
+    #           port: 4318
+    #   tls:
+    #     - secretName: otel-collector-tls
+    #       hosts:
+    #         - collector.example.com
+
   replicas: 1
 
 mongodb:
@@ -205,7 +224,7 @@ otel:
   clickhouseEndpoint:
   clickhouseUser:
   clickhousePassword:
-  # Clickhouse Prometheus endpoint - defaults to chart's Clickhouse prometheus service. Customize if you want to use a different Clickhouse prometheus service. 
+  # Clickhouse Prometheus endpoint - defaults to chart's Clickhouse prometheus service. Customize if you want to use a different Clickhouse prometheus service.
   # Leave empty if prometheus is disabled.
   # Example: clickhousePrometheusEndpoint: "http://custom-clickhouse-service:9363"
   clickhousePrometheusEndpoint:
