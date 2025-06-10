@@ -1,12 +1,13 @@
 {
   "name": "helm-charts",
   "version": "0.5.2",
+  "private": true,
   "main": "index.js",
   "repository": "git@github.com:hyperdxio/helm-charts.git",
   "author": "HyperDX",
   "license": "MIT",
   "scripts": {
-    "release": "changeset publish",
+    "release": "",
     "version": "changeset version && npm run update-chart-versions",
     "update-chart-versions": "node scripts/update-chart-versions.js"
   },
