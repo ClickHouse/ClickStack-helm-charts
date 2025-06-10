@@ -120,6 +120,7 @@ hyperdx:
           nginx.ingress.kubernetes.io/ssl-redirect: "false"
           nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
           nginx.ingress.kubernetes.io/use-regex: "true"
+        ingressClassName: nginx
         hosts:
           - host: collector.yourdomain.com
             paths:
