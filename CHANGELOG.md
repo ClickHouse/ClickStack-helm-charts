@@ -1,5 +1,16 @@
 # helm-charts
 
+## 0.6.0
+
+### Minor Changes
+
+- 7b964f1: Allow defining additional ingresses so resources outside of the HyperDX application can accept traffic outside of the cluster.
+- 1541c5f: feat: refactor image value + bump default tag to 2.0.0
+
+### Patch Changes
+
+- cec5983: enable using remote mongodb
+
 ## 0.5.2
 
 ### Patch Changes
