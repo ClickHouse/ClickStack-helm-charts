@@ -33,13 +33,4 @@ jobs:
 
       - name: Run helm-unittest
         run: |
-          helm unittest charts/hdx-oss-v2 ./results.xml
-
-      - name: Publish Test Results
-        uses: EnricoMi/publish-unit-test-result-action@v2
-        if: (!cancelled())
-        with:
-          check_name: "Unit Test Results"
-          comment_mode: off
-          files: ./results.xml
-
+          helm unittest charts/hdx-oss-v2
