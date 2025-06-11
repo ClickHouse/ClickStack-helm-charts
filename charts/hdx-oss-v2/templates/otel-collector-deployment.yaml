@@ -52,6 +52,9 @@ spec:
               value: {{ .Values.otel.clickhouseUser | default .Values.clickhouse.config.users.otelUserName }}
             - name: CLICKHOUSE_PASSWORD
               value: {{ .Values.otel.clickhousePassword | default .Values.clickhouse.config.users.otelUserPassword }}
+            {{- with .Values.otel.env }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
 ---
 apiVersion: v1
 kind: Service
