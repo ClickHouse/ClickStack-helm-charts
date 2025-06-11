@@ -1,0 +1,9 @@
+hyperdx:
+  port: 4444
+
+  ingress:
+    enabled: true
+    host: hdx.k8s.orb.local
+    ingressClassName: alb
+    annotations:
+      alb.ingress.kubernetes.io/scheme: internet-facing
