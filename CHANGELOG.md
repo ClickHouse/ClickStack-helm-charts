@@ -1,5 +1,11 @@
 # helm-charts
 
+## 0.6.1
+
+### Patch Changes
+
+- c117d72: fix: Allow for custom otel collector environment variables
+
 ## 0.6.0
 
 ### Minor Changes
