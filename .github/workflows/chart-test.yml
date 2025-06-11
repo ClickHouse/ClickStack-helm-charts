@@ -26,6 +26,14 @@ jobs:
       with:
         version: '3.12.0'
 
+    - name: Update appVersion for nightly builds
+      if: github.event_name == 'schedule'
+      run: |
+        echo "Updating appVersion to 2-nightly for scheduled builds"
+        sed -i 's/^appVersion:.*/appVersion: 2-nightly/' charts/hdx-oss-v2/Chart.yaml
+        echo "Updated Chart.yaml:"
+        cat charts/hdx-oss-v2/Chart.yaml
+
     - name: Create kind cluster config
       run: |
         cat > kind-config.yaml << EOF
