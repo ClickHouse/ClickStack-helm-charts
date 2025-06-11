@@ -431,3 +431,85 @@ tests:
           content:
             name: CLICKHOUSE_PASSWORD
             value: "custom-password"
+
+  - it: should render custom environment variables when specified
+    set:
+      otel:
+        enabled: true
+        image:
+          repository: hyperdx/hyperdx-otel-collector
+          tag: 2-beta
+        env:
+          - name: CUSTOM_VAR
+            value: "custom-value"
+          - name: DEBUG_MODE
+            value: "true"
+          - name: SECRET_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: my-secret
+                key: token
+      hyperdx:
+        image:
+          repository: hyperdx/hyperdx
+          tag: 2-beta
+        logLevel: info
+      clickhouse:
+        config:
+          users:
+            otelUserPassword: test-password
+    release:
+      name: test-release
+    asserts:
+      - documentIndex: 0
+        isKind:
+          of: Deployment
+      - documentIndex: 0
+        contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CUSTOM_VAR
+            value: "custom-value"
+      - documentIndex: 0
+        contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DEBUG_MODE
+            value: "true"
+      - documentIndex: 0
+        contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: SECRET_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: my-secret
+                key: token
+
+  - it: should not render custom environment variables when not specified
+    set:
+      otel:
+        enabled: true
+        image:
+          repository: hyperdx/hyperdx-otel-collector
+          tag: 2-beta
+      hyperdx:
+        image:
+          repository: hyperdx/hyperdx
+          tag: 2-beta
+        logLevel: info
+      clickhouse:
+        config:
+          users:
+            otelUserPassword: test-password
+    release:
+      name: test-release
+    asserts:
+      - documentIndex: 0
+        isKind:
+          of: Deployment
+      - documentIndex: 0
+        notContains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CUSTOM_VAR
