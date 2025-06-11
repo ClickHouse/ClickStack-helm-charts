@@ -99,10 +99,63 @@ tests:
     asserts:
       - hasDocuments:
           count: 2
-      - matchSnapshot: {}
-        documentSelector:
+      # Test the main app ingress (document 0)
+      - isKind:
+          of: Ingress
+        documentIndex: 0
+      - equal:
+          path: metadata.name
+          value: RELEASE-NAME-hdx-oss-v2-app-ingress
+        documentIndex: 0
+      - equal:
+          path: spec.rules[0].host
+          value: hyperdx.example.com
+        documentIndex: 0
+      # Test the additional otel-collector ingress (document 1)
+      - isKind:
+          of: Ingress
+        documentIndex: 1
+      - equal:
           path: metadata.name
           value: RELEASE-NAME-hdx-oss-v2-otel-collector
+        documentIndex: 1
+      - equal:
+          path: metadata.annotations.testProperty
+          value: "true"
+        documentIndex: 1
+      - equal:
+          path: metadata.annotations.another
+          value: "yes"
+        documentIndex: 1
+      - equal:
+          path: spec.ingressClassName
+          value: nginx
+        documentIndex: 1
+      - equal:
+          path: spec.rules[0].host
+          value: collector.example.com
+        documentIndex: 1
+      - equal:
+          path: spec.rules[0].http.paths[0].path
+          value: /
+        documentIndex: 1
+      - equal:
+          path: spec.rules[0].http.paths[0].pathType
+          value: Prefix
+        documentIndex: 1
+      - equal:
+          path: spec.rules[0].http.paths[0].backend.service.port.number
+          value: 4318
+        documentIndex: 1
+      # Validate version-agnostic labels exist
+      - matchRegex:
+          path: metadata.labels["helm.sh/chart"]
+          pattern: ^hdx-oss-v2-\d+\.\d+\.\d+$
+        documentIndex: 1
+      - matchRegex:
+          path: metadata.labels["app.kubernetes.io/version"]
+          pattern: ^\d+\.\d+\.\d+$
+        documentIndex: 1
 
   - it: should render additional ingress templates with TLS enabled
     set:
@@ -131,10 +184,72 @@ tests:
     asserts:
       - hasDocuments:
           count: 2
-      - matchSnapshot: {}
-        documentSelector:
+      # Test the main app ingress (document 0)
+      - isKind:
+          of: Ingress
+        documentIndex: 0
+      - equal:
+          path: metadata.name
+          value: RELEASE-NAME-hdx-oss-v2-app-ingress
+        documentIndex: 0
+      - equal:
+          path: spec.rules[0].host
+          value: hyperdx.example.com
+        documentIndex: 0
+      # Test the additional otel-collector ingress (document 1)
+      - isKind:
+          of: Ingress
+        documentIndex: 1
+      - equal:
           path: metadata.name
           value: RELEASE-NAME-hdx-oss-v2-otel-collector
+        documentIndex: 1
+      - equal:
+          path: metadata.annotations.testProperty
+          value: "true"
+        documentIndex: 1
+      - equal:
+          path: metadata.annotations.another
+          value: "yes"
+        documentIndex: 1
+      - equal:
+          path: spec.ingressClassName
+          value: nginx
+        documentIndex: 1
+      - equal:
+          path: spec.rules[0].host
+          value: collector.example.com
+        documentIndex: 1
+      - equal:
+          path: spec.rules[0].http.paths[0].path
+          value: /
+        documentIndex: 1
+      - equal:
+          path: spec.rules[0].http.paths[0].pathType
+          value: Prefix
+        documentIndex: 1
+      - equal:
+          path: spec.rules[0].http.paths[0].backend.service.port.number
+          value: 4318
+        documentIndex: 1
+      # Test TLS configuration
+      - equal:
+          path: spec.tls[0].secretName
+          value: otel-collector-tls
+        documentIndex: 1
+      - contains:
+          path: spec.tls[0].hosts
+          content: collector.example.com
+        documentIndex: 1
+      # Validate version-agnostic labels exist
+      - matchRegex:
+          path: metadata.labels["helm.sh/chart"]
+          pattern: ^hdx-oss-v2-\d+\.\d+\.\d+$
+        documentIndex: 1
+      - matchRegex:
+          path: metadata.labels["app.kubernetes.io/version"]
+          pattern: ^\d+\.\d+\.\d+$
+        documentIndex: 1
 
   - it: should fail when annotations of the additional ingresses is not a map of strings
     set:
