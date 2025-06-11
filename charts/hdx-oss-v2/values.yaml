@@ -220,6 +220,16 @@ otel:
   httpPort: 4318
   healthPort: 8888
   enabled: true
+  env: []
+    # Additional environment variables can be configured here
+    # Example:
+    # - name: CUSTOM_VAR
+    #   value: "my-value"
+    # - name: SECRET_VAR
+    #   valueFrom:
+    #     secretKeyRef:
+    #       name: my-secret
+    #       key: secret-key
   # Opamp server URL - defaults to the app service. Customize if you want to use a different Opamp server.
   # Leave empty if you want to use the app service.
   # Example: opampServerUrl: "http://custom-opamp-server:4320"
