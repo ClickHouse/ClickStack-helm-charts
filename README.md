@@ -106,6 +106,39 @@ hyperdx:
   otelExporterEndpoint: "http://your-otel-collector:4318"
 ```
 
+#### Configuring Ingress for OTEL Collector
+
+If you need to expose your OTEL collector endpoints through ingress, you can use the additional ingresses configuration. The example below uses a regex pattern to capture all OTLP endpoints (traces, metrics, and logs) in a single path rule:
+
+```yaml
+hyperdx:
+  ingress:
+    enabled: true
+    additionalIngresses:
+      - name: otel-collector
+        annotations:
+          nginx.ingress.kubernetes.io/ssl-redirect: "false"
+          nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
+          nginx.ingress.kubernetes.io/use-regex: "true"
+        ingressClassName: nginx
+        hosts:
+          - host: collector.yourdomain.com
+            paths:
+              - path: /v1/(traces|metrics|logs)
+                pathType: Prefix
+                port: 4318
+        tls:
+          - hosts:
+              - collector.yourdomain.com
+            secretName: collector-tls
+```
+
+This configuration creates a separate ingress resource for the OTEL collector endpoints, allowing you to:
+- Use a different domain for collector traffic
+- Configure specific TLS settings
+- Apply custom annotations for the collector ingress
+- Route all telemetry signals through a single regex-based path rule
+
 ### Minimal Deployment
 
 For organizations with existing infrastructure:
@@ -285,7 +318,7 @@ helm install my-hyperdx hyperdx/hdx-oss-v2 \
 # values-gke.yaml
 hyperdx:
   appUrl: "http://34.123.61.99"  # Use your LoadBalancer external IP
-  
+
 otel:
   opampServerUrl: "http://my-hyperdx-hdx-oss-v2-app.default.svc.cluster.local:4320"
 

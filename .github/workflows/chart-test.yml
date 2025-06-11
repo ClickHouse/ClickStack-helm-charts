@@ -16,7 +16,7 @@ on:
 jobs:
   test-helm-chart:
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -55,7 +55,7 @@ jobs:
 
     - name: Run Helm unit tests
       run: |
-        helm plugin install https://github.com/quintush/helm-unittest || true
+        helm plugin install https://github.com/helm-unittest/helm-unittest.git || true
         helm unittest charts/hdx-oss-v2
 
     - name: Deploy HyperDX chart
@@ -66,33 +66,33 @@ jobs:
           apiKey: "test-api-key-for-ci"
           appUrl: "http://localhost:3000"
           replicas: 1
-        
+
         clickhouse:
           persistence:
             enabled: true
             dataSize: 2Gi
             logSize: 1Gi
-        
+
         persistence:
           mongodb:
             enabled: true
             size: 2Gi
-        
+
         # Enable NodePort services for testing
         hyperdx:
           service:
             type: NodePort
             nodePort: 30000
-        
+
         otel:
           service:
             type: NodePort
             nodePort: 30001
         EOF
-        
+
         # Install the chart
         helm install hyperdx-test ./charts/hdx-oss-v2 -f test-values.yaml --timeout=2m
-        
+
         # Give services time to initialize after pods are running
         echo "Waiting for services to initialize..."
         sleep 20
@@ -101,10 +101,10 @@ jobs:
       run: |
         # Wait for all pods to be ready
         kubectl wait --for=condition=Ready pods --all --timeout=300s
-        
+
         # Check pod status
         kubectl get pods -o wide
-        
+
         # Check services
         kubectl get services
 
@@ -112,7 +112,7 @@ jobs:
       run: |
         # Make smoke test script executable
         chmod +x ./scripts/smoke-test.sh
-        
+
         # Run the smoke test with CI-specific environment
         RELEASE_NAME=hyperdx-test NAMESPACE=default ./scripts/smoke-test.sh
 
@@ -121,19 +121,19 @@ jobs:
       run: |
         echo "=== Pod Status ==="
         kubectl get pods -o wide
-        
+
         echo "=== Events ==="
         kubectl get events --sort-by=.metadata.creationTimestamp
-        
+
         echo "=== HyperDX App Logs ==="
         kubectl logs -l app=app --tail=100 || true
-        
+
         echo "=== ClickHouse Logs ==="
         kubectl logs -l app=clickhouse --tail=100 || true
-        
+
         echo "=== MongoDB Logs ==="
         kubectl logs -l app=mongodb --tail=100 || true
-        
+
         echo "=== OTEL Collector Logs ==="
         kubectl logs -l app=otel-collector --tail=100 || true
 
