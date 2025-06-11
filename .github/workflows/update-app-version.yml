@@ -1,0 +1,39 @@
+name: Update App Version
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to update appVersion to'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-app-version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update appVersion in Chart.yaml
+        run: |
+          sed -i "s/^appVersion: .*/appVersion: ${{ github.event.inputs.tag }}/" charts/hdx-oss-v2/Chart.yaml
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore: Update appVersion to ${{ github.event.inputs.tag }}"
+          title: "Update appVersion to ${{ github.event.inputs.tag }}"
+          body: |
+            This PR updates the appVersion in Chart.yaml to `${{ github.event.inputs.tag }}`.
+            
+            - Updated `charts/hdx-oss-v2/Chart.yaml`
+          branch: update-app-version-${{ github.event.inputs.tag }}
+          delete-branch: true
