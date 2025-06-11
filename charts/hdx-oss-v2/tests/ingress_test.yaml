@@ -33,27 +33,105 @@ tests:
           value: hyperdx.example.com
       # Validate ingress annotations
       - equal:
-          path: metadata.annotations["nginx.ingress.kubernetes.io/proxy-body-size"]
-          value: "100m"
-      - equal:
-          path: metadata.annotations["nginx.ingress.kubernetes.io/proxy-connect-timeout"]
-          value: "60"
-      - equal:
-          path: metadata.annotations["nginx.ingress.kubernetes.io/proxy-read-timeout"]
-          value: "60"
-      - equal:
-          path: metadata.annotations["nginx.ingress.kubernetes.io/proxy-send-timeout"]
-          value: "60"
-      - equal:
-          path: metadata.annotations["nginx.ingress.kubernetes.io/rewrite-target"]
-          value: "/$1"
-      - equal:
-          path: metadata.annotations["nginx.ingress.kubernetes.io/use-regex"]
-          value: "true"
-      # Validate chart version format without exact match
+          path: metadata.annotations
+          value:
+            nginx.ingress.kubernetes.io/proxy-body-size: 100m
+            nginx.ingress.kubernetes.io/proxy-connect-timeout: "60"
+            nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
+            nginx.ingress.kubernetes.io/proxy-send-timeout: "60"
+            nginx.ingress.kubernetes.io/rewrite-target: /$1
+            nginx.ingress.kubernetes.io/use-regex: "true"
       - matchRegex:
           path: metadata.labels["helm.sh/chart"]
           pattern: ^hdx-oss-v2-\d+\.\d+\.\d+$
+
+  - it: should allow overriding the ingress class name
+    set:
+      hyperdx:
+        ingress:
+          enabled: true
+          ingressClassName: custom-ingress
+          host: hyperdx.example.com
+          proxyBodySize: 100m
+          proxyConnectTimeout: "60"
+          proxySendTimeout: "60"
+          proxyReadTimeout: "60"
+          tls:
+            enabled: false
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: Ingress
+      - equal:
+          path: spec.ingressClassName
+          value: custom-ingress
+
+  - it: should merge user defined annotations
+    set:
+      hyperdx:
+        ingress:
+          enabled: true
+          annotations:
+            a-test-annotation: "letter a"
+            z-test-annotation: "letter z"
+          host: hyperdx.example.com
+          proxyBodySize: 100m
+          proxyConnectTimeout: "60"
+          proxySendTimeout: "60"
+          proxyReadTimeout: "60"
+          tls:
+            enabled: false
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: Ingress
+      - equal:
+          path: metadata.annotations
+          value:
+            a-test-annotation: letter a
+            nginx.ingress.kubernetes.io/proxy-body-size: 100m
+            nginx.ingress.kubernetes.io/proxy-connect-timeout: "60"
+            nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
+            nginx.ingress.kubernetes.io/proxy-send-timeout: "60"
+            nginx.ingress.kubernetes.io/rewrite-target: /$1
+            nginx.ingress.kubernetes.io/use-regex: "true"
+            z-test-annotation: letter z
+
+  - it: should not allow user to override helm defined annotation values
+    set:
+      hyperdx:
+        ingress:
+          enabled: true
+          annotations:
+            nginx.ingress.kubernetes.io/proxy-body-size: 9999999999m
+            nginx.ingress.kubernetes.io/proxy-connect-timeout: "99999999"
+            nginx.ingress.kubernetes.io/proxy-read-timeout: "99999999"
+            nginx.ingress.kubernetes.io/proxy-send-timeout: "99999999"
+            nginx.ingress.kubernetes.io/rewrite-target: /bad/value
+            nginx.ingress.kubernetes.io/use-regex: "do not"
+          host: hyperdx.example.com
+          proxyBodySize: 100m
+          proxyConnectTimeout: "60"
+          proxySendTimeout: "60"
+          proxyReadTimeout: "60"
+          tls:
+            enabled: false
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: Ingress
+      - equal:
+          path: metadata.annotations
+          value:
+            nginx.ingress.kubernetes.io/proxy-body-size: 100m
+            nginx.ingress.kubernetes.io/proxy-connect-timeout: "60"
+            nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
+            nginx.ingress.kubernetes.io/proxy-send-timeout: "60"
+            nginx.ingress.kubernetes.io/rewrite-target: /$1
+            nginx.ingress.kubernetes.io/use-regex: "true"
 
   - it: should render the app ingress template  with TLS when enabled
     set:
@@ -75,6 +153,11 @@ tests:
       - equal:
           path: spec.tls[0].secretName
           value: hyperdx-tls
+      - isSubset:
+          path: metadata.annotations
+          content:
+            nginx.ingress.kubernetes.io/ssl-redirect: "true"
+            nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
 
   - it: should render additional ingress templates
     set:

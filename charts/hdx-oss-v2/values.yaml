@@ -6,7 +6,7 @@ global:
 hyperdx:
   image:
     repository: docker.hyperdx.io/hyperdx/hyperdx
-    tag: 
+    tag:
     pullPolicy: IfNotPresent
   apiKey: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
   apiPort: 8000
@@ -145,6 +145,8 @@ hyperdx:
 
   ingress:
     enabled: false
+    ingressClassName: nginx
+    annotations: {}
     host: "localhost"  # Production domain
     proxyBodySize: "100m"
     proxyConnectTimeout: "60"

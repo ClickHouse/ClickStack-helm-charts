@@ -6,18 +6,20 @@ metadata:
   labels:
     {{- include "hdx-oss.labels" . | nindent 4 }}
   annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /$1
-    nginx.ingress.kubernetes.io/use-regex: "true"
+    {{ $reqAnnotations := dict "nginx.ingress.kubernetes.io/rewrite-target" "/$1"
+                               "nginx.ingress.kubernetes.io/use-regex" "true"
+                               "nginx.ingress.kubernetes.io/proxy-body-size" .Values.hyperdx.ingress.proxyBodySize
+                               "nginx.ingress.kubernetes.io/proxy-connect-timeout" .Values.hyperdx.ingress.proxyConnectTimeout
+                               "nginx.ingress.kubernetes.io/proxy-send-timeout" .Values.hyperdx.ingress.proxySendTimeout
+                               "nginx.ingress.kubernetes.io/proxy-read-timeout" .Values.hyperdx.ingress.proxyReadTimeout
+     }}
     {{- if .Values.hyperdx.ingress.tls.enabled }}
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
-    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+      {{ $_ := set $reqAnnotations "nginx.ingress.kubernetes.io/ssl-redirect" "true" }}
+      {{ $_ := set $reqAnnotations "nginx.ingress.kubernetes.io/force-ssl-redirect" "true" }}
     {{- end }}
-    nginx.ingress.kubernetes.io/proxy-body-size: {{ .Values.hyperdx.ingress.proxyBodySize | quote }}
-    nginx.ingress.kubernetes.io/proxy-connect-timeout: {{ .Values.hyperdx.ingress.proxyConnectTimeout | quote }}
-    nginx.ingress.kubernetes.io/proxy-send-timeout: {{ .Values.hyperdx.ingress.proxySendTimeout | quote }}
-    nginx.ingress.kubernetes.io/proxy-read-timeout: {{ .Values.hyperdx.ingress.proxyReadTimeout | quote }}
+    {{ toYaml (mergeOverwrite .Values.hyperdx.ingress.annotations $reqAnnotations) | nindent 4}}
 spec:
-  ingressClassName: nginx
+  ingressClassName: {{ .Values.hyperdx.ingress.ingressClassName }}
   {{- if .Values.hyperdx.ingress.tls.enabled }}
   tls:
   - hosts:
@@ -48,9 +50,7 @@ metadata:
   {{- fail "annotations must be a map of string key-value pairs" }}
   {{- end }}
   annotations:
-    {{- range $key, $value := .annotations }}
-    {{- printf "%s: %s" $key (tpl $value $ | quote) | nindent 4 }}
-    {{- end }}
+    {{ toYaml .annotations | nindent 4 }}
   {{- end }}
 spec:
   {{- if .ingressClassName }}
