@@ -66,6 +66,8 @@ tests:
       - equal:
           path: spec.ingressClassName
           value: custom-ingress
+      - isEmpty:
+          path: metadata.annotations
 
   - it: should merge user defined annotations
     set:

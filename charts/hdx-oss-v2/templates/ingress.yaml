@@ -6,16 +6,19 @@ metadata:
   labels:
     {{- include "hdx-oss.labels" . | nindent 4 }}
   annotations:
-    {{ $reqAnnotations := dict "nginx.ingress.kubernetes.io/rewrite-target" "/$1"
+    {{ $reqAnnotations := dict }}
+    {{- if eq .Values.hyperdx.ingress.ingressClassName "nginx" }}
+      {{ $reqAnnotations = dict "nginx.ingress.kubernetes.io/rewrite-target" "/$1"
                                "nginx.ingress.kubernetes.io/use-regex" "true"
                                "nginx.ingress.kubernetes.io/proxy-body-size" .Values.hyperdx.ingress.proxyBodySize
                                "nginx.ingress.kubernetes.io/proxy-connect-timeout" .Values.hyperdx.ingress.proxyConnectTimeout
                                "nginx.ingress.kubernetes.io/proxy-send-timeout" .Values.hyperdx.ingress.proxySendTimeout
                                "nginx.ingress.kubernetes.io/proxy-read-timeout" .Values.hyperdx.ingress.proxyReadTimeout
-     }}
-    {{- if .Values.hyperdx.ingress.tls.enabled }}
-      {{ $_ := set $reqAnnotations "nginx.ingress.kubernetes.io/ssl-redirect" "true" }}
-      {{ $_ := set $reqAnnotations "nginx.ingress.kubernetes.io/force-ssl-redirect" "true" }}
+      }}
+      {{- if .Values.hyperdx.ingress.tls.enabled }}
+        {{ $_ := set $reqAnnotations "nginx.ingress.kubernetes.io/ssl-redirect" "true" }}
+        {{ $_ := set $reqAnnotations "nginx.ingress.kubernetes.io/force-ssl-redirect" "true" }}
+      {{- end }}
     {{- end }}
     {{ toYaml (mergeOverwrite .Values.hyperdx.ingress.annotations $reqAnnotations) | nindent 4}}
 spec:
