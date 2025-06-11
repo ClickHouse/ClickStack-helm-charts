@@ -7,7 +7,7 @@
   "author": "HyperDX",
   "license": "MIT",
   "scripts": {
-    "release": "",
+    "release": "changeset publish",
     "version": "changeset version && npm run update-chart-versions",
     "update-chart-versions": "node scripts/update-chart-versions.js"
   },
