@@ -1,5 +1,11 @@
 # helm-charts
 
+## 0.6.2
+
+### Patch Changes
+
+- d0650ed: Allows setting custom ingressClassName and annotations for the HyperDX application ingress.
+
 ## 0.6.1
 
 ### Patch Changes
