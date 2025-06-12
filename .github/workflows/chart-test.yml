@@ -81,10 +81,10 @@ jobs:
             dataSize: 2Gi
             logSize: 1Gi
 
-        persistence:
-          mongodb:
+        mongodb:
+          persistence:
             enabled: true
-            size: 2Gi
+            dataSize: 2Gi
 
         # Enable NodePort services for testing
         hyperdx:
