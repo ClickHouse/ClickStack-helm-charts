@@ -14,7 +14,6 @@ data:
   HYPERDX_LOG_LEVEL: "{{ .Values.hyperdx.logLevel }}"
   MINER_API_URL: "http://{{ include "hdx-oss.fullname" . }}-miner:5123"
   MONGO_URI: "{{ tpl .Values.hyperdx.mongoUri . }}"
-  NEXT_PUBLIC_SERVER_URL: "{{ .Values.hyperdx.appUrl }}:{{ .Values.hyperdx.apiPort }}"
   OTEL_SERVICE_NAME: "hdx-oss-api"
   USAGE_STATS_ENABLED: "{{ .Values.hyperdx.usageStatsEnabled | default true }}"
   CRON_IN_APP_DISABLED: "{{ .Values.tasks.enabled | default false }}"
