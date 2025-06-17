@@ -28,6 +28,14 @@ spec:
         {{- end -}}
       {{- end }}
     spec:
+      {{- if .Values.hyperdx.nodeSelector }}
+      nodeSelector:
+        {{- toYaml .Values.hyperdx.nodeSelector | nindent 8 }}
+      {{- end }}
+      {{- if .Values.hyperdx.tolerations }}
+      tolerations:
+        {{- toYaml .Values.hyperdx.tolerations | nindent 8 }}
+      {{- end }}
       {{- if .Values.mongodb.enabled }}
       initContainers:
         - name: wait-for-mongodb

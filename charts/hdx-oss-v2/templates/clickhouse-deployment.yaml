@@ -18,6 +18,14 @@ spec:
         {{- include "hdx-oss.selectorLabels" . | nindent 8 }}
         app: clickhouse
     spec:
+      {{- if .Values.clickhouse.nodeSelector }}
+      nodeSelector:
+        {{- toYaml .Values.clickhouse.nodeSelector | nindent 8 }}
+      {{- end }}
+      {{- if .Values.clickhouse.tolerations }}
+      tolerations:
+        {{- toYaml .Values.clickhouse.tolerations | nindent 8 }}
+      {{- end }}
       containers:
         - name: clickhouse
           image: "{{ .Values.clickhouse.image }}"

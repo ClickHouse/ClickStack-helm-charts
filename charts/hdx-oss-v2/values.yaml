@@ -8,6 +8,17 @@ hyperdx:
     repository: docker.hyperdx.io/hyperdx/hyperdx
     tag:
     pullPolicy: IfNotPresent
+  # Add nodeSelector and tolerations for hyperdx service
+  nodeSelector: {}
+    # Example:
+    # kubernetes.io/os: linux
+    # node-role.kubernetes.io/worker: "true"
+  tolerations: []
+    # Example:
+    # - key: "key1"
+    #   operator: "Equal"
+    #   value: "value1"
+    #   effect: "NoSchedule"
   apiKey: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
   apiPort: 8000
   appPort: 3000
@@ -180,6 +191,17 @@ mongodb:
   image: "mongo:5.0.14-focal"
   port: 27017
   enabled: true
+  # Add nodeSelector and tolerations for mongodb service
+  nodeSelector: {}
+    # Example:
+    # kubernetes.io/os: linux
+    # node-role.kubernetes.io/worker: "true"
+  tolerations: []
+    # Example:
+    # - key: "key1"
+    #   operator: "Equal"
+    #   value: "value1"
+    #   effect: "NoSchedule"
   persistence:
     enabled: true
     dataSize: 10Gi
@@ -189,6 +211,17 @@ clickhouse:
   port: 8123
   nativePort: 9000
   enabled: true
+  # Add nodeSelector and tolerations for clickhouse service
+  nodeSelector: {}
+    # Example:
+    # kubernetes.io/os: linux
+    # node-role.kubernetes.io/worker: "true"
+  tolerations: []
+    # Example:
+    # - key: "key1"
+    #   operator: "Equal"
+    #   value: "value1"
+    #   effect: "NoSchedule"
   persistence:
     enabled: true
     dataSize: 10Gi
@@ -216,6 +249,17 @@ otel:
     repository: docker.hyperdx.io/hyperdx/hyperdx-otel-collector
     tag:
     pullPolicy: IfNotPresent
+  # Add nodeSelector and tolerations for otel-collector service
+  nodeSelector: {}
+    # Example:
+    # kubernetes.io/os: linux
+    # node-role.kubernetes.io/worker: "true"
+  tolerations: []
+    # Example:
+    # - key: "key1"
+    #   operator: "Equal"
+    #   value: "value1"
+    #   effect: "NoSchedule"
   port: 13133
   nativePort: 24225
   grpcPort: 4317

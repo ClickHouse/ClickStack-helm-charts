@@ -18,6 +18,14 @@ spec:
         {{- include "hdx-oss.selectorLabels" . | nindent 8 }}
         app: mongodb
     spec:
+      {{- if .Values.mongodb.nodeSelector }}
+      nodeSelector:
+        {{- toYaml .Values.mongodb.nodeSelector | nindent 8 }}
+      {{- end }}
+      {{- if .Values.mongodb.tolerations }}
+      tolerations:
+        {{- toYaml .Values.mongodb.tolerations | nindent 8 }}
+      {{- end }}
       containers:
         - name: mongodb
           image: "{{ .Values.mongodb.image }}"
