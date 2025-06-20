@@ -28,7 +28,7 @@ spec:
         {{- end -}}
       {{- end }}
     spec:
-      {{- if not .Values.mongodb.enabled }}
+      {{- if .Values.mongodb.enabled }}
       initContainers:
         - name: wait-for-mongodb
           image: busybox

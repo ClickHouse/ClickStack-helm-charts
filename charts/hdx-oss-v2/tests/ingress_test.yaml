@@ -31,6 +31,13 @@ tests:
       - equal:
           path: spec.rules[0].host
           value: hyperdx.example.com
+      # Validate main app ingress path configuration
+      - equal:
+          path: spec.rules[0].http.paths[0].path
+          value: /(.*)
+      - equal:
+          path: spec.rules[0].http.paths[0].pathType
+          value: ImplementationSpecific
       # Validate ingress annotations
       - equal:
           path: metadata.annotations
@@ -152,6 +159,13 @@ tests:
       - equal:
           path: spec.rules[0].host
           value: hyperdx.example.com
+      # Validate main app ingress path configuration
+      - equal:
+          path: spec.rules[0].http.paths[0].path
+          value: /(.*)
+      - equal:
+          path: spec.rules[0].http.paths[0].pathType
+          value: ImplementationSpecific
       - equal:
           path: spec.tls[0].secretName
           value: hyperdx-tls
@@ -195,6 +209,15 @@ tests:
       - equal:
           path: spec.rules[0].host
           value: hyperdx.example.com
+        documentIndex: 0
+      # Validate main app ingress path configuration
+      - equal:
+          path: spec.rules[0].http.paths[0].path
+          value: /(.*)
+        documentIndex: 0
+      - equal:
+          path: spec.rules[0].http.paths[0].pathType
+          value: ImplementationSpecific
         documentIndex: 0
       # Test the additional otel-collector ingress (document 1)
       - isKind:
@@ -280,6 +303,15 @@ tests:
       - equal:
           path: spec.rules[0].host
           value: hyperdx.example.com
+        documentIndex: 0
+      # Validate main app ingress path configuration
+      - equal:
+          path: spec.rules[0].http.paths[0].path
+          value: /(.*)
+        documentIndex: 0
+      - equal:
+          path: spec.rules[0].http.paths[0].pathType
+          value: ImplementationSpecific
         documentIndex: 0
       # Test the additional otel-collector ingress (document 1)
       - isKind:
