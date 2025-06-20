@@ -4,8 +4,14 @@ metadata:
   name: {{ include "hdx-oss.fullname" . }}-app
   labels:
     {{- include "hdx-oss.labels" . | nindent 4 }}
+  {{- if .Values.hyperdx.service.annotations }}
+  annotations:
+    {{- with .Values.hyperdx.service.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- end }}
 spec:
-  type: LoadBalancer
+  type: {{ .Values.hyperdx.service.type | default "ClusterIP" }}
   ports:
     - port: {{ .Values.hyperdx.appPort }}
       targetPort: {{ .Values.hyperdx.appPort }}
@@ -15,4 +21,4 @@ spec:
       name: opamp
   selector:
     {{- include "hdx-oss.selectorLabels" . | nindent 4 }}
-    app: {{ include "hdx-oss.fullname" . }} 
+    app: {{ include "hdx-oss.fullname" . }}

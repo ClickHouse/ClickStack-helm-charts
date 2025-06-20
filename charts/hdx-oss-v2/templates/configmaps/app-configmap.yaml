@@ -7,7 +7,11 @@ metadata:
 data:
   APP_PORT: {{ .Values.hyperdx.appPort | quote }}
   API_PORT: {{ .Values.hyperdx.apiPort | quote }}
+  {{- if .Values.hyperdx.ingress.enabled }}
+  FRONTEND_URL: "{{ if .Values.hyperdx.ingress.tls.enabled }}https{{ else }}http{{ end }}://{{ .Values.hyperdx.ingress.host }}"
+  {{- else }}
   FRONTEND_URL: "{{ .Values.hyperdx.appUrl }}:{{ .Values.hyperdx.appPort }}"
+  {{- end }}
   HYPERDX_API_PORT: "{{ .Values.hyperdx.apiPort }}"
   HYPERDX_APP_PORT: "{{ .Values.hyperdx.appPort }}"
   HYPERDX_APP_URL: "{{ .Values.hyperdx.appUrl }}"

@@ -107,3 +107,25 @@ tests:
       - equal:
           path: spec.template.spec.containers[0].ports[2].containerPort
           value: 5320
+  - it: should include initContainers when mongodb.enabled is true
+    set:
+      mongodb:
+        enabled: true
+    asserts:
+      - isNotEmpty:
+          path: spec.template.spec.initContainers
+      - equal:
+          path: spec.template.spec.initContainers[0].name
+          value: wait-for-mongodb
+      - equal:
+          path: spec.template.spec.initContainers[0].image
+          value: busybox
+      - contains:
+          path: spec.template.spec.initContainers[0].command
+          content: sh
+      - contains:
+          path: spec.template.spec.initContainers[0].command
+          content: -c
+      - matchRegex:
+          path: spec.template.spec.initContainers[0].command[2]
+          pattern: "until nc -z .+-mongodb [0-9]+; do echo waiting for mongodb; sleep 2; done;"

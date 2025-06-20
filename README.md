@@ -18,6 +18,7 @@ Welcome to the official HyperDX Helm charts repository. This guide provides inst
   - [API Key Setup](#api-key-setup)
   - [Task Configuration](#task-configuration)
   - [Using Secrets](#using-secrets)
+  - [Ingress Setup](#ingress-setup)
 - [Operations](#operations)
   - [Upgrading](#upgrading-the-chart)
   - [Uninstalling](#uninstalling-hyperdx)
@@ -108,36 +109,7 @@ hyperdx:
 
 #### Configuring Ingress for OTEL Collector
 
-If you need to expose your OTEL collector endpoints through ingress, you can use the additional ingresses configuration. The example below uses a regex pattern to capture all OTLP endpoints (traces, metrics, and logs) in a single path rule:
-
-```yaml
-hyperdx:
-  ingress:
-    enabled: true
-    additionalIngresses:
-      - name: otel-collector
-        annotations:
-          nginx.ingress.kubernetes.io/ssl-redirect: "false"
-          nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
-          nginx.ingress.kubernetes.io/use-regex: "true"
-        ingressClassName: nginx
-        hosts:
-          - host: collector.yourdomain.com
-            paths:
-              - path: /v1/(traces|metrics|logs)
-                pathType: Prefix
-                port: 4318
-        tls:
-          - hosts:
-              - collector.yourdomain.com
-            secretName: collector-tls
-```
-
-This configuration creates a separate ingress resource for the OTEL collector endpoints, allowing you to:
-- Use a different domain for collector traffic
-- Configure specific TLS settings
-- Apply custom annotations for the collector ingress
-- Route all telemetry signals through a single regex-based path rule
+For instructions on exposing your OTEL collector endpoints via ingress (including example configuration and best practices), see the [OTEL Collector Ingress](#otel-collector-ingress) section in the [Ingress Setup](#ingress-setup) chapter above.
 
 ### Minimal Deployment
 
@@ -262,6 +234,173 @@ By default, there is one task in the chart setup as a cronjob, responsible for c
 | `tasks.enabled` | Enable/Disable cron tasks in the cluster. By default, the HyperDX image will run cron tasks intra process. Change to true if you'd rather use a separate cron task in the cluster. | `false` |
 | `tasks.checkAlerts.schedule` | Cron schedule for the check-alerts task | `*/1 * * * *` |
 | `tasks.checkAlerts.resources` | Resource requests and limits for the check-alerts task | See `values.yaml` |
+
+## Ingress Setup
+
+- [General Ingress Setup](#general-ingress-setup)
+- [OTEL Collector Ingress](#otel-collector-ingress)
+- [Troubleshooting Ingress](#troubleshooting-ingress)
+
+### General Ingress Setup
+
+To expose the HyperDX UI and API via a domain name, enable ingress in your `values.yaml`:
+
+```yaml
+hyperdx:
+  ingress:
+    enabled: true
+    host: "hyperdx.yourdomain.com"  # Set this to your desired domain
+```
+
+#### Configuring `ingress.host` and `hyperdx.appUrl`
+
+- **`hyperdx.ingress.host`**: Set to the domain you want to use for accessing HyperDX (e.g., `hyperdx.yourdomain.com`).
+- **`hyperdx.appUrl`**: Should match the ingress host and include the protocol (e.g., `https://hyperdx.yourdomain.com`).
+
+**Example:**
+```yaml
+hyperdx:
+  appUrl: "https://hyperdx.yourdomain.com"
+  ingress:
+    enabled: true
+    host: "hyperdx.yourdomain.com"
+```
+
+This ensures that all generated links, cookies, and redirects work correctly.
+
+#### Enabling TLS (HTTPS)
+
+To secure your deployment with HTTPS, enable TLS in your ingress configuration:
+
+```yaml
+hyperdx:
+  ingress:
+    enabled: true
+    host: "hyperdx.yourdomain.com"
+    tls:
+      enabled: true
+      tlsSecretName: "hyperdx-tls"  # Name of the Kubernetes TLS secret
+```
+
+- Create a Kubernetes TLS secret with your certificate and key:
+  ```sh
+  kubectl create secret tls hyperdx-tls \
+    --cert=path/to/tls.crt \
+    --key=path/to/tls.key
+  ```
+- The ingress will reference this secret to terminate HTTPS connections.
+
+#### Example Minimal Ingress YAML
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: hyperdx-app-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+    nginx.ingress.kubernetes.io/use-regex: "true"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: hyperdx.yourdomain.com
+      http:
+        paths:
+          - path: /(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: <service-name>
+                port:
+                  number: 3000
+  tls:
+    - hosts:
+        - hyperdx.yourdomain.com
+      secretName: hyperdx-tls
+```
+
+#### Common Pitfalls
+
+- **Path and Rewrite Configuration:**
+  - For Next.js and other SPAs, always use a regex path and rewrite annotation as shown above. Do not use just `path: /` without a rewrite, as this will break static asset serving.
+- **Mismatched `appUrl` and `ingress.host`:**
+  - If these do not match, you may experience issues with cookies, redirects, and asset loading.
+- **TLS Misconfiguration:**
+  - Ensure your TLS secret is valid and referenced correctly in the ingress.
+  - Browsers may block insecure content if you access the app over HTTP when TLS is enabled.
+- **Ingress Controller Version:**
+  - Some features (like regex paths and rewrites) require recent versions of nginx ingress controller. Check your version with:
+    ```sh
+    kubectl -n ingress-nginx get pods -l app.kubernetes.io/name=ingress-nginx -o jsonpath="{.items[0].spec.containers[0].image}"
+    ```
+
+---
+
+### OTEL Collector Ingress
+
+If you need to expose your OTEL collector endpoints (for traces, metrics, logs) through ingress, you can use the `additionalIngresses` configuration. This is useful for organizations that want to send telemetry data from outside the cluster or use a custom domain for the collector.
+
+**Example configuration:**
+
+```yaml
+hyperdx:
+  ingress:
+    enabled: true
+    additionalIngresses:
+      - name: otel-collector
+        annotations:
+          nginx.ingress.kubernetes.io/ssl-redirect: "false"
+          nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
+          nginx.ingress.kubernetes.io/use-regex: "true"
+        ingressClassName: nginx
+        hosts:
+          - host: collector.yourdomain.com
+            paths:
+              - path: /v1/(traces|metrics|logs)
+                pathType: Prefix
+                port: 4318
+        tls:
+          - hosts:
+              - collector.yourdomain.com
+            secretName: collector-tls
+```
+
+- This creates a separate ingress resource for the OTEL collector endpoints.
+- You can use a different domain, configure specific TLS settings, and apply custom annotations for the collector ingress.
+- The regex path rule allows you to route all OTLP signals (traces, metrics, logs) through a single rule.
+
+**Note:**
+- If you do not need to expose the OTEL collector externally, you can skip this section.
+- For most users, the general ingress setup is sufficient.
+
+---
+
+### Troubleshooting Ingress
+
+- **Check Ingress Resource:**
+  ```sh
+  kubectl get ingress -A
+  kubectl describe ingress <ingress-name>
+  ```
+- **Check Pod Logs:**
+  ```sh
+  kubectl logs -l app.kubernetes.io/name=ingress-nginx -n ingress-nginx
+  ```
+- **Test Asset URLs:**
+  Use `curl` to verify static assets are served as JS, not HTML:
+  ```sh
+  curl -I https://hyperdx.yourdomain.com/_next/static/chunks/main-xxxx.js
+  # Should return Content-Type: application/javascript
+  ```
+- **Browser DevTools:**
+  - Check the Network tab for 404s or assets returning HTML instead of JS.
+  - Look for errors like "Unexpected token <" in the console (indicates HTML returned for JS).
+- **Check for Path Rewrites:**
+  - Ensure the ingress is not stripping or incorrectly rewriting asset paths.
+- **Clear Browser and CDN Cache:**
+  - After changes, clear your browser cache and any CDN/proxy cache to avoid stale assets.
+
+---
 
 ## Operations
 
@@ -393,40 +532,3 @@ For HTTP-only deployments (development/testing), some browsers may show crypto A
 ```sh
 kubectl logs -l app.kubernetes.io/name=hdx-oss-v2
 ```
-
-### OTEL Collector OpAMP Connection Issues
-
-If you see connection refused errors in OTEL collector logs:
-
-```sh
-# Check OTEL collector logs
-kubectl logs -l app=otel-collector
-
-# Verify service DNS resolution
-kubectl exec -it deployment/my-hyperdx-hdx-oss-v2-otel-collector -- nslookup my-hyperdx-hdx-oss-v2-app
-```
-
-### Debugging a Failed Install
-
-```sh
-helm install my-hyperdx hyperdx/hdx-oss-v2 --debug --dry-run
-```
-
-### Verifying Deployment
-
-```sh
-kubectl get pods -l app.kubernetes.io/name=hdx-oss-v2
-```
-
-For more details, refer to the [Helm documentation](https://helm.sh/docs/) or open an issue in this repository.
-
----
-
-## Contributing
-
-We welcome contributions! Please open an issue or submit a pull request if you have improvements or feature requests.
-
-## License
-
-This project is licensed under the [MIT License](LICENSE).
-

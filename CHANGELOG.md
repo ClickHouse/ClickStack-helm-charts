@@ -1,5 +1,12 @@
 # helm-charts
 
+## 0.6.3
+
+### Patch Changes
+
+- 39d37c5: fix if condition typo
+- 3d75672: fix: Fix pathType for ingress
+
 ## 0.6.2
 
 ### Patch Changes
