@@ -25,7 +25,8 @@ tests:
     templates:
       - hyperdx-deployment.yaml
     asserts:
-      - equal:
+      - documentIndex: 0
+        equal:
           path: spec.template.spec.nodeSelector
           value:
             disktype: ssd
@@ -77,12 +78,14 @@ tests:
     templates:
       - clickhouse-deployment.yaml
     asserts:
-      - equal:
+      - documentIndex: 0
+        equal:
           path: spec.template.spec.nodeSelector
           value:
             node-role: database
             storage: fast-ssd
-      - equal:
+      - documentIndex: 0
+        equal:
           path: spec.template.spec.tolerations
           value:
             - key: database-key
@@ -107,11 +110,13 @@ tests:
     templates:
       - otel-collector-deployment.yaml
     asserts:
-      - equal:
+      - documentIndex: 0
+        equal:
           path: spec.template.spec.nodeSelector
           value:
             node-role: monitoring
-      - equal:
+      - documentIndex: 0
+        equal:
           path: spec.template.spec.tolerations
           value:
             - key: monitoring-key
@@ -133,11 +138,13 @@ tests:
     templates:
       - mongodb-deployment.yaml
     asserts:
-      - equal:
+      - documentIndex: 0
+        equal:
           path: spec.template.spec.nodeSelector
           value:
             node-role: database
-      - equal:
+      - documentIndex: 0
+        equal:
           path: spec.template.spec.tolerations
           value:
             - key: database-key
@@ -146,7 +153,7 @@ tests:
               effect: NoSchedule
 
   # Test multiple components with different configurations
-  - it: should handle different nodeSelector and tolerations per component
+  - it: should apply correct nodeSelector and tolerations to HyperDX deployment
     set:
       hyperdx:
         nodeSelector:
@@ -171,10 +178,7 @@ tests:
           storage: standard
     templates:
       - hyperdx-deployment.yaml
-      - clickhouse-deployment.yaml
-      - mongodb-deployment.yaml
     asserts:
-      # HyperDX deployment
       - documentIndex: 0
         equal:
           path: spec.template.spec.nodeSelector
@@ -188,14 +192,40 @@ tests:
               operator: Equal
               value: api
               effect: NoSchedule
-      # ClickHouse deployment
-      - documentIndex: 1
+
+  - it: should apply correct nodeSelector and tolerations to ClickHouse deployment
+    set:
+      hyperdx:
+        nodeSelector:
+          component: api
+        tolerations:
+          - key: hyperdx
+            operator: Equal
+            value: api
+            effect: NoSchedule
+      clickhouse:
+        nodeSelector:
+          component: database
+          storage: ssd
+        tolerations:
+          - key: database
+            operator: Equal
+            value: clickhouse
+            effect: NoExecute
+      mongodb:
+        nodeSelector:
+          component: database
+          storage: standard
+    templates:
+      - clickhouse-deployment.yaml
+    asserts:
+      - documentIndex: 0
         equal:
           path: spec.template.spec.nodeSelector
           value:
             component: database
             storage: ssd
-      - documentIndex: 1
+      - documentIndex: 0
         equal:
           path: spec.template.spec.tolerations
           value:
@@ -203,14 +233,40 @@ tests:
               operator: Equal
               value: clickhouse
               effect: NoExecute
-      # MongoDB deployment  
-      - documentIndex: 2
+
+  - it: should apply correct nodeSelector and no tolerations to MongoDB deployment
+    set:
+      hyperdx:
+        nodeSelector:
+          component: api
+        tolerations:
+          - key: hyperdx
+            operator: Equal
+            value: api
+            effect: NoSchedule
+      clickhouse:
+        nodeSelector:
+          component: database
+          storage: ssd
+        tolerations:
+          - key: database
+            operator: Equal
+            value: clickhouse
+            effect: NoExecute
+      mongodb:
+        nodeSelector:
+          component: database
+          storage: standard
+    templates:
+      - mongodb-deployment.yaml
+    asserts:
+      - documentIndex: 0
         equal:
           path: spec.template.spec.nodeSelector
           value:
             component: database
             storage: standard
-      - documentIndex: 2
+      - documentIndex: 0
         isNull:
           path: spec.template.spec.tolerations
 
