@@ -1,5 +1,14 @@
 # helm-charts
 
+## 0.6.4
+
+### Patch Changes
+
+- d8ca4db: chore: Remove NEXT_PUBLIC_URL from configmap as it is not needed
+- 46a37c6: feat: support nodeSelector and toleration
+- b5881bd: fix: Update FRONTEND_URL to be dynamic w/ingress
+- b82c57d: fix: Allow for configurable service type + annotations
+
 ## 0.6.3
 
 ### Patch Changes
