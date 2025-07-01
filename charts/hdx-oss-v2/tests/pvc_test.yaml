@@ -9,7 +9,7 @@ tests:
           enabled: true
           dataSize: 10Gi
       global:
-        storageClass: standard
+        storageClassName: standard
     asserts:
       - isKind:
           of: PersistentVolumeClaim
@@ -35,21 +35,21 @@ tests:
       - hasDocuments:
           count: 0
 
-  - it: should not include storageClassName when global.storageClass is empty
+  - it: should not include storageClassName when global.storageClassName is empty
     set:
       mongodb:
         persistence:
           enabled: true
           dataSize: 10Gi
       global:
-        storageClass: ""
+        storageClassName: ""
     asserts:
       - isKind:
           of: PersistentVolumeClaim
       - isNull:
           path: spec.storageClassName
 
-  - it: should not include storageClassName when global.storageClass is not set
+  - it: should not include storageClassName when global.storageClassName is not set
     set:
       mongodb:
         persistence:

@@ -5,7 +5,7 @@ tests:
   - it: should use correct mongodb PVC name and size
     set:
       global:
-        storageClass: "custom-storage-class"
+        storageClassName: "custom-storage-class"
       mongodb:
         persistence:
           enabled: true
@@ -32,10 +32,10 @@ tests:
       - hasDocuments:
           count: 0
 
-  - it: should omit storageClassName when global.storageClass is empty string
+  - it: should omit storageClassName when global.storageClassName is empty string
     set:
       global:
-        storageClass: ""
+        storageClassName: ""
       mongodb:
         persistence:
           enabled: true
