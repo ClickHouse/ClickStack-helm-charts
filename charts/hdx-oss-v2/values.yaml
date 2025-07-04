@@ -235,6 +235,16 @@ clickhouse:
     #   operator: "Equal"
     #   value: "value1"
     #   effect: "NoSchedule"
+    
+  # Service configuration
+  service:
+    type: ClusterIP  # Use ClusterIP for security. For external access, use ingress with proper TLS and authentication
+    # Service-level annotations (applied to the Kubernetes service resource)
+    annotations: {}
+      # Example service annotations:
+      # service.beta.kubernetes.io/aws-load-balancer-internal: "true"
+      # cloud.google.com/load-balancer-type: "Internal"
+
   persistence:
     enabled: true
     dataSize: 10Gi

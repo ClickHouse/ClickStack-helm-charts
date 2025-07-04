@@ -74,7 +74,14 @@ metadata:
   name: {{ include "hdx-oss.fullname" . }}-clickhouse
   labels:
     {{- include "hdx-oss.labels" . | nindent 4 }}
+  {{- if .Values.clickhouse.service.annotations }}
+  annotations:
+    {{- with .Values.clickhouse.service.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- end }}
 spec:
+  type: {{ .Values.clickhouse.service.type | default "ClusterIP" }}
   ports:
     - port: {{ .Values.clickhouse.port }}
       targetPort: {{ .Values.clickhouse.port }}
