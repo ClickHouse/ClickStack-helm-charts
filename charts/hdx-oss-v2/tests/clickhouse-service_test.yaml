@@ -39,7 +39,7 @@ tests:
 
   - it: should not render annotations section when annotations are empty
     set:
-      hyperdx:
+      clickhouse:
         service:
           annotations: {}
     asserts:
