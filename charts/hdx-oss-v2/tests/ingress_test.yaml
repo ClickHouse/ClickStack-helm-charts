@@ -175,6 +175,24 @@ tests:
             nginx.ingress.kubernetes.io/ssl-redirect: "true"
             nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
 
+  - it: should use custom TLS secret name when provided
+    set:
+      hyperdx:
+        ingress:
+          enabled: true
+          host: hyperdx.example.com
+          tls:
+            enabled: true
+            secretName: my-custom-tls-secret
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: Ingress
+      - equal:
+          path: spec.tls[0].secretName
+          value: my-custom-tls-secret
+
   - it: should render additional ingress templates
     set:
       hyperdx:
