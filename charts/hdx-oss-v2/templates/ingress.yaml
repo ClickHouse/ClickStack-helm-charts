@@ -27,7 +27,7 @@ spec:
   tls:
   - hosts:
     - {{ .Values.hyperdx.ingress.host | default "localhost" }}
-    secretName: {{ .Values.hyperdx.ingress.tlsSecretName | default "hyperdx-tls" }}
+    secretName: {{ .Values.hyperdx.ingress.tls.secretName | default "hyperdx-tls" }}
   {{- end }}
   rules:
     - host: {{ .Values.hyperdx.ingress.host | default "localhost" }}

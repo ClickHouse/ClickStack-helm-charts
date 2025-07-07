@@ -8,8 +8,8 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  {{- if .Values.global.storageClass }}
-  storageClassName: {{ .Values.global.storageClass }}
+  {{- if .Values.global.storageClassName }}
+  storageClassName: {{ .Values.global.storageClassName }}
   {{- end }}
   resources:
     requests:

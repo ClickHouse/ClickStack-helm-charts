@@ -35,10 +35,10 @@ tests:
         isKind:
           of: PersistentVolumeClaim
 
-  - it: should include storageClassName when global.storageClass is set
+  - it: should include storageClassName when global.storageClassName is set
     set:
       global:
-        storageClass: "fast-ssd"
+        storageClassName: "fast-ssd"
       clickhouse:
         enabled: true
         persistence:
@@ -55,10 +55,10 @@ tests:
           path: spec.storageClassName
           value: "fast-ssd"
 
-  - it: should omit storageClassName when global.storageClass is empty
+  - it: should omit storageClassName when global.storageClassName is empty
     set:
       global:
-        storageClass: ""
+        storageClassName: ""
       clickhouse:
         enabled: true
         persistence:
