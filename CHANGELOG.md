@@ -1,5 +1,11 @@
 # helm-charts
 
+## 0.6.5
+
+### Patch Changes
+
+- 40f2e89: feat: support servicetype and annotations for clickhouse svc
+
 ## 0.6.4
 
 ### Patch Changes
