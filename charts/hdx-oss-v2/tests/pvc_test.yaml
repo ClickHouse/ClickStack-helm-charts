@@ -9,7 +9,7 @@ tests:
           enabled: true
           dataSize: 10Gi
       global:
-        storageClass: standard
+        storageClassName: standard
     asserts:
       - isKind:
           of: PersistentVolumeClaim
@@ -42,14 +42,14 @@ tests:
           enabled: true
           dataSize: 10Gi
       global:
-        storageClass: ""
+        storageClassName: ""
     asserts:
       - isKind:
           of: PersistentVolumeClaim
       - isNull:
           path: spec.storageClassName
 
-  - it: should not include storageClassName when global.storageClass is not set
+  - it: should use default storageClassName when global.storageClassName is not explicitly overridden
     set:
       mongodb:
         persistence:
@@ -58,5 +58,6 @@ tests:
     asserts:
       - isKind:
           of: PersistentVolumeClaim
-      - isNull:
-          path: spec.storageClassName 
+      - equal:
+          path: spec.storageClassName
+          value: local-path 
