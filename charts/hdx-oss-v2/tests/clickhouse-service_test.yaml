@@ -8,7 +8,8 @@ tests:
         service:
           type: LoadBalancer
     asserts:
-      - equal:
+      - documentIndex: 1
+        equal:
           path: spec.type
           value: LoadBalancer
 
@@ -18,7 +19,8 @@ tests:
         service:
           type: NodePort
     asserts:
-      - equal:
+      - documentIndex: 1
+        equal:
           path: spec.type
           value: NodePort
   
@@ -30,10 +32,12 @@ tests:
             service.beta.kubernetes.io/aws-load-balancer-internal: "true"
             service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
     asserts:
-      - equal:
+      - documentIndex: 1
+        equal:
           path: metadata.annotations["service.beta.kubernetes.io/aws-load-balancer-internal"]
           value: "true"
-      - equal:
+      - documentIndex: 1
+        equal:
           path: metadata.annotations["service.beta.kubernetes.io/aws-load-balancer-type"]
           value: "nlb"
 
@@ -43,7 +47,8 @@ tests:
         service:
           annotations: {}
     asserts:
-      - isNull:
+      - documentIndex: 1
+        isNull:
           path: metadata.annotations
 
   - it: should combine LoadBalancer type with annotations
@@ -55,13 +60,16 @@ tests:
             cloud.google.com/load-balancer-type: "Internal"
             service.beta.kubernetes.io/azure-load-balancer-internal: "true"
     asserts:
-      - equal:
+      - documentIndex: 1
+        equal:
           path: spec.type
           value: LoadBalancer
-      - equal:
+      - documentIndex: 1
+        equal:
           path: metadata.annotations["cloud.google.com/load-balancer-type"]
           value: "Internal"
-      - equal:
+      - documentIndex: 1
+        equal:
           path: metadata.annotations["service.beta.kubernetes.io/azure-load-balancer-internal"]
           value: "true"
 
@@ -70,6 +78,7 @@ tests:
       clickhouse:
         service: {}
     asserts:
-      - equal:
+      - documentIndex: 1
+        equal:
           path: spec.type
           value: ClusterIP
