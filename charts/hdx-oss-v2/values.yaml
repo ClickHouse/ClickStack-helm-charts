@@ -191,6 +191,9 @@ hyperdx:
 
   replicas: 1
 
+  podDisruptionBudget:
+    enabled: false
+
   # Service configuration
   service:
     type: ClusterIP  # Use ClusterIP for security. For external access, use ingress with proper TLS and authentication

@@ -36,6 +36,13 @@ spec:
       tolerations:
         {{- toYaml .Values.hyperdx.tolerations | nindent 8 }}
       {{- end }}
+      {{- if .Values.hyperdx.topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- toYaml .Values.hyperdx.topologySpreadConstraints | nindent 8 }}
+      {{- end }}
+      {{- if .Values.hyperdx.priorityClassName }}
+      priorityClassName: {{ .Values.hyperdx.priorityClassName | quote }}
+      {{- end }}
       {{- if .Values.mongodb.enabled }}
       initContainers:
         - name: wait-for-mongodb
@@ -53,6 +60,10 @@ spec:
               containerPort: {{ .Values.hyperdx.apiPort }}
             - name: opamp-port
               containerPort: {{ .Values.hyperdx.opampPort }}
+          {{- if .Values.hyperdx.resources }}
+          resources:
+            {{- toYaml .Values.hyperdx.resources | nindent 12 }}
+          {{- end }}
           envFrom:
             - configMapRef:
                 name: {{ include "hdx-oss.fullname" . }}-app-config

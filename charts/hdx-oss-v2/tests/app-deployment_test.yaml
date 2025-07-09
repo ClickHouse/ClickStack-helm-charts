@@ -47,4 +47,53 @@ tests:
     asserts:
       - equal:
           path: spec.replicas
-          value: 3 
+          value: 3
+
+  - it: should set topology spread constraints when specified
+    set:
+      hyperdx:
+        topologySpreadConstraints:
+          - maxSkew: 1
+            topologyKey: topology.kubernetes.io/zone
+            whenUnsatisfiable: DoNotSchedule
+            labelSelector:
+              matchLabels:
+                foo: bar
+    asserts:
+      - contains:
+          path: spec.template.spec.topologySpreadConstraints
+          content:
+            maxSkew: 1
+            topologyKey: topology.kubernetes.io/zone
+            whenUnsatisfiable: DoNotSchedule
+            labelSelector:
+              matchLabels:
+                foo: bar
+
+  - it: should set priority class name when specified
+    set:
+      hyperdx:
+        priorityClassName: system-node-critical
+    asserts:
+      - equal:
+          path: spec.template.spec.priorityClassName
+          value: system-node-critical
+
+  - it: should set container resources when specified
+    set:
+      hyperdx:
+        resources:
+          limits:
+            memory: 1Gi
+          requests:
+            cpu: 100m
+            memory: 256Mi
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].resources
+          value:
+            limits:
+              memory: 1Gi
+            requests:
+              cpu: 100m
+              memory: 256Mi
