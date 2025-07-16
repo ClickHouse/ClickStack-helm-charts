@@ -7,7 +7,7 @@ metadata:
     {{- include "hdx-oss.labels" . | nindent 4 }}
     app: otel-collector
 spec:
-  replicas: 1
+  replicas: {{ .Values.otel.replicas | default 1 }}
   selector:
     matchLabels:
       {{- include "hdx-oss.selectorLabels" . | nindent 6 }}

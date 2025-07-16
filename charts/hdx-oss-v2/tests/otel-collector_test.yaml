@@ -23,7 +23,7 @@ tests:
       - documentIndex: 1
         isKind:
           of: Service
-          
+
   - it: should not render otel collector when disabled
     set:
       otel:
@@ -513,3 +513,36 @@ tests:
           path: spec.template.spec.containers[0].env
           content:
             name: CUSTOM_VAR
+
+  - it: should use default replica count 1 when not specified
+    set:
+      otel:
+        enabled: true
+        image:
+          repository: hyperdx/hyperdx-otel-collector
+          tag: 2-beta
+    asserts:
+      - documentIndex: 0
+        isKind:
+          of: Deployment
+      - documentIndex: 0
+        equal:
+          path: spec.replicas
+          value: 1
+
+  - it: should use custom replica count when specified
+    set:
+      otel:
+        enabled: true
+        replicas: 5
+        image:
+          repository: hyperdx/hyperdx-otel-collector
+          tag: 2-beta
+    asserts:
+      - documentIndex: 0
+        isKind:
+          of: Deployment
+      - documentIndex: 0
+        equal:
+          path: spec.replicas
+          value: 5

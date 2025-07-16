@@ -29,12 +29,12 @@ hyperdx:
   # Endpoint to send hyperdx logs/traces/metrics to.Defaults to the chart's otel collector endpoint.
   otelExporterEndpoint: http://{{ include "hdx-oss.fullname" . }}-otel-collector:{{ .Values.otel.httpPort }}
   mongoUri: mongodb://{{ include "hdx-oss.fullname" . }}-mongodb:{{ .Values.mongodb.port }}/hyperdx
-  
+
   # Pod-level annotations (applied to the deployment pods)
   annotations: {}
     # myAnnotation: "myValue"
-  
-  # Pod-level labels (applied to the deployment pods)  
+
+  # Pod-level labels (applied to the deployment pods)
   labels: {}
     # myLabel: "myValue"
   env: []
@@ -238,7 +238,7 @@ clickhouse:
     #   operator: "Equal"
     #   value: "value1"
     #   effect: "NoSchedule"
-    
+
   # Service configuration
   service:
     type: ClusterIP  # Use ClusterIP for security. For external access, use ingress with proper TLS and authentication
@@ -275,6 +275,7 @@ otel:
     repository: docker.hyperdx.io/hyperdx/hyperdx-otel-collector
     tag:
     pullPolicy: IfNotPresent
+  replicas: 1
   # Add nodeSelector and tolerations for otel-collector service
   nodeSelector: {}
     # Example:
