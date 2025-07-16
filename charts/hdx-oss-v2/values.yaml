@@ -276,6 +276,14 @@ otel:
     tag:
     pullPolicy: IfNotPresent
   replicas: 1
+  resources: {}
+    # Example:
+    # requests:
+    #   memory: "127Mi"
+    #   cpu: "100m"
+    # limits:
+    #   memory: "256Mi"
+    #   cpu: "200m"
   # Add nodeSelector and tolerations for otel-collector service
   nodeSelector: {}
     # Example:

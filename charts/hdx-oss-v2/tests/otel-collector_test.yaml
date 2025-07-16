@@ -546,3 +546,93 @@ tests:
         equal:
           path: spec.replicas
           value: 5
+
+  - it: should not render resources when not specified
+    set:
+      otel:
+        enabled: true
+        image:
+          repository: hyperdx/hyperdx-otel-collector
+          tag: 2-beta
+    asserts:
+      - documentIndex: 0
+        isKind:
+          of: Deployment
+      - documentIndex: 0
+        isNull:
+          path: spec.template.spec.containers[0].resources
+
+  - it: should render resources when specified
+    set:
+      otel:
+        enabled: true
+        image:
+          repository: hyperdx/hyperdx-otel-collector
+          tag: 2-beta
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+    asserts:
+      - documentIndex: 0
+        isKind:
+          of: Deployment
+      - documentIndex: 0
+        equal:
+          path: spec.template.spec.containers[0].resources
+          value:
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+
+  - it: should render only limits when requests not specified
+    set:
+      otel:
+        enabled: true
+        image:
+          repository: hyperdx/hyperdx-otel-collector
+          tag: 2-beta
+        resources:
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+    asserts:
+      - documentIndex: 0
+        isKind:
+          of: Deployment
+      - documentIndex: 0
+        equal:
+          path: spec.template.spec.containers[0].resources
+          value:
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+
+  - it: should render only requests when limits not specified
+    set:
+      otel:
+        enabled: true
+        image:
+          repository: hyperdx/hyperdx-otel-collector
+          tag: 2-beta
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+    asserts:
+      - documentIndex: 0
+        isKind:
+          of: Deployment
+      - documentIndex: 0
+        equal:
+          path: spec.template.spec.containers[0].resources
+          value:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"

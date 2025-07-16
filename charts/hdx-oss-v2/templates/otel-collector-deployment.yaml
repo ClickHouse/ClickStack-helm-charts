@@ -36,6 +36,10 @@ spec:
             - containerPort: {{ .Values.otel.grpcPort }}
             - containerPort: {{ .Values.otel.httpPort }}
             - containerPort: {{ .Values.otel.healthPort }}
+          {{- if .Values.otel.resources }}
+          resources:
+            {{- toYaml .Values.otel.resources | nindent 12 }}
+          {{- end }}
           env:
             - name: CLICKHOUSE_ENDPOINT
               value: "{{ .Values.otel.clickhouseEndpoint | default (printf "tcp://%s-clickhouse:%v?dial_timeout=10s" (include "hdx-oss.fullname" .) .Values.clickhouse.nativePort) }}"
