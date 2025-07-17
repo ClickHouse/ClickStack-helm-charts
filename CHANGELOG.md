@@ -1,5 +1,12 @@
 # helm-charts
 
+## 0.6.6
+
+### Patch Changes
+
+- b6ab8ff: feat: support set replica and resources for otel-collector
+- f9c8a4c: feat: improve availability of HyperDX pods
+
 ## 0.6.5
 
 ### Patch Changes
