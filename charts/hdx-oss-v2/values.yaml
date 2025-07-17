@@ -284,6 +284,9 @@ otel:
     # limits:
     #   memory: "256Mi"
     #   cpu: "200m"
+  # Pod-level annotations (applied to the deployment pods)
+  annotations: {}
+    # myAnnotation: "myValue"
   # Add nodeSelector and tolerations for otel-collector service
   nodeSelector: {}
     # Example:

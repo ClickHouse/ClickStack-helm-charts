@@ -636,3 +636,53 @@ tests:
             requests:
               memory: "128Mi"
               cpu: "100m"
+
+  - it: should render annotations when specified
+    set:
+      otel:
+        enabled: true
+        image:
+          repository: hyperdx/hyperdx-otel-collector
+          tag: 2-beta
+        annotations:
+          prometheus.io/scrape: "true"
+          prometheus.io/port: "8888"
+          prometheus.io/path: "/metrics"
+    asserts:
+      - documentIndex: 0
+        isKind:
+          of: Deployment
+      - documentIndex: 0
+        equal:
+          path: spec.template.metadata.annotations
+          value:
+            prometheus.io/scrape: "true"
+            prometheus.io/port: "8888"
+            prometheus.io/path: "/metrics"
+
+  - it: should render multiple annotations correctly
+    set:
+      otel:
+        enabled: true
+        image:
+          repository: hyperdx/hyperdx-otel-collector
+          tag: 2-beta
+        annotations:
+          prometheus.io/scrape: "true"
+          prometheus.io/port: "8888"
+          checksum/config: "abcdef1234567890"
+          deployment.kubernetes.io/revision: "1"
+          sidecar.istio.io/inject: "false"
+    asserts:
+      - documentIndex: 0
+        isKind:
+          of: Deployment
+      - documentIndex: 0
+        isSubset:
+          path: spec.template.metadata.annotations
+          content:
+            prometheus.io/scrape: "true"
+            prometheus.io/port: "8888"
+            checksum/config: "abcdef1234567890"
+            deployment.kubernetes.io/revision: "1"
+            sidecar.istio.io/inject: "false"
