@@ -1,5 +1,12 @@
 # helm-charts
 
+## 0.6.7
+
+### Patch Changes
+
+- c2ffc45: chore: Update appVersion to 2.0.6
+- c0d70d5: fix: update the new entrypoint since v2.0.2 (alert cronjob)
+
 ## 0.6.6
 
 ### Patch Changes
