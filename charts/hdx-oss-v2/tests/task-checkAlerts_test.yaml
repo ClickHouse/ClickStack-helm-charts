@@ -38,7 +38,7 @@ tests:
           value: hyperdx/hyperdx:2-beta
       - equal:
           path: spec.jobTemplate.spec.template.spec.containers[0].command
-          value: ["node", "/app/api/build/tasks/index.js", "check-alerts"]
+          value: ["node", "/app/packages/api/tasks/index", "check-alerts"]
       - isSubset:
           path: spec.jobTemplate.spec.template.spec.containers[0].resources
           content:
