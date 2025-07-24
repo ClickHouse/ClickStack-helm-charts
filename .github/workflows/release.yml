@@ -29,6 +29,8 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 20
+      - name: Enable Corepack
+        run: corepack enable
       - name: Install Dependencies
         run: yarn
       - name: Create Release Pull Request
