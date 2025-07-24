@@ -22,7 +22,7 @@ spec:
             - name: task
               image: "{{ .Values.hyperdx.image.repository }}:{{ .Values.hyperdx.image.tag | default .Chart.AppVersion }}"
               imagePullPolicy: {{ .Values.hyperdx.image.pullPolicy }}
-              command: ["node", "/app/api/build/tasks/index.js", "check-alerts"]
+              command: ["node", "/app/packages/api/tasks/index", "check-alerts"]
               envFrom:
                 - configMapRef:
                     name: {{ include "hdx-oss.fullname" . }}-app-config
