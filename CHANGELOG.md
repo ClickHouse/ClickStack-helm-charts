@@ -1,5 +1,11 @@
 # helm-charts
 
+## 0.6.8
+
+### Patch Changes
+
+- 9db1d33: fix: rename CRON_IN_APP_DISABLED to RUN_SCHEDULED_TASKS_EXTERNALLY
+
 ## 0.6.7
 
 ### Patch Changes
