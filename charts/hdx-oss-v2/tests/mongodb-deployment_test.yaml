@@ -72,7 +72,7 @@ tests:
         isNull:
           path: spec.template.spec.volumes[0].persistentVolumeClaim
 
-  - it: should include livenessProbe with exec command
+  - it: should include livenessProbe with tcpSocket
     set:
       mongodb:
         enabled: true
@@ -81,17 +81,14 @@ tests:
         isSubset:
           path: spec.template.spec.containers[0].livenessProbe
           content:
-            exec:
-              command:
-                - mongosh
-                - --eval
-                - "db.adminCommand('ping')"
+            tcpSocket:
+              port: 27017
             initialDelaySeconds: 10
             periodSeconds: 30
             timeoutSeconds: 5
             failureThreshold: 3
 
-  - it: should include readinessProbe with exec command
+  - it: should include readinessProbe with tcpSocket
     set:
       mongodb:
         enabled: true
@@ -100,11 +97,8 @@ tests:
         isSubset:
           path: spec.template.spec.containers[0].readinessProbe
           content:
-            exec:
-              command:
-                - mongosh
-                - --eval
-                - "db.adminCommand('ping')"
+            tcpSocket:
+              port: 27017
             initialDelaySeconds: 1
             periodSeconds: 10
             timeoutSeconds: 5

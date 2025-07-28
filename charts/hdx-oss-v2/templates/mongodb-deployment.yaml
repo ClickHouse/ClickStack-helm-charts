@@ -32,21 +32,15 @@ spec:
           ports:
             - containerPort: {{ .Values.mongodb.port }}
           livenessProbe:
-            exec:
-              command:
-                - mongosh
-                - --eval
-                - "db.adminCommand('ping')"
+            tcpSocket:
+              port: {{ .Values.mongodb.port }}
             initialDelaySeconds: 10
             periodSeconds: 30
             timeoutSeconds: 5
             failureThreshold: 3
           readinessProbe:
-            exec:
-              command:
-                - mongosh
-                - --eval
-                - "db.adminCommand('ping')"
+            tcpSocket:
+              port: {{ .Values.mongodb.port }}
             initialDelaySeconds: 1
             periodSeconds: 10
             timeoutSeconds: 5
