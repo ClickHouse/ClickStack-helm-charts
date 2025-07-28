@@ -359,6 +359,7 @@ hyperdx:
               - path: /v1/(traces|metrics|logs)
                 pathType: Prefix
                 port: 4318
+                name: otel-collector
         tls:
           - hosts:
               - collector.yourdomain.com
