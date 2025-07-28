@@ -64,6 +64,22 @@ spec:
           resources:
             {{- toYaml .Values.hyperdx.resources | nindent 12 }}
           {{- end }}
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.hyperdx.apiPort }}
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.hyperdx.apiPort }}
+            initialDelaySeconds: 1
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
           envFrom:
             - configMapRef:
                 name: {{ include "hdx-oss.fullname" . }}-app-config

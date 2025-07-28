@@ -46,6 +46,22 @@ spec:
           resources:
             {{- toYaml .Values.otel.resources | nindent 12 }}
           {{- end }}
+          livenessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.otel.port }}
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.otel.port }}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
           env:
             - name: CLICKHOUSE_ENDPOINT
               value: "{{ .Values.otel.clickhouseEndpoint | default (printf "tcp://%s-clickhouse:%v?dial_timeout=10s" (include "hdx-oss.fullname" .) .Values.clickhouse.nativePort) }}"

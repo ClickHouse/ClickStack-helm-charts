@@ -35,6 +35,22 @@ spec:
           env:
             - name: CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT
               value: "1"
+          livenessProbe:
+            httpGet:
+              path: /ping
+              port: {{ .Values.clickhouse.port }}
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /ping
+              port: {{ .Values.clickhouse.port }}
+            initialDelaySeconds: 1
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
           volumeMounts:
             - name: config
               mountPath: /etc/clickhouse-server/config.xml
