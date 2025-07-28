@@ -146,3 +146,54 @@ tests:
       - documentIndex: 0
         isNull:
           path: spec.template.spec.volumes[3].persistentVolumeClaim
+
+  - it: should include livenessProbe with default values
+    set:
+      clickhouse:
+        enabled: true
+        port: 8123
+    asserts:
+      - documentIndex: 0
+        isSubset:
+          path: spec.template.spec.containers[0].livenessProbe
+          content:
+            httpGet:
+              path: /ping
+              port: 8123
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+  - it: should include readinessProbe with default values
+    set:
+      clickhouse:
+        enabled: true
+        port: 8123
+    asserts:
+      - documentIndex: 0
+        isSubset:
+          path: spec.template.spec.containers[0].readinessProbe
+          content:
+            httpGet:
+              path: /ping
+              port: 8123
+            initialDelaySeconds: 1
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+  - it: should use custom port in probes when provided
+    set:
+      clickhouse:
+        enabled: true
+        port: 8124
+    asserts:
+      - documentIndex: 0
+        equal:
+          path: spec.template.spec.containers[0].livenessProbe.httpGet.port
+          value: 8124
+      - documentIndex: 0
+        equal:
+          path: spec.template.spec.containers[0].readinessProbe.httpGet.port
+          value: 8124

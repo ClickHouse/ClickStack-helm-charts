@@ -686,3 +686,54 @@ tests:
             checksum/config: "abcdef1234567890"
             deployment.kubernetes.io/revision: "1"
             sidecar.istio.io/inject: "false"
+
+  - it: should include livenessProbe with default values
+    set:
+      otel:
+        enabled: true
+        port: 13133
+    asserts:
+      - documentIndex: 0
+        isSubset:
+          path: spec.template.spec.containers[0].livenessProbe
+          content:
+            httpGet:
+              path: /
+              port: 13133
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+  - it: should include readinessProbe with default values
+    set:
+      otel:
+        enabled: true
+        port: 13133
+    asserts:
+      - documentIndex: 0
+        isSubset:
+          path: spec.template.spec.containers[0].readinessProbe
+          content:
+            httpGet:
+              path: /
+              port: 13133
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+  - it: should use custom port in probes when provided
+    set:
+      otel:
+        enabled: true
+        port: 13134
+    asserts:
+      - documentIndex: 0
+        equal:
+          path: spec.template.spec.containers[0].livenessProbe.httpGet.port
+          value: 13134
+      - documentIndex: 0
+        equal:
+          path: spec.template.spec.containers[0].readinessProbe.httpGet.port
+          value: 13134

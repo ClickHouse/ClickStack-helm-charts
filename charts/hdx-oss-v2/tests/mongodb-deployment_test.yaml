@@ -71,3 +71,41 @@ tests:
       - documentIndex: 0
         isNull:
           path: spec.template.spec.volumes[0].persistentVolumeClaim
+
+  - it: should include livenessProbe with exec command
+    set:
+      mongodb:
+        enabled: true
+    asserts:
+      - documentIndex: 0
+        isSubset:
+          path: spec.template.spec.containers[0].livenessProbe
+          content:
+            exec:
+              command:
+                - mongosh
+                - --eval
+                - "db.adminCommand('ping')"
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+  - it: should include readinessProbe with exec command
+    set:
+      mongodb:
+        enabled: true
+    asserts:
+      - documentIndex: 0
+        isSubset:
+          path: spec.template.spec.containers[0].readinessProbe
+          content:
+            exec:
+              command:
+                - mongosh
+                - --eval
+                - "db.adminCommand('ping')"
+            initialDelaySeconds: 1
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
