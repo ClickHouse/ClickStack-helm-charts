@@ -35,22 +35,26 @@ spec:
           env:
             - name: CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT
               value: "1"
+          {{- if .Values.clickhouse.livenessProbe.enabled }}
           livenessProbe:
             httpGet:
               path: /ping
               port: {{ .Values.clickhouse.port }}
-            initialDelaySeconds: 10
-            periodSeconds: 30
-            timeoutSeconds: 5
-            failureThreshold: 3
+            initialDelaySeconds: {{ .Values.clickhouse.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.clickhouse.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.clickhouse.livenessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.clickhouse.livenessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.clickhouse.readinessProbe.enabled }}
           readinessProbe:
             httpGet:
               path: /ping
               port: {{ .Values.clickhouse.port }}
-            initialDelaySeconds: 1
-            periodSeconds: 10
-            timeoutSeconds: 5
-            failureThreshold: 3
+            initialDelaySeconds: {{ .Values.clickhouse.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.clickhouse.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.clickhouse.readinessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.clickhouse.readinessProbe.failureThreshold }}
+          {{- end }}
           volumeMounts:
             - name: config
               mountPath: /etc/clickhouse-server/config.xml

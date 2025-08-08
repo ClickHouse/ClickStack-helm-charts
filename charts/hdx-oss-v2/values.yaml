@@ -8,6 +8,18 @@ hyperdx:
     repository: docker.hyperdx.io/hyperdx/hyperdx
     tag:
     pullPolicy: IfNotPresent
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 10
+    periodSeconds: 30
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readinessProbe:
+    enabled: true
+    initialDelaySeconds: 1
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
   # Add nodeSelector and tolerations for hyperdx service
   nodeSelector: {}
     # Example:
@@ -221,11 +233,35 @@ mongodb:
   persistence:
     enabled: true
     dataSize: 10Gi
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 10
+    periodSeconds: 30
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readinessProbe:
+    enabled: true
+    initialDelaySeconds: 1
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
 
 clickhouse:
   image: "clickhouse/clickhouse-server:24-alpine"
   port: 8123
   nativePort: 9000
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 10
+    periodSeconds: 30
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readinessProbe:
+    enabled: true
+    initialDelaySeconds: 1
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
   enabled: true
   # Add nodeSelector and tolerations for clickhouse service
   nodeSelector: {}
@@ -330,6 +366,18 @@ otel:
   clickhousePrometheusEndpoint:
   # Clickhouse database to send logs/traces/metrics to. Defaults to "default"
   clickhouseDatabase: "default"
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 10
+    periodSeconds: 30
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readinessProbe:
+    enabled: true
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
 
 tasks:
   enabled: false

@@ -31,20 +31,24 @@ spec:
           image: "{{ .Values.mongodb.image }}"
           ports:
             - containerPort: {{ .Values.mongodb.port }}
+          {{- if .Values.mongodb.livenessProbe.enabled }}
           livenessProbe:
             tcpSocket:
               port: {{ .Values.mongodb.port }}
-            initialDelaySeconds: 10
-            periodSeconds: 30
-            timeoutSeconds: 5
-            failureThreshold: 3
+            initialDelaySeconds: {{ .Values.mongodb.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.mongodb.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.mongodb.livenessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.mongodb.livenessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.mongodb.readinessProbe.enabled }}
           readinessProbe:
             tcpSocket:
               port: {{ .Values.mongodb.port }}
-            initialDelaySeconds: 1
-            periodSeconds: 10
-            timeoutSeconds: 5
-            failureThreshold: 3
+            initialDelaySeconds: {{ .Values.mongodb.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.mongodb.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.mongodb.readinessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.mongodb.readinessProbe.failureThreshold }}
+          {{- end }}
           volumeMounts:
             - name: mongodb-data
               mountPath: /data/db

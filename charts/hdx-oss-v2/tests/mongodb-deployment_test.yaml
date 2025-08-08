@@ -72,7 +72,7 @@ tests:
         isNull:
           path: spec.template.spec.volumes[0].persistentVolumeClaim
 
-  - it: should include livenessProbe with tcpSocket
+  - it: should include livenessProbe with tcpSocket when enabled
     set:
       mongodb:
         enabled: true
@@ -88,7 +88,7 @@ tests:
             timeoutSeconds: 5
             failureThreshold: 3
 
-  - it: should include readinessProbe with tcpSocket
+  - it: should include readinessProbe with tcpSocket when enabled
     set:
       mongodb:
         enabled: true
@@ -103,3 +103,69 @@ tests:
             periodSeconds: 10
             timeoutSeconds: 5
             failureThreshold: 3
+
+  - it: should not include livenessProbe when disabled
+    set:
+      mongodb:
+        enabled: true
+        livenessProbe:
+          enabled: false
+    asserts:
+      - documentIndex: 0
+        isNull:
+          path: spec.template.spec.containers[0].livenessProbe
+
+  - it: should not include readinessProbe when disabled
+    set:
+      mongodb:
+        enabled: true
+        readinessProbe:
+          enabled: false
+    asserts:
+      - documentIndex: 0
+        isNull:
+          path: spec.template.spec.containers[0].readinessProbe
+
+  - it: should use custom livenessProbe values when provided
+    set:
+      mongodb:
+        enabled: true
+        livenessProbe:
+          enabled: true
+          initialDelaySeconds: 20
+          periodSeconds: 60
+          timeoutSeconds: 10
+          failureThreshold: 5
+    asserts:
+      - documentIndex: 0
+        isSubset:
+          path: spec.template.spec.containers[0].livenessProbe
+          content:
+            tcpSocket:
+              port: 27017
+            initialDelaySeconds: 20
+            periodSeconds: 60
+            timeoutSeconds: 10
+            failureThreshold: 5
+
+  - it: should use custom readinessProbe values when provided
+    set:
+      mongodb:
+        enabled: true
+        readinessProbe:
+          enabled: true
+          initialDelaySeconds: 5
+          periodSeconds: 20
+          timeoutSeconds: 3
+          failureThreshold: 2
+    asserts:
+      - documentIndex: 0
+        isSubset:
+          path: spec.template.spec.containers[0].readinessProbe
+          content:
+            tcpSocket:
+              port: 27017
+            initialDelaySeconds: 5
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 2
