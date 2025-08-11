@@ -163,6 +163,8 @@ hyperdx:
     ingressClassName: nginx
     annotations: {}
     host: "localhost"  # Production domain
+    path: "/(.*)"
+    pathType: "ImplementationSpecific"
     proxyBodySize: "100m"
     proxyConnectTimeout: "60"
     proxySendTimeout: "60"
