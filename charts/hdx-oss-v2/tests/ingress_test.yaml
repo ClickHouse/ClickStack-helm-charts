@@ -481,3 +481,131 @@ tests:
     asserts:
       - failedTemplate:
           errorMessage: "Each path in additional ingress must contain path, pathType, and port properties"
+
+  - it: should use custom path and pathType when provided
+    set:
+      hyperdx:
+        ingress:
+          enabled: true
+          host: hyperdx.example.com
+          path: /api/(.*)
+          pathType: Prefix
+          tls:
+            enabled: false
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: Ingress
+      - equal:
+          path: spec.rules[0].http.paths[0].path
+          value: /api/(.*)
+      - equal:
+          path: spec.rules[0].http.paths[0].pathType
+          value: Prefix
+
+  - it: should use default path and pathType when not provided
+    set:
+      hyperdx:
+        ingress:
+          enabled: true
+          host: hyperdx.example.com
+          tls:
+            enabled: false
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: Ingress
+      - equal:
+          path: spec.rules[0].http.paths[0].path
+          value: /(.*)
+      - equal:
+          path: spec.rules[0].http.paths[0].pathType
+          value: ImplementationSpecific
+
+  - it: should allow Exact pathType
+    set:
+      hyperdx:
+        ingress:
+          enabled: true
+          host: hyperdx.example.com
+          path: /hyperdx
+          pathType: Exact
+          tls:
+            enabled: false
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: Ingress
+      - equal:
+          path: spec.rules[0].http.paths[0].path
+          value: /hyperdx
+      - equal:
+          path: spec.rules[0].http.paths[0].pathType
+          value: Exact
+
+  - it: should use service name suffix when name is provided in additional ingress paths
+    set:
+      hyperdx:
+        ingress:
+          enabled: true
+          host: hyperdx.example.com
+          additionalIngresses:
+            - name: custom-service
+              ingressClassName: nginx
+              hosts:
+                - host: custom.example.com
+                  paths:
+                    - path: /api
+                      pathType: Prefix
+                      port: 8080
+                      name: api-service
+                    - path: /metrics
+                      pathType: Exact
+                      port: 9090
+                      name: metrics
+    asserts:
+      - hasDocuments:
+          count: 2
+      # Check the additional ingress (document 1)
+      - isKind:
+          of: Ingress
+        documentIndex: 1
+      - equal:
+          path: spec.rules[0].http.paths[0].backend.service.name
+          value: RELEASE-NAME-hdx-oss-v2-api-service
+        documentIndex: 1
+      - equal:
+          path: spec.rules[0].http.paths[1].backend.service.name
+          value: RELEASE-NAME-hdx-oss-v2-metrics
+        documentIndex: 1
+
+  - it: should use default service name when name is not provided in additional ingress paths
+    set:
+      hyperdx:
+        ingress:
+          enabled: true
+          host: hyperdx.example.com
+          additionalIngresses:
+            - name: default-service
+              ingressClassName: nginx
+              hosts:
+                - host: default.example.com
+                  paths:
+                    - path: /
+                      pathType: Prefix
+                      port: 8080
+                      # name field is not provided
+    asserts:
+      - hasDocuments:
+          count: 2
+      # Check the additional ingress (document 1)
+      - isKind:
+          of: Ingress
+        documentIndex: 1
+      - equal:
+          path: spec.rules[0].http.paths[0].backend.service.name
+          value: RELEASE-NAME-hdx-oss-v2
+        documentIndex: 1

@@ -25,6 +25,17 @@ jobs:
         run: |
           sed -i "s/^appVersion: .*/appVersion: ${{ github.event.inputs.tag }}/" charts/hdx-oss-v2/Chart.yaml
 
+      - name: Create changeset
+        run: |
+          mkdir -p .changeset
+          cat > .changeset/update-app-version-${{ github.event.inputs.tag }}.md << 'EOF'
+          ---
+          "hdx-oss-v2": patch
+          ---
+          
+          chore: update appVersion to ${{ github.event.inputs.tag }}
+          EOF
+
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v5
         with:

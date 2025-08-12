@@ -1,4 +1,26 @@
 {{- if .Values.mongodb.enabled }}
+{{- if .Values.mongodb.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "hdx-oss.fullname" . }}-mongodb
+  labels:
+    {{- include "hdx-oss.labels" . | nindent 4 }}
+  {{- if .Values.global.keepPVC }}
+  annotations:
+    "helm.sh/resource-policy": keep
+  {{- end }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  {{- if .Values.global.storageClassName }}
+  storageClassName: {{ .Values.global.storageClassName }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.mongodb.persistence.dataSize }}
+---
+{{- end }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -25,6 +47,10 @@ spec:
       {{- if .Values.mongodb.tolerations }}
       tolerations:
         {{- toYaml .Values.mongodb.tolerations | nindent 8 }}
+      {{- end }}
+      {{- if .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml .Values.global.imagePullSecrets | nindent 8 }}
       {{- end }}
       containers:
         - name: mongodb

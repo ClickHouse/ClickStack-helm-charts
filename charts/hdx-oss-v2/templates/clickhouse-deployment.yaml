@@ -26,6 +26,10 @@ spec:
       tolerations:
         {{- toYaml .Values.clickhouse.tolerations | nindent 8 }}
       {{- end }}
+      {{- if .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml .Values.global.imagePullSecrets | nindent 8 }}
+      {{- end }}
       containers:
         - name: clickhouse
           image: "{{ .Values.clickhouse.image }}"
@@ -147,6 +151,10 @@ metadata:
   name: {{ include "hdx-oss.fullname" . }}-clickhouse-data
   labels:
     {{- include "hdx-oss.labels" . | nindent 4 }}
+  {{- if .Values.global.keepPVC }}
+  annotations:
+    "helm.sh/resource-policy": keep
+  {{- end }}
 spec:
   accessModes:
     - ReadWriteOnce
@@ -163,6 +171,10 @@ metadata:
   name: {{ include "hdx-oss.fullname" . }}-clickhouse-logs
   labels:
     {{- include "hdx-oss.labels" . | nindent 4 }}
+  {{- if .Values.global.keepPVC }}
+  annotations:
+    "helm.sh/resource-policy": keep
+  {{- end }}
 spec:
   accessModes:
     - ReadWriteOnce

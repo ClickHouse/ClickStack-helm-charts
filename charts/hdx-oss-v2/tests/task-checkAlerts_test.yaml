@@ -72,3 +72,25 @@ tests:
       - equal:
           path: spec.schedule
           value: "*/1 * * * *"
+
+  - it: should not include imagePullSecrets when not configured
+    set:
+      tasks:
+        enabled: true
+    asserts:
+      - isNull:
+          path: spec.jobTemplate.spec.template.spec.imagePullSecrets
+
+  - it: should include imagePullSecrets when configured
+    set:
+      tasks:
+        enabled: true
+      global:
+        imagePullSecrets:
+          - name: regcred
+    asserts:
+      - isNotNull:
+          path: spec.jobTemplate.spec.template.spec.imagePullSecrets
+      - equal:
+          path: spec.jobTemplate.spec.template.spec.imagePullSecrets[0].name
+          value: regcred
