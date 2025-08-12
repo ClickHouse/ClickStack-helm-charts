@@ -1,47 +1,64 @@
 suite: Test Persistence Settings
 templates:
-  - claims/persistent-volume-claims.yaml
+  - mongodb-deployment.yaml
 tests:
   - it: should use correct mongodb PVC name and size
     set:
       global:
         storageClassName: "custom-storage-class"
       mongodb:
+        enabled: true
         persistence:
           enabled: true
           dataSize: 15Gi
     asserts:
-      - isKind:
+      - hasDocuments:
+          count: 3  # PVC, Deployment, Service
+      - documentIndex: 0
+        isKind:
           of: PersistentVolumeClaim
-      - matchRegex:
+      - documentIndex: 0
+        matchRegex:
           path: metadata.name
           pattern: .*-mongodb$
-      - equal:
+      - documentIndex: 0
+        equal:
           path: spec.storageClassName
           value: custom-storage-class
-      - equal:
+      - documentIndex: 0
+        equal:
           path: spec.resources.requests.storage
           value: 15Gi
 
   - it: should not create PVCs when persistence is disabled
     set:
       mongodb:
+        enabled: true
         persistence:
           enabled: false
     asserts:
       - hasDocuments:
-          count: 0
+          count: 2  # Only Deployment and Service, no PVC
+      - documentIndex: 0
+        isKind:
+          of: Deployment
+      - documentIndex: 1
+        isKind:
+          of: Service
 
   - it: should omit storageClassName when global.storageClass is empty string
     set:
       global:
         storageClassName: ""
       mongodb:
+        enabled: true
         persistence:
           enabled: true
           dataSize: 10Gi
     asserts:
-      - isKind:
+      - documentIndex: 0
+        isKind:
           of: PersistentVolumeClaim
-      - isNull:
+      - documentIndex: 0
+        isNull:
           path: spec.storageClassName

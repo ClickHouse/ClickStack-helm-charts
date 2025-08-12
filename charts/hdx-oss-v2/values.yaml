@@ -8,6 +8,8 @@ global:
   #   - name: docker-hub-secret
   imagePullSecrets: []
   storageClassName: "local-path"
+  # Keep PVCs when uninstalling helm release to preserve data
+  keepPVC: false
 
 hyperdx:
   image:
