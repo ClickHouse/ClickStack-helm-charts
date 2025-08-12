@@ -283,10 +283,10 @@ tests:
         imagePullSecrets:
           - name: regcred
     asserts:
-      - documentIndex: 0
+      - documentIndex: 1
         isNotNull:
           path: spec.template.spec.imagePullSecrets
-      - documentIndex: 0
+      - documentIndex: 1
         equal:
           path: spec.template.spec.imagePullSecrets[0].name
           value: regcred
