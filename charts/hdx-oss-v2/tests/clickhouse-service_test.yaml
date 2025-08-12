@@ -1,6 +1,12 @@
 suite: Test Clickhouse Service
 templates:
   - clickhouse-deployment.yaml
+
+# Common documentSelector patterns using YAML anchors
+_selectors:
+  service: &service-selector
+    path: kind
+    value: Service
 tests:
   - it: should use LoadBalancer type when configured
     set:
@@ -8,7 +14,7 @@ tests:
         service:
           type: LoadBalancer
     asserts:
-      - documentIndex: 1
+      - documentSelector: *service-selector
         equal:
           path: spec.type
           value: LoadBalancer
@@ -19,7 +25,7 @@ tests:
         service:
           type: NodePort
     asserts:
-      - documentIndex: 1
+      - documentSelector: *service-selector
         equal:
           path: spec.type
           value: NodePort
@@ -32,11 +38,11 @@ tests:
             service.beta.kubernetes.io/aws-load-balancer-internal: "true"
             service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
     asserts:
-      - documentIndex: 1
+      - documentSelector: *service-selector
         equal:
           path: metadata.annotations["service.beta.kubernetes.io/aws-load-balancer-internal"]
           value: "true"
-      - documentIndex: 1
+      - documentSelector: *service-selector
         equal:
           path: metadata.annotations["service.beta.kubernetes.io/aws-load-balancer-type"]
           value: "nlb"
@@ -47,7 +53,7 @@ tests:
         service:
           annotations: {}
     asserts:
-      - documentIndex: 1
+      - documentSelector: *service-selector
         isNull:
           path: metadata.annotations
 
@@ -60,15 +66,15 @@ tests:
             cloud.google.com/load-balancer-type: "Internal"
             service.beta.kubernetes.io/azure-load-balancer-internal: "true"
     asserts:
-      - documentIndex: 1
+      - documentSelector: *service-selector
         equal:
           path: spec.type
           value: LoadBalancer
-      - documentIndex: 1
+      - documentSelector: *service-selector
         equal:
           path: metadata.annotations["cloud.google.com/load-balancer-type"]
           value: "Internal"
-      - documentIndex: 1
+      - documentSelector: *service-selector
         equal:
           path: metadata.annotations["service.beta.kubernetes.io/azure-load-balancer-internal"]
           value: "true"
@@ -78,7 +84,7 @@ tests:
       clickhouse:
         service: {}
     asserts:
-      - documentIndex: 1
+      - documentSelector: *service-selector
         equal:
           path: spec.type
           value: ClusterIP

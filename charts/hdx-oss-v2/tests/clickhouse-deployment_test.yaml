@@ -1,6 +1,27 @@
 suite: Test ClickHouse Deployment
 templates:
   - clickhouse-deployment.yaml
+
+# Common documentSelector patterns using YAML anchors
+_selectors:
+  deployment: &deployment-selector
+    path: kind
+    value: Deployment
+  service: &service-selector
+    path: kind
+    value: Service
+  config-configmap: &config-configmap-selector
+    path: metadata.name
+    value: RELEASE-NAME-hdx-oss-v2-clickhouse-config
+  users-configmap: &users-configmap-selector
+    path: metadata.name
+    value: RELEASE-NAME-hdx-oss-v2-clickhouse-users
+  data-pvc: &data-pvc-selector
+    path: metadata.name
+    value: RELEASE-NAME-hdx-oss-v2-clickhouse-data
+  logs-pvc: &logs-pvc-selector
+    path: metadata.name
+    value: RELEASE-NAME-hdx-oss-v2-clickhouse-logs
 tests:
   - it: should render expected kubernetes resources
     set:
@@ -16,22 +37,22 @@ tests:
     asserts:
       - hasDocuments:
           count: 6
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         isKind:
           of: Deployment
-      - documentIndex: 1
+      - documentSelector: *service-selector
         isKind:
           of: Service
-      - documentIndex: 2
+      - documentSelector: *config-configmap-selector
         isKind:
           of: ConfigMap
-      - documentIndex: 3
+      - documentSelector: *users-configmap-selector
         isKind:
           of: ConfigMap
-      - documentIndex: 4
+      - documentSelector: *data-pvc-selector
         isKind:
           of: PersistentVolumeClaim
-      - documentIndex: 5
+      - documentSelector: *logs-pvc-selector
         isKind:
           of: PersistentVolumeClaim
 
@@ -46,11 +67,11 @@ tests:
           dataSize: 10Gi
           logSize: 5Gi
     asserts:
-      - documentIndex: 4
+      - documentSelector: *data-pvc-selector
         equal:
           path: spec.storageClassName
           value: "fast-ssd"
-      - documentIndex: 5
+      - documentSelector: *logs-pvc-selector
         equal:
           path: spec.storageClassName
           value: "fast-ssd"
@@ -66,10 +87,10 @@ tests:
           dataSize: 10Gi
           logSize: 5Gi
     asserts:
-      - documentIndex: 4
+      - documentSelector: *data-pvc-selector
         isNull:
           path: spec.storageClassName
-      - documentIndex: 5
+      - documentSelector: *logs-pvc-selector
         isNull:
           path: spec.storageClassName
 
@@ -82,35 +103,35 @@ tests:
           dataSize: 10Gi
           logSize: 5Gi
     asserts:
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         isKind:
           of: Deployment
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         equal:
           path: spec.template.spec.volumes[2].name
           value: data
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         isNotNull:
           path: spec.template.spec.volumes[2].persistentVolumeClaim
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         matchRegex:
           path: spec.template.spec.volumes[2].persistentVolumeClaim.claimName
           pattern: .*-clickhouse-data$
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         isNull:
           path: spec.template.spec.volumes[2].emptyDir
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         equal:
           path: spec.template.spec.volumes[3].name
           value: logs
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         isNotNull:
           path: spec.template.spec.volumes[3].persistentVolumeClaim
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         matchRegex:
           path: spec.template.spec.volumes[3].persistentVolumeClaim.claimName
           pattern: .*-clickhouse-logs$
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         isNull:
           path: spec.template.spec.volumes[3].emptyDir
 
@@ -123,27 +144,27 @@ tests:
     asserts:
       - hasDocuments:
           count: 4
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         isKind:
           of: Deployment
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         equal:
           path: spec.template.spec.volumes[2].name
           value: data
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         isNotNull:
           path: spec.template.spec.volumes[2].emptyDir
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         isNull:
           path: spec.template.spec.volumes[2].persistentVolumeClaim
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         equal:
           path: spec.template.spec.volumes[3].name
           value: logs
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         isNotNull:
           path: spec.template.spec.volumes[3].emptyDir
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         isNull:
           path: spec.template.spec.volumes[3].persistentVolumeClaim
 
@@ -153,7 +174,7 @@ tests:
         enabled: true
         port: 8123
     asserts:
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         isSubset:
           path: spec.template.spec.containers[0].livenessProbe
           content:
@@ -171,7 +192,7 @@ tests:
         enabled: true
         port: 8123
     asserts:
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         isSubset:
           path: spec.template.spec.containers[0].readinessProbe
           content:
@@ -190,7 +211,7 @@ tests:
         livenessProbe:
           enabled: false
     asserts:
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         isNull:
           path: spec.template.spec.containers[0].livenessProbe
 
@@ -201,7 +222,7 @@ tests:
         readinessProbe:
           enabled: false
     asserts:
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         isNull:
           path: spec.template.spec.containers[0].readinessProbe
 
@@ -217,7 +238,7 @@ tests:
           timeoutSeconds: 10
           failureThreshold: 5
     asserts:
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         isSubset:
           path: spec.template.spec.containers[0].livenessProbe
           content:
@@ -241,7 +262,7 @@ tests:
           timeoutSeconds: 3
           failureThreshold: 2
     asserts:
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         isSubset:
           path: spec.template.spec.containers[0].readinessProbe
           content:
@@ -259,11 +280,11 @@ tests:
         enabled: true
         port: 8124
     asserts:
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         equal:
           path: spec.template.spec.containers[0].livenessProbe.httpGet.port
           value: 8124
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         equal:
           path: spec.template.spec.containers[0].readinessProbe.httpGet.port
           value: 8124
@@ -279,17 +300,17 @@ tests:
       global:
         keepPVC: true
     asserts:
-      - documentIndex: 4
+      - documentSelector: *data-pvc-selector
         isKind:
           of: PersistentVolumeClaim
-      - documentIndex: 4
+      - documentSelector: *data-pvc-selector
         equal:
           path: metadata.annotations["helm.sh/resource-policy"]
           value: keep
-      - documentIndex: 5
+      - documentSelector: *logs-pvc-selector
         isKind:
           of: PersistentVolumeClaim
-      - documentIndex: 5
+      - documentSelector: *logs-pvc-selector
         equal:
           path: metadata.annotations["helm.sh/resource-policy"]
           value: keep
@@ -305,16 +326,16 @@ tests:
       global:
         keepPVC: false
     asserts:
-      - documentIndex: 4
+      - documentSelector: *data-pvc-selector
         isKind:
           of: PersistentVolumeClaim
-      - documentIndex: 4
+      - documentSelector: *data-pvc-selector
         isNull:
           path: metadata.annotations
-      - documentIndex: 5
+      - documentSelector: *logs-pvc-selector
         isKind:
           of: PersistentVolumeClaim
-      - documentIndex: 5
+      - documentSelector: *logs-pvc-selector
         isNull:
           path: metadata.annotations
 
@@ -327,15 +348,15 @@ tests:
           dataSize: 10Gi
           logSize: 5Gi
     asserts:
-      - documentIndex: 4
+      - documentSelector: *data-pvc-selector
         isKind:
           of: PersistentVolumeClaim
-      - documentIndex: 4
+      - documentSelector: *data-pvc-selector
         isNull:
           path: metadata.annotations
-      - documentIndex: 5
+      - documentSelector: *logs-pvc-selector
         isKind:
           of: PersistentVolumeClaim
-      - documentIndex: 5
+      - documentSelector: *logs-pvc-selector
         isNull:
           path: metadata.annotations

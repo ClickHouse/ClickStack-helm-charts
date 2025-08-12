@@ -1,6 +1,15 @@
 suite: Test OTEL Collector Deployment
 templates:
   - otel-collector-deployment.yaml
+
+# Common documentSelector patterns using YAML anchors
+_selectors:
+  deployment: &deployment-selector
+    path: kind
+    value: Deployment
+  service: &service-selector
+    path: kind
+    value: Service
 tests:
   - it: should render both deployment and service when enabled
     set:
@@ -17,10 +26,10 @@ tests:
     asserts:
       - hasDocuments:
           count: 2
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         isKind:
           of: Deployment
-      - documentIndex: 1
+      - documentSelector: *service-selector
         isKind:
           of: Service
 
@@ -56,46 +65,46 @@ tests:
     release:
       name: test-release
     asserts:
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         isKind:
           of: Deployment
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         contains:
           path: spec.template.spec.containers[0].env
           content:
             name: CLICKHOUSE_ENDPOINT
             value: "tcp://test-release-hdx-oss-v2-clickhouse:9000?dial_timeout=10s"
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         contains:
           path: spec.template.spec.containers[0].env
           content:
             name: CLICKHOUSE_SERVER_ENDPOINT
             value: "test-release-hdx-oss-v2-clickhouse:9000"
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         contains:
           path: spec.template.spec.containers[0].env
           content:
             name: CLICKHOUSE_PROMETHEUS_METRICS_ENDPOINT
             value: "test-release-hdx-oss-v2-clickhouse:9363"
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         contains:
           path: spec.template.spec.containers[0].env
           content:
             name: HYPERDX_LOG_LEVEL
             value: info
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         contains:
           path: spec.template.spec.containers[0].env
           content:
             name: CLICKHOUSE_USER
             value: "otelcollector"
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         contains:
           path: spec.template.spec.containers[0].env
           content:
             name: CLICKHOUSE_PASSWORD
             value: test-password
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         contains:
           path: spec.template.spec.containers[0].env
           content:
@@ -126,28 +135,28 @@ tests:
     release:
       name: custom-release
     asserts:
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         isKind:
           of: Deployment
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         contains:
           path: spec.template.spec.containers[0].env
           content:
             name: CLICKHOUSE_ENDPOINT
             value: "tcp://custom-clickhouse:9000"
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         contains:
           path: spec.template.spec.containers[0].env
           content:
             name: CLICKHOUSE_SERVER_ENDPOINT
             value: "tcp://custom-clickhouse:9000"
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         contains:
           path: spec.template.spec.containers[0].env
           content:
             name: CLICKHOUSE_PROMETHEUS_METRICS_ENDPOINT
             value: "custom-release-hdx-oss-v2-clickhouse:9363"
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         contains:
           path: spec.template.spec.containers[0].env
           content:
@@ -164,38 +173,38 @@ tests:
         httpPort: 4318
         healthPort: 8888
     asserts:
-      - documentIndex: 1
+      - documentSelector: *service-selector
         isKind:
           of: Service
-      - documentIndex: 1
+      - documentSelector: *service-selector
         contains:
           path: spec.ports
           content:
             port: 13133
             targetPort: 13133
             name: health
-      - documentIndex: 1
+      - documentSelector: *service-selector
         contains:
           path: spec.ports
           content:
             port: 24225
             targetPort: 24225
             name: fluentd
-      - documentIndex: 1
+      - documentSelector: *service-selector
         contains:
           path: spec.ports
           content:
             port: 4317
             targetPort: 4317
             name: otlp-grpc
-      - documentIndex: 1
+      - documentSelector: *service-selector
         contains:
           path: spec.ports
           content:
             port: 4318
             targetPort: 4318
             name: otlp-http
-      - documentIndex: 1
+      - documentSelector: *service-selector
         contains:
           path: spec.ports
           content:
@@ -213,30 +222,30 @@ tests:
         httpPort: 4318
         healthPort: 8888
     asserts:
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         isKind:
           of: Deployment
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         contains:
           path: spec.template.spec.containers[0].ports
           content:
             containerPort: 13133
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         contains:
           path: spec.template.spec.containers[0].ports
           content:
             containerPort: 24225
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         contains:
           path: spec.template.spec.containers[0].ports
           content:
             containerPort: 4317
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         contains:
           path: spec.template.spec.containers[0].ports
           content:
             containerPort: 4318
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         contains:
           path: spec.template.spec.containers[0].ports
           content:
@@ -266,10 +275,10 @@ tests:
     release:
       name: test-release
     asserts:
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         isKind:
           of: Deployment
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         contains:
           path: spec.template.spec.containers[0].env
           content:
@@ -297,10 +306,10 @@ tests:
     release:
       name: test-release
     asserts:
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         isKind:
           of: Deployment
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         notContains:
           path: spec.template.spec.containers[0].env
           content:
@@ -326,10 +335,10 @@ tests:
     release:
       name: test-release
     asserts:
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         isKind:
           of: Deployment
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         contains:
           path: spec.template.spec.containers[0].env
           content:
@@ -355,10 +364,10 @@ tests:
     release:
       name: test-release
     asserts:
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         isKind:
           of: Deployment
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         contains:
           path: spec.template.spec.containers[0].env
           content:
@@ -385,10 +394,10 @@ tests:
     release:
       name: test-release
     asserts:
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         isKind:
           of: Deployment
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         contains:
           path: spec.template.spec.containers[0].env
           content:
@@ -416,16 +425,16 @@ tests:
     release:
       name: test-release
     asserts:
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         isKind:
           of: Deployment
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         contains:
           path: spec.template.spec.containers[0].env
           content:
             name: CLICKHOUSE_USER
             value: "custom-user"
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         contains:
           path: spec.template.spec.containers[0].env
           content:
@@ -461,22 +470,22 @@ tests:
     release:
       name: test-release
     asserts:
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         isKind:
           of: Deployment
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         contains:
           path: spec.template.spec.containers[0].env
           content:
             name: CUSTOM_VAR
             value: "custom-value"
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         contains:
           path: spec.template.spec.containers[0].env
           content:
             name: DEBUG_MODE
             value: "true"
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         contains:
           path: spec.template.spec.containers[0].env
           content:
@@ -505,10 +514,10 @@ tests:
     release:
       name: test-release
     asserts:
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         isKind:
           of: Deployment
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         notContains:
           path: spec.template.spec.containers[0].env
           content:
@@ -522,10 +531,10 @@ tests:
           repository: hyperdx/hyperdx-otel-collector
           tag: 2-beta
     asserts:
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         isKind:
           of: Deployment
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         equal:
           path: spec.replicas
           value: 1
@@ -539,10 +548,10 @@ tests:
           repository: hyperdx/hyperdx-otel-collector
           tag: 2-beta
     asserts:
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         isKind:
           of: Deployment
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         equal:
           path: spec.replicas
           value: 5
@@ -555,10 +564,10 @@ tests:
           repository: hyperdx/hyperdx-otel-collector
           tag: 2-beta
     asserts:
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         isKind:
           of: Deployment
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         isNull:
           path: spec.template.spec.containers[0].resources
 
@@ -577,10 +586,10 @@ tests:
             memory: "256Mi"
             cpu: "250m"
     asserts:
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         isKind:
           of: Deployment
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         equal:
           path: spec.template.spec.containers[0].resources
           value:
@@ -603,10 +612,10 @@ tests:
             memory: "1Gi"
             cpu: "1000m"
     asserts:
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         isKind:
           of: Deployment
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         equal:
           path: spec.template.spec.containers[0].resources
           value:
@@ -626,10 +635,10 @@ tests:
             memory: "128Mi"
             cpu: "100m"
     asserts:
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         isKind:
           of: Deployment
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         equal:
           path: spec.template.spec.containers[0].resources
           value:
@@ -649,10 +658,10 @@ tests:
           prometheus.io/port: "8888"
           prometheus.io/path: "/metrics"
     asserts:
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         isKind:
           of: Deployment
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         equal:
           path: spec.template.metadata.annotations
           value:
@@ -674,10 +683,10 @@ tests:
           deployment.kubernetes.io/revision: "1"
           sidecar.istio.io/inject: "false"
     asserts:
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         isKind:
           of: Deployment
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         isSubset:
           path: spec.template.metadata.annotations
           content:
@@ -693,7 +702,7 @@ tests:
         enabled: true
         port: 13133
     asserts:
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         isSubset:
           path: spec.template.spec.containers[0].livenessProbe
           content:
@@ -711,7 +720,7 @@ tests:
         enabled: true
         port: 13133
     asserts:
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         isSubset:
           path: spec.template.spec.containers[0].readinessProbe
           content:
@@ -730,7 +739,7 @@ tests:
         livenessProbe:
           enabled: false
     asserts:
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         isNull:
           path: spec.template.spec.containers[0].livenessProbe
 
@@ -741,7 +750,7 @@ tests:
         readinessProbe:
           enabled: false
     asserts:
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         isNull:
           path: spec.template.spec.containers[0].readinessProbe
 
@@ -757,7 +766,7 @@ tests:
           timeoutSeconds: 10
           failureThreshold: 5
     asserts:
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         isSubset:
           path: spec.template.spec.containers[0].livenessProbe
           content:
@@ -781,7 +790,7 @@ tests:
           timeoutSeconds: 3
           failureThreshold: 2
     asserts:
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         isSubset:
           path: spec.template.spec.containers[0].readinessProbe
           content:
@@ -799,11 +808,11 @@ tests:
         enabled: true
         port: 13134
     asserts:
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         equal:
           path: spec.template.spec.containers[0].livenessProbe.httpGet.port
           value: 13134
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         equal:
           path: spec.template.spec.containers[0].readinessProbe.httpGet.port
           value: 13134

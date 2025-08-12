@@ -4,6 +4,12 @@ templates:
   - clickhouse-deployment.yaml
   - otel-collector-deployment.yaml
   - mongodb-deployment.yaml
+
+# Common documentSelector patterns using YAML anchors
+_selectors:
+  deployment: &deployment-selector
+    path: kind
+    value: Deployment
 tests:
   # Test default behavior - no nodeSelector or tolerations
   - it: should not include nodeSelector and tolerations when not configured
@@ -25,7 +31,7 @@ tests:
     templates:
       - hyperdx-deployment.yaml
     asserts:
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         equal:
           path: spec.template.spec.nodeSelector
           value:
@@ -78,13 +84,13 @@ tests:
     templates:
       - clickhouse-deployment.yaml
     asserts:
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         equal:
           path: spec.template.spec.nodeSelector
           value:
             node-role: database
             storage: fast-ssd
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         equal:
           path: spec.template.spec.tolerations
           value:
@@ -110,12 +116,12 @@ tests:
     templates:
       - otel-collector-deployment.yaml
     asserts:
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         equal:
           path: spec.template.spec.nodeSelector
           value:
             node-role: monitoring
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         equal:
           path: spec.template.spec.tolerations
           value:
@@ -140,12 +146,12 @@ tests:
     templates:
       - mongodb-deployment.yaml
     asserts:
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         equal:
           path: spec.template.spec.nodeSelector
           value:
             node-role: database
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         equal:
           path: spec.template.spec.tolerations
           value:
@@ -181,12 +187,12 @@ tests:
     templates:
       - hyperdx-deployment.yaml
     asserts:
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         equal:
           path: spec.template.spec.nodeSelector
           value:
             component: api
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         equal:
           path: spec.template.spec.tolerations
           value:
@@ -221,13 +227,13 @@ tests:
     templates:
       - clickhouse-deployment.yaml
     asserts:
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         equal:
           path: spec.template.spec.nodeSelector
           value:
             component: database
             storage: ssd
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         equal:
           path: spec.template.spec.tolerations
           value:
@@ -264,13 +270,13 @@ tests:
     templates:
       - mongodb-deployment.yaml
     asserts:
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         equal:
           path: spec.template.spec.nodeSelector
           value:
             component: database
             storage: standard
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         isNull:
           path: spec.template.spec.tolerations
 

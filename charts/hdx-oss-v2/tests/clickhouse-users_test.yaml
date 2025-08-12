@@ -1,39 +1,50 @@
 suite: Test ClickHouse Users Configuration
 templates:
   - clickhouse-deployment.yaml
+
+# Common documentSelector patterns using YAML anchors
+_selectors:
+  deployment: &deployment-selector
+    path: kind
+    value: Deployment
+  users-configmap: &users-configmap-selector
+    path: metadata.name
+    value: RELEASE-NAME-hdx-oss-v2-clickhouse-users
 tests:
   - it: should render Deployment with users volume mount
     asserts:
-      - isKind:
+      - documentSelector:
+          path: kind
+          value: Deployment
+        isKind:
           of: Deployment
-        documentIndex: 0
       - contains:
           path: spec.template.spec.containers[0].volumeMounts
           content:
             name: users
             mountPath: /etc/clickhouse-server/users.xml
             subPath: users.xml
-        documentIndex: 0
+        documentSelector: *deployment-selector
       - contains:
           path: spec.template.spec.volumes
           content:
             name: users
             configMap:
               name: RELEASE-NAME-hdx-oss-v2-clickhouse-users
-        documentIndex: 0
+        documentSelector: *deployment-selector
 
   - it: should render users ConfigMap with default values
     asserts:
       - isKind:
           of: ConfigMap
-        documentIndex: 3
+        documentSelector: *users-configmap-selector
       - equal:
           path: metadata.name
           value: RELEASE-NAME-hdx-oss-v2-clickhouse-users
-        documentIndex: 3
+        documentSelector: *users-configmap-selector
       - isNotEmpty:
           path: data
-        documentIndex: 3
+        documentSelector: *users-configmap-selector
 
   - it: should render users ConfigMap with custom clusterCidrs
     set:
@@ -49,14 +60,14 @@ tests:
     asserts:
       - isKind:
           of: ConfigMap
-        documentIndex: 3
+        documentSelector: *users-configmap-selector
       - equal:
           path: metadata.name
           value: RELEASE-NAME-hdx-oss-v2-clickhouse-users
-        documentIndex: 3
+        documentSelector: *users-configmap-selector
       - isNotEmpty:
           path: data
-        documentIndex: 3
+        documentSelector: *users-configmap-selector
 
   - it: should render users ConfigMap with single clusterCidr
     set:
@@ -70,14 +81,14 @@ tests:
     asserts:
       - isKind:
           of: ConfigMap
-        documentIndex: 3
+        documentSelector: *users-configmap-selector
       - equal:
           path: metadata.name
           value: RELEASE-NAME-hdx-oss-v2-clickhouse-users
-        documentIndex: 3
+        documentSelector: *users-configmap-selector
       - isNotEmpty:
           path: data
-        documentIndex: 3
+        documentSelector: *users-configmap-selector
 
   - it: should render users ConfigMap with empty clusterCidrs
     set:
@@ -90,14 +101,14 @@ tests:
     asserts:
       - isKind:
           of: ConfigMap
-        documentIndex: 3
+        documentSelector: *users-configmap-selector
       - equal:
           path: metadata.name
           value: RELEASE-NAME-hdx-oss-v2-clickhouse-users
-        documentIndex: 3
+        documentSelector: *users-configmap-selector
       - isNotEmpty:
           path: data
-        documentIndex: 3
+        documentSelector: *users-configmap-selector
 
   - it: should render users ConfigMap with custom passwords
     set:
@@ -111,11 +122,11 @@ tests:
     asserts:
       - isKind:
           of: ConfigMap
-        documentIndex: 3
+        documentSelector: *users-configmap-selector
       - equal:
           path: metadata.name
           value: RELEASE-NAME-hdx-oss-v2-clickhouse-users
-        documentIndex: 3
+        documentSelector: *users-configmap-selector
       - isNotEmpty:
           path: data
-        documentIndex: 3
+        documentSelector: *users-configmap-selector

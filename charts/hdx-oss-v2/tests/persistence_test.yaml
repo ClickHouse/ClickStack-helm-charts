@@ -1,6 +1,18 @@
 suite: Test Persistence Settings
 templates:
   - mongodb-deployment.yaml
+
+# Common documentSelector patterns using YAML anchors
+_selectors:
+  pvc: &pvc-selector
+    path: kind
+    value: PersistentVolumeClaim
+  deployment: &deployment-selector
+    path: kind
+    value: Deployment
+  service: &service-selector
+    path: kind
+    value: Service
 tests:
   - it: should use correct mongodb PVC name and size
     set:
@@ -14,18 +26,18 @@ tests:
     asserts:
       - hasDocuments:
           count: 3  # PVC, Deployment, Service
-      - documentIndex: 0
+      - documentSelector: *pvc-selector
         isKind:
           of: PersistentVolumeClaim
-      - documentIndex: 0
+      - documentSelector: *pvc-selector
         matchRegex:
           path: metadata.name
           pattern: .*-mongodb$
-      - documentIndex: 0
+      - documentSelector: *pvc-selector
         equal:
           path: spec.storageClassName
           value: custom-storage-class
-      - documentIndex: 0
+      - documentSelector: *pvc-selector
         equal:
           path: spec.resources.requests.storage
           value: 15Gi
@@ -39,10 +51,10 @@ tests:
     asserts:
       - hasDocuments:
           count: 2  # Only Deployment and Service, no PVC
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         isKind:
           of: Deployment
-      - documentIndex: 1
+      - documentSelector: *service-selector
         isKind:
           of: Service
 
@@ -56,9 +68,9 @@ tests:
           enabled: true
           dataSize: 10Gi
     asserts:
-      - documentIndex: 0
+      - documentSelector: *pvc-selector
         isKind:
           of: PersistentVolumeClaim
-      - documentIndex: 0
+      - documentSelector: *pvc-selector
         isNull:
           path: spec.storageClassName

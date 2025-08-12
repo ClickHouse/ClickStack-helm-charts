@@ -1,6 +1,18 @@
 suite: Test MongoDB Deployment
 templates:
   - mongodb-deployment.yaml
+
+# Common documentSelector patterns using YAML anchors
+_selectors:
+  deployment: &deployment-selector
+    path: kind
+    value: Deployment
+  service: &service-selector
+    path: kind
+    value: Service
+  pvc: &pvc-selector
+    path: kind
+    value: PersistentVolumeClaim
 tests:
   - it: should render both deployment and service when enabled
     set:
@@ -13,10 +25,10 @@ tests:
     asserts:
       - hasDocuments:
           count: 2
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         isKind:
           of: Deployment
-      - documentIndex: 1
+      - documentSelector: *service-selector
         isKind:
           of: Service 
   
@@ -38,35 +50,35 @@ tests:
     asserts:
       - hasDocuments:
           count: 3
-      - documentIndex: 0
+      - documentSelector: *pvc-selector
         isKind:
           of: PersistentVolumeClaim
-      - documentIndex: 0
+      - documentSelector: *pvc-selector
         matchRegex:
           path: metadata.name
           pattern: .*-mongodb$
-      - documentIndex: 0
+      - documentSelector: *pvc-selector
         equal:
           path: spec.resources.requests.storage
           value: 10Gi
-      - documentIndex: 1
+      - documentSelector: *deployment-selector
         isKind:
           of: Deployment
-      - documentIndex: 1
+      - documentSelector: *deployment-selector
         equal:
           path: spec.template.spec.volumes[0].name
           value: mongodb-data
-      - documentIndex: 1
+      - documentSelector: *deployment-selector
         isNotNull:
           path: spec.template.spec.volumes[0].persistentVolumeClaim
-      - documentIndex: 1
+      - documentSelector: *deployment-selector
         matchRegex:
           path: spec.template.spec.volumes[0].persistentVolumeClaim.claimName
           pattern: .*-mongodb$
-      - documentIndex: 1
+      - documentSelector: *deployment-selector
         isNull:
           path: spec.template.spec.volumes[0].emptyDir
-      - documentIndex: 2
+      - documentSelector: *service-selector
         isKind:
           of: Service
 
@@ -79,20 +91,20 @@ tests:
     asserts:
       - hasDocuments:
           count: 2  # Only Deployment and Service, no PVC
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         isKind:
           of: Deployment
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         equal:
           path: spec.template.spec.volumes[0].name
           value: mongodb-data
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         isNotNull:
           path: spec.template.spec.volumes[0].emptyDir
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         isNull:
           path: spec.template.spec.volumes[0].persistentVolumeClaim
-      - documentIndex: 1
+      - documentSelector: *service-selector
         isKind:
           of: Service
 
@@ -103,7 +115,7 @@ tests:
         persistence:
           enabled: false  # To ensure predictable document ordering
     asserts:
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         isSubset:
           path: spec.template.spec.containers[0].livenessProbe
           content:
@@ -121,7 +133,7 @@ tests:
         persistence:
           enabled: false  # To ensure predictable document ordering
     asserts:
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         isSubset:
           path: spec.template.spec.containers[0].readinessProbe
           content:
@@ -141,7 +153,7 @@ tests:
         livenessProbe:
           enabled: false
     asserts:
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         isNull:
           path: spec.template.spec.containers[0].livenessProbe
 
@@ -154,7 +166,7 @@ tests:
         readinessProbe:
           enabled: false
     asserts:
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         isNull:
           path: spec.template.spec.containers[0].readinessProbe
 
@@ -171,7 +183,7 @@ tests:
           timeoutSeconds: 10
           failureThreshold: 5
     asserts:
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         isSubset:
           path: spec.template.spec.containers[0].livenessProbe
           content:
@@ -195,7 +207,7 @@ tests:
           timeoutSeconds: 3
           failureThreshold: 2
     asserts:
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         isSubset:
           path: spec.template.spec.containers[0].readinessProbe
           content:
@@ -225,10 +237,10 @@ tests:
       global:
         keepPVC: true
     asserts:
-      - documentIndex: 0
+      - documentSelector: *pvc-selector
         isKind:
           of: PersistentVolumeClaim
-      - documentIndex: 0
+      - documentSelector: *pvc-selector
         equal:
           path: metadata.annotations["helm.sh/resource-policy"]
           value: keep
@@ -242,10 +254,10 @@ tests:
       global:
         keepPVC: false
     asserts:
-      - documentIndex: 0
+      - documentSelector: *pvc-selector
         isKind:
           of: PersistentVolumeClaim
-      - documentIndex: 0
+      - documentSelector: *deployment-selector
         isNull:
           path: metadata.annotations["helm.sh/resource-policy"]
 
@@ -258,10 +270,10 @@ tests:
       global:
         storageClassName: fast-ssd
     asserts:
-      - documentIndex: 0
+      - documentSelector: *pvc-selector
         isKind:
           of: PersistentVolumeClaim
-      - documentIndex: 0
+      - documentSelector: *pvc-selector
         equal:
           path: spec.storageClassName
           value: fast-ssd
