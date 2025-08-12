@@ -277,3 +277,28 @@ tests:
         equal:
           path: spec.storageClassName
           value: fast-ssd
+
+  - it: should not include imagePullSecrets when not configured
+    set:
+      mongodb:
+        enabled: true
+    asserts:
+      - documentIndex: 0
+        isNull:
+          path: spec.template.spec.imagePullSecrets
+
+  - it: should include imagePullSecrets when configured
+    set:
+      mongodb:
+        enabled: true
+      global:
+        imagePullSecrets:
+          - name: regcred
+    asserts:
+      - documentIndex: 1
+        isNotNull:
+          path: spec.template.spec.imagePullSecrets
+      - documentIndex: 1
+        equal:
+          path: spec.template.spec.imagePullSecrets[0].name
+          value: regcred

@@ -360,3 +360,28 @@ tests:
       - documentSelector: *logs-pvc-selector
         isNull:
           path: metadata.annotations
+
+  - it: should not include imagePullSecrets when not configured
+    set:
+      clickhouse:
+        enabled: true
+    asserts:
+      - documentIndex: 0
+        isNull:
+          path: spec.template.spec.imagePullSecrets
+
+  - it: should include imagePullSecrets when configured
+    set:
+      clickhouse:
+        enabled: true
+      global:
+        imagePullSecrets:
+          - name: regcred
+    asserts:
+      - documentIndex: 0
+        isNotNull:
+          path: spec.template.spec.imagePullSecrets
+      - documentIndex: 0
+        equal:
+          path: spec.template.spec.imagePullSecrets[0].name
+          value: regcred

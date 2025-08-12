@@ -1,5 +1,11 @@
 global:
   imageRegistry: ""
+  # List of image pull secrets to use for pulling images from private registries
+  # This helps avoid rate limiting (429 errors) when pulling from Docker Hub
+  # Example:
+  # imagePullSecrets:
+  #   - name: regcred
+  #   - name: docker-hub-secret
   imagePullSecrets: []
   storageClassName: "local-path"
   # Keep PVCs when uninstalling helm release to preserve data
