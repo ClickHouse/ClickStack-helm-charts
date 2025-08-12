@@ -1,4 +1,26 @@
 {{- if .Values.mongodb.enabled }}
+{{- if .Values.mongodb.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "hdx-oss.fullname" . }}-mongodb
+  labels:
+    {{- include "hdx-oss.labels" . | nindent 4 }}
+  {{- if .Values.global.keepPVC }}
+  annotations:
+    "helm.sh/resource-policy": keep
+  {{- end }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  {{- if .Values.global.storageClassName }}
+  storageClassName: {{ .Values.global.storageClassName }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.mongodb.persistence.dataSize }}
+---
+{{- end }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -31,6 +53,24 @@ spec:
           image: "{{ .Values.mongodb.image }}"
           ports:
             - containerPort: {{ .Values.mongodb.port }}
+          {{- if .Values.mongodb.livenessProbe.enabled }}
+          livenessProbe:
+            tcpSocket:
+              port: {{ .Values.mongodb.port }}
+            initialDelaySeconds: {{ .Values.mongodb.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.mongodb.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.mongodb.livenessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.mongodb.livenessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.mongodb.readinessProbe.enabled }}
+          readinessProbe:
+            tcpSocket:
+              port: {{ .Values.mongodb.port }}
+            initialDelaySeconds: {{ .Values.mongodb.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.mongodb.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.mongodb.readinessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.mongodb.readinessProbe.failureThreshold }}
+          {{- end }}
           volumeMounts:
             - name: mongodb-data
               mountPath: /data/db

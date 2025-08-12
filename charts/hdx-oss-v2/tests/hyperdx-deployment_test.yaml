@@ -129,3 +129,101 @@ tests:
       - matchRegex:
           path: spec.template.spec.initContainers[0].command[2]
           pattern: "until nc -z .+-mongodb [0-9]+; do echo waiting for mongodb; sleep 2; done;"
+
+  - it: should include livenessProbe with default values when enabled
+    asserts:
+      - isSubset:
+          path: spec.template.spec.containers[0].livenessProbe
+          content:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+  - it: should include readinessProbe with default values when enabled
+    asserts:
+      - isSubset:
+          path: spec.template.spec.containers[0].readinessProbe
+          content:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 1
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+  - it: should not include livenessProbe when disabled
+    set:
+      hyperdx:
+        livenessProbe:
+          enabled: false
+    asserts:
+      - isNull:
+          path: spec.template.spec.containers[0].livenessProbe
+
+  - it: should not include readinessProbe when disabled
+    set:
+      hyperdx:
+        readinessProbe:
+          enabled: false
+    asserts:
+      - isNull:
+          path: spec.template.spec.containers[0].readinessProbe
+
+  - it: should use custom livenessProbe values when provided
+    set:
+      hyperdx:
+        livenessProbe:
+          enabled: true
+          initialDelaySeconds: 20
+          periodSeconds: 60
+          timeoutSeconds: 10
+          failureThreshold: 5
+    asserts:
+      - isSubset:
+          path: spec.template.spec.containers[0].livenessProbe
+          content:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 20
+            periodSeconds: 60
+            timeoutSeconds: 10
+            failureThreshold: 5
+
+  - it: should use custom readinessProbe values when provided
+    set:
+      hyperdx:
+        readinessProbe:
+          enabled: true
+          initialDelaySeconds: 5
+          periodSeconds: 20
+          timeoutSeconds: 3
+          failureThreshold: 2
+    asserts:
+      - isSubset:
+          path: spec.template.spec.containers[0].readinessProbe
+          content:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 2
+
+  - it: should use custom apiPort in probes when provided
+    set:
+      hyperdx:
+        apiPort: 9000
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].livenessProbe.httpGet.port
+          value: 9000
+      - equal:
+          path: spec.template.spec.containers[0].readinessProbe.httpGet.port
+          value: 9000

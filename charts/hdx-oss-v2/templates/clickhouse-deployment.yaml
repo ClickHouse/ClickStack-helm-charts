@@ -35,6 +35,26 @@ spec:
           env:
             - name: CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT
               value: "1"
+          {{- if .Values.clickhouse.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              path: /ping
+              port: {{ .Values.clickhouse.port }}
+            initialDelaySeconds: {{ .Values.clickhouse.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.clickhouse.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.clickhouse.livenessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.clickhouse.livenessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.clickhouse.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              path: /ping
+              port: {{ .Values.clickhouse.port }}
+            initialDelaySeconds: {{ .Values.clickhouse.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.clickhouse.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.clickhouse.readinessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.clickhouse.readinessProbe.failureThreshold }}
+          {{- end }}
           volumeMounts:
             - name: config
               mountPath: /etc/clickhouse-server/config.xml
@@ -127,6 +147,10 @@ metadata:
   name: {{ include "hdx-oss.fullname" . }}-clickhouse-data
   labels:
     {{- include "hdx-oss.labels" . | nindent 4 }}
+  {{- if .Values.global.keepPVC }}
+  annotations:
+    "helm.sh/resource-policy": keep
+  {{- end }}
 spec:
   accessModes:
     - ReadWriteOnce
@@ -143,6 +167,10 @@ metadata:
   name: {{ include "hdx-oss.fullname" . }}-clickhouse-logs
   labels:
     {{- include "hdx-oss.labels" . | nindent 4 }}
+  {{- if .Values.global.keepPVC }}
+  annotations:
+    "helm.sh/resource-policy": keep
+  {{- end }}
 spec:
   accessModes:
     - ReadWriteOnce

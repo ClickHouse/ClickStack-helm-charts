@@ -64,6 +64,26 @@ spec:
           resources:
             {{- toYaml .Values.hyperdx.resources | nindent 12 }}
           {{- end }}
+          {{- if .Values.hyperdx.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.hyperdx.apiPort }}
+            initialDelaySeconds: {{ .Values.hyperdx.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.hyperdx.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.hyperdx.livenessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.hyperdx.livenessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.hyperdx.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.hyperdx.apiPort }}
+            initialDelaySeconds: {{ .Values.hyperdx.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.hyperdx.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.hyperdx.readinessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.hyperdx.readinessProbe.failureThreshold }}
+          {{- end }}
           envFrom:
             - configMapRef:
                 name: {{ include "hdx-oss.fullname" . }}-app-config
