@@ -8,6 +8,8 @@ tests:
         image: mongo:5.0.14-focal
         port: 27017
         enabled: true
+        persistence:
+          enabled: false
     asserts:
       - hasDocuments:
           count: 2
@@ -26,38 +28,57 @@ tests:
       - hasDocuments:
           count: 0
 
-  - it: should use PVC when persistence is enabled
+  - it: should create PVC, deployment and service when persistence is enabled
     set:
       mongodb:
         enabled: true
         persistence:
           enabled: true
+          dataSize: 10Gi
     asserts:
+      - hasDocuments:
+          count: 3
       - documentIndex: 0
         isKind:
-          of: Deployment
+          of: PersistentVolumeClaim
       - documentIndex: 0
+        matchRegex:
+          path: metadata.name
+          pattern: .*-mongodb$
+      - documentIndex: 0
+        equal:
+          path: spec.resources.requests.storage
+          value: 10Gi
+      - documentIndex: 1
+        isKind:
+          of: Deployment
+      - documentIndex: 1
         equal:
           path: spec.template.spec.volumes[0].name
           value: mongodb-data
-      - documentIndex: 0
+      - documentIndex: 1
         isNotNull:
           path: spec.template.spec.volumes[0].persistentVolumeClaim
-      - documentIndex: 0
+      - documentIndex: 1
         matchRegex:
           path: spec.template.spec.volumes[0].persistentVolumeClaim.claimName
           pattern: .*-mongodb$
-      - documentIndex: 0
+      - documentIndex: 1
         isNull:
           path: spec.template.spec.volumes[0].emptyDir
+      - documentIndex: 2
+        isKind:
+          of: Service
 
-  - it: should use emptyDir when persistence is disabled
+  - it: should use emptyDir when persistence is disabled and not create PVC
     set:
       mongodb:
         enabled: true
         persistence:
           enabled: false
     asserts:
+      - hasDocuments:
+          count: 2  # Only Deployment and Service, no PVC
       - documentIndex: 0
         isKind:
           of: Deployment
@@ -71,11 +92,16 @@ tests:
       - documentIndex: 0
         isNull:
           path: spec.template.spec.volumes[0].persistentVolumeClaim
+      - documentIndex: 1
+        isKind:
+          of: Service
 
   - it: should include livenessProbe with tcpSocket when enabled
     set:
       mongodb:
         enabled: true
+        persistence:
+          enabled: false  # To ensure predictable document ordering
     asserts:
       - documentIndex: 0
         isSubset:
@@ -92,6 +118,8 @@ tests:
     set:
       mongodb:
         enabled: true
+        persistence:
+          enabled: false  # To ensure predictable document ordering
     asserts:
       - documentIndex: 0
         isSubset:
@@ -108,6 +136,8 @@ tests:
     set:
       mongodb:
         enabled: true
+        persistence:
+          enabled: false  # To ensure predictable document ordering
         livenessProbe:
           enabled: false
     asserts:
@@ -119,6 +149,8 @@ tests:
     set:
       mongodb:
         enabled: true
+        persistence:
+          enabled: false  # To ensure predictable document ordering
         readinessProbe:
           enabled: false
     asserts:
@@ -130,6 +162,8 @@ tests:
     set:
       mongodb:
         enabled: true
+        persistence:
+          enabled: false  # To ensure predictable document ordering
         livenessProbe:
           enabled: true
           initialDelaySeconds: 20
@@ -152,6 +186,8 @@ tests:
     set:
       mongodb:
         enabled: true
+        persistence:
+          enabled: false  # To ensure predictable document ordering
         readinessProbe:
           enabled: true
           initialDelaySeconds: 5
@@ -169,3 +205,63 @@ tests:
             periodSeconds: 20
             timeoutSeconds: 3
             failureThreshold: 2
+
+  - it: should not create PVC when mongodb is disabled
+    set:
+      mongodb:
+        enabled: false
+        persistence:
+          enabled: true  # Even with persistence enabled, no PVC should be created
+    asserts:
+      - hasDocuments:
+          count: 0  # No resources should be created
+
+  - it: should include keep annotation on PVC when global.keepPVC is true
+    set:
+      mongodb:
+        enabled: true
+        persistence:
+          enabled: true
+      global:
+        keepPVC: true
+    asserts:
+      - documentIndex: 0
+        isKind:
+          of: PersistentVolumeClaim
+      - documentIndex: 0
+        equal:
+          path: metadata.annotations["helm.sh/resource-policy"]
+          value: keep
+
+  - it: should not include keep annotation on PVC when global.keepPVC is false
+    set:
+      mongodb:
+        enabled: true
+        persistence:
+          enabled: true
+      global:
+        keepPVC: false
+    asserts:
+      - documentIndex: 0
+        isKind:
+          of: PersistentVolumeClaim
+      - documentIndex: 0
+        isNull:
+          path: metadata.annotations["helm.sh/resource-policy"]
+
+  - it: should use global storageClassName when specified
+    set:
+      mongodb:
+        enabled: true
+        persistence:
+          enabled: true
+      global:
+        storageClassName: fast-ssd
+    asserts:
+      - documentIndex: 0
+        isKind:
+          of: PersistentVolumeClaim
+      - documentIndex: 0
+        equal:
+          path: spec.storageClassName
+          value: fast-ssd
