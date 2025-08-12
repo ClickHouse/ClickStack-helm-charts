@@ -5,6 +5,10 @@ metadata:
   name: {{ include "hdx-oss.fullname" . }}-mongodb
   labels:
     {{- include "hdx-oss.labels" . | nindent 4 }}
+  {{- if .Values.global.keepPVC }}
+  annotations:
+    "helm.sh/resource-policy": keep
+  {{- end }}
 spec:
   accessModes:
     - ReadWriteOnce

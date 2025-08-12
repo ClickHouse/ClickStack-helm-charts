@@ -267,3 +267,75 @@ tests:
         equal:
           path: spec.template.spec.containers[0].readinessProbe.httpGet.port
           value: 8124
+
+  - it: should add keep annotation to PVCs when global.keepPVC is true
+    set:
+      clickhouse:
+        enabled: true
+        persistence:
+          enabled: true
+          dataSize: 10Gi
+          logSize: 5Gi
+      global:
+        keepPVC: true
+    asserts:
+      - documentIndex: 4
+        isKind:
+          of: PersistentVolumeClaim
+      - documentIndex: 4
+        equal:
+          path: metadata.annotations["helm.sh/resource-policy"]
+          value: keep
+      - documentIndex: 5
+        isKind:
+          of: PersistentVolumeClaim
+      - documentIndex: 5
+        equal:
+          path: metadata.annotations["helm.sh/resource-policy"]
+          value: keep
+
+  - it: should not add keep annotation to PVCs when global.keepPVC is false
+    set:
+      clickhouse:
+        enabled: true
+        persistence:
+          enabled: true
+          dataSize: 10Gi
+          logSize: 5Gi
+      global:
+        keepPVC: false
+    asserts:
+      - documentIndex: 4
+        isKind:
+          of: PersistentVolumeClaim
+      - documentIndex: 4
+        isNull:
+          path: metadata.annotations
+      - documentIndex: 5
+        isKind:
+          of: PersistentVolumeClaim
+      - documentIndex: 5
+        isNull:
+          path: metadata.annotations
+
+  - it: should not add keep annotation to PVCs when global.keepPVC is not set
+    set:
+      clickhouse:
+        enabled: true
+        persistence:
+          enabled: true
+          dataSize: 10Gi
+          logSize: 5Gi
+    asserts:
+      - documentIndex: 4
+        isKind:
+          of: PersistentVolumeClaim
+      - documentIndex: 4
+        isNull:
+          path: metadata.annotations
+      - documentIndex: 5
+        isKind:
+          of: PersistentVolumeClaim
+      - documentIndex: 5
+        isNull:
+          path: metadata.annotations
