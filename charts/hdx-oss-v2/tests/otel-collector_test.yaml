@@ -807,3 +807,28 @@ tests:
         equal:
           path: spec.template.spec.containers[0].readinessProbe.httpGet.port
           value: 13134
+
+  - it: should not include imagePullSecrets when not configured
+    set:
+      otel:
+        enabled: true
+    asserts:
+      - documentIndex: 0
+        isNull:
+          path: spec.template.spec.imagePullSecrets
+
+  - it: should include imagePullSecrets when configured
+    set:
+      otel:
+        enabled: true
+      global:
+        imagePullSecrets:
+          - name: regcred
+    asserts:
+      - documentIndex: 0
+        isNotNull:
+          path: spec.template.spec.imagePullSecrets
+      - documentIndex: 0
+        equal:
+          path: spec.template.spec.imagePullSecrets[0].name
+          value: regcred
