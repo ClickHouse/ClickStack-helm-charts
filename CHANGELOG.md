@@ -1,5 +1,17 @@
 # helm-charts
 
+## 0.6.9
+
+### Patch Changes
+
+- 0f05519: chore: update appVersion to 2.1.2
+- 2a8dac4: chore: Update appVersion to 2.1.1
+- 76c6da5: feat: add livenessProbe and readinessProbe for services
+- a06f212: feat: allows customizing additional ingresses service names to route to the correct otel collector service (with README update)
+- 862b81f: feat: Add support for image pull secrets in deployments
+- a06f212: feat: allows specifying ingress path and pathType for different ingress controllers
+- 4a5194f: feat: option to keep all services PVCs when uninstalling helm
+
 ## 0.6.8
 
 ### Patch Changes
