@@ -62,7 +62,20 @@ hyperdx:
     # This is preserved for backward compatibility and advanced use cases
 
   # Default connections and sources (ENABLED BY DEFAULT)
-  # Set to empty string to disable: defaultConnections: ""
+  # Set to empty string to disable: defaultConnections: "" or defaultSources: ""
+  # 
+  # To use an existing secret instead of inline configuration, set:
+  # useExistingConfigSecret: true
+  # existingConfigSecret: "my-hyperdx-config"
+  # existingConfigConnectionsKey: "connections.json"  # defaults to "connections.json"
+  # existingConfigSourcesKey: "sources.json"  # defaults to "sources.json"
+  #
+  # The secret should contain separate keys for connections and sources JSON arrays
+  useExistingConfigSecret: false
+  existingConfigSecret: ""
+  existingConfigConnectionsKey: "connections.json"
+  existingConfigSourcesKey: "sources.json"
+  
   defaultConnections: |
     [
       {

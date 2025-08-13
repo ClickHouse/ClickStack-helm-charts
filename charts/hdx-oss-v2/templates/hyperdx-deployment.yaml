@@ -97,6 +97,20 @@ spec:
                 secretKeyRef:
                   name: {{ include "hdx-oss.fullname" . }}-app-secrets
                   key: api-key
+            {{- if .Values.hyperdx.useExistingConfigSecret }}
+            - name: DEFAULT_CONNECTIONS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.hyperdx.existingConfigSecret | quote }}
+                  key: {{ .Values.hyperdx.existingConfigConnectionsKey | quote }}
+                  optional: false
+            - name: DEFAULT_SOURCES
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.hyperdx.existingConfigSecret | quote }}
+                  key: {{ .Values.hyperdx.existingConfigSourcesKey | quote }}
+                  optional: false
+            {{- else }}
             {{- if .Values.hyperdx.defaultConnections }}
             - name: DEFAULT_CONNECTIONS
               value: {{ tpl .Values.hyperdx.defaultConnections . | quote }}
@@ -104,6 +118,7 @@ spec:
             {{- if .Values.hyperdx.defaultSources }}
             - name: DEFAULT_SOURCES
               value: {{ tpl .Values.hyperdx.defaultSources . | quote }}
+            {{- end }}
             {{- end }}
             {{- with .Values.hyperdx.env }}
             {{- toYaml . | nindent 12 }}

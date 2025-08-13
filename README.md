@@ -69,7 +69,9 @@ helm install my-hyperdx hyperdx/hdx-oss-v2
 
 ### External ClickHouse
 
-If you have an existing ClickHouse cluster:
+If you have an existing ClickHouse cluster, you have two options for configuring connections:
+
+#### Option 1: Inline Configuration (Simple)
 
 ```yaml
 # values-external-clickhouse.yaml
@@ -91,6 +93,93 @@ hyperdx:
         "password": "your-password"
       }
     ]
+```
+
+#### Option 2: External Secret (Recommended for Production)
+
+For production deployments where you want to keep credentials separate from your Helm configuration:
+
+```yaml
+# values-external-clickhouse-secret.yaml
+clickhouse:
+  enabled: false  # Disable the built-in ClickHouse
+
+otel:
+  clickhouseEndpoint: "tcp://your-clickhouse-server:9000"
+  clickhousePrometheusEndpoint: "http://your-clickhouse-server:9363"  # Optional
+
+hyperdx:
+  # Use an existing secret for complete configuration (connections + sources)
+  useExistingConfigSecret: true
+  existingConfigSecret: "hyperdx-external-config"
+  existingConfigConnectionsKey: "connections.json"
+  existingConfigSourcesKey: "sources.json"
+```
+
+Create your configuration secret:
+
+```bash
+# Create the connections JSON
+cat <<EOF > connections.json
+[
+  {
+    "name": "Production ClickHouse",
+    "host": "https://your-production-clickhouse.com:8123",
+    "port": 8123,
+    "username": "hyperdx_user",
+    "password": "your-secure-password"
+  }
+]
+EOF
+
+# Create the sources JSON
+cat <<EOF > sources.json
+[
+  {
+    "from": {
+      "databaseName": "default",
+      "tableName": "otel_logs"
+    },
+    "kind": "log",
+    "name": "Logs",
+    "connection": "Production ClickHouse",
+    "timestampValueExpression": "TimestampTime",
+    "displayedTimestampValueExpression": "Timestamp",
+    "implicitColumnExpression": "Body",
+    "serviceNameExpression": "ServiceName",
+    "bodyExpression": "Body",
+    "eventAttributesExpression": "LogAttributes",
+    "resourceAttributesExpression": "ResourceAttributes",
+    "severityTextExpression": "SeverityText",
+    "traceIdExpression": "TraceId",
+    "spanIdExpression": "SpanId"
+  },
+  {
+    "from": {
+      "databaseName": "default",
+      "tableName": "otel_traces"
+    },
+    "kind": "trace",
+    "name": "Traces",
+    "connection": "Production ClickHouse",
+    "timestampValueExpression": "Timestamp",
+    "displayedTimestampValueExpression": "Timestamp",
+    "implicitColumnExpression": "SpanName",
+    "serviceNameExpression": "ServiceName",
+    "traceIdExpression": "TraceId",
+    "spanIdExpression": "SpanId",
+    "durationExpression": "Duration"
+  }
+]
+EOF
+
+# Create the Kubernetes secret
+kubectl create secret generic hyperdx-external-config \
+  --from-file=connections.json=connections.json \
+  --from-file=sources.json=sources.json
+
+# Clean up the local files
+rm connections.json sources.json
 ```
 
 ### External OTEL Collector
@@ -125,6 +214,7 @@ otel:
 
 hyperdx:
   otelExporterEndpoint: "http://your-otel-collector:4318"
+  # Option 1: Inline configuration (for testing/development)
   defaultConnections: |
     [
       {
@@ -135,6 +225,12 @@ hyperdx:
         "password": "your-password"
       }
     ]
+  
+  # Option 2: External secret (recommended for production)
+  # useExistingConfigSecret: true
+  # existingConfigSecret: "my-external-config"
+  # existingConfigConnectionsKey: "connections.json"
+  # existingConfigSourcesKey: "sources.json"
 ```
 
 ## Configuration
