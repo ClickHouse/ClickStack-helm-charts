@@ -72,7 +72,7 @@ jobs:
         cat > test-values.yaml << EOF
         hyperdx:
           apiKey: "test-api-key-for-ci"
-          appUrl: "http://localhost:3000"
+          frontendUrl: "http://localhost:3000"
           replicas: 1
 
         clickhouse:

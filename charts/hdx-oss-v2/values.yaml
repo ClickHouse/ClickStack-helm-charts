@@ -43,7 +43,9 @@ hyperdx:
   apiPort: 8000
   appPort: 3000
   opampPort: 4320
-  appUrl: "http://localhost"
+  # The URL that will be use to access the frontend. Defaults to the http://localhost:appPort.
+  # If you have an ingress enabled, you should set this to the ingress host with the protocol. E.g. https://hdx-my-domain.com
+  frontendUrl: http://localhost:{{ .Values.hyperdx.appPort }}
   logLevel: "info"
   usageStatsEnabled: true
   # Endpoint to send hyperdx logs/traces/metrics to.Defaults to the chart's otel collector endpoint.
@@ -182,6 +184,7 @@ hyperdx:
     enabled: false
     ingressClassName: nginx
     annotations: {}
+    # The host to use for the ingress. Defaults to localhost. Be sure to update hyperdx.frontendUrl with this host value + protocol
     host: "localhost"  # Production domain
     path: "/(.*)"
     pathType: "ImplementationSpecific"

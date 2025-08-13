@@ -252,15 +252,15 @@ hyperdx:
     host: "hyperdx.yourdomain.com"  # Set this to your desired domain
 ```
 
-#### Configuring `ingress.host` and `hyperdx.appUrl`
+#### Configuring `ingress.host` and `hyperdx.frontendUrl`
 
 - **`hyperdx.ingress.host`**: Set to the domain you want to use for accessing HyperDX (e.g., `hyperdx.yourdomain.com`).
-- **`hyperdx.appUrl`**: Should match the ingress host and include the protocol (e.g., `https://hyperdx.yourdomain.com`).
+- **`hyperdx.frontendUrl`**: Should match the ingress host and include the protocol (e.g., `https://hyperdx.yourdomain.com`).
 
 **Example:**
 ```yaml
 hyperdx:
-  appUrl: "https://hyperdx.yourdomain.com"
+  frontendUrl: "https://hyperdx.yourdomain.com"
   ingress:
     enabled: true
     host: "hyperdx.yourdomain.com"
@@ -323,7 +323,7 @@ spec:
 
 - **Path and Rewrite Configuration:**
   - For Next.js and other SPAs, always use a regex path and rewrite annotation as shown above. Do not use just `path: /` without a rewrite, as this will break static asset serving.
-- **Mismatched `appUrl` and `ingress.host`:**
+- **Mismatched `frontendUrl` and `ingress.host`:**
   - If these do not match, you may experience issues with cookies, redirects, and asset loading.
 - **TLS Misconfiguration:**
   - Ensure your TLS secret is valid and referenced correctly in the ingress.
@@ -448,7 +448,7 @@ Use the fully qualified domain name (FQDN) for the OpAMP server URL:
 
 ```bash
 helm install my-hyperdx hyperdx/hdx-oss-v2 \
-  --set hyperdx.appUrl="http://your-external-ip-or-domain.com" \
+  --set hyperdx.frontendUrl="http://your-external-ip-or-domain.com" \
   --set otel.opampServerUrl="http://my-hyperdx-hdx-oss-v2-app.default.svc.cluster.local:4320"
 ```
 
@@ -457,7 +457,7 @@ helm install my-hyperdx hyperdx/hdx-oss-v2 \
 ```yaml
 # values-gke.yaml
 hyperdx:
-  appUrl: "http://34.123.61.99"  # Use your LoadBalancer external IP
+  frontendUrl: "http://34.123.61.99"  # Use your LoadBalancer external IP
 
 otel:
   opampServerUrl: "http://my-hyperdx-hdx-oss-v2-app.default.svc.cluster.local:4320"
@@ -477,7 +477,7 @@ For EKS deployments, consider these common configurations:
 ```yaml
 # values-eks.yaml
 hyperdx:
-  appUrl: "http://your-alb-domain.com"
+  frontendUrl: "http://your-alb-domain.com"
 
 # EKS typically uses these pod CIDRs
 clickhouse:
@@ -502,7 +502,7 @@ For AKS deployments:
 ```yaml
 # values-aks.yaml
 hyperdx:
-  appUrl: "http://your-azure-lb.com"
+  frontendUrl: "http://your-azure-lb.com"
 
 # AKS pod networking
 clickhouse:
@@ -514,7 +514,7 @@ clickhouse:
 
 ### Production Cloud Deployment Checklist
 
-- [ ] Configure proper `appUrl` with your external domain/IP
+- [ ] Configure proper `frontendUrl` with your external domain/IP
 - [ ] Set up ingress with TLS for HTTPS access
 - [ ] Override `otel.opampServerUrl` with FQDN if experiencing connection issues
 - [ ] Adjust `clickhouse.config.clusterCidrs` for your pod network CIDR
