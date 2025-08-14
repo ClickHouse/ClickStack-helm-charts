@@ -1,5 +1,11 @@
 # helm-charts
 
+## 0.7.1
+
+### Patch Changes
+
+- 268c6e0: fix: Better backwards compatibility for app url for existing deployments
+
 ## 0.7.0
 
 ### Minor Changes
