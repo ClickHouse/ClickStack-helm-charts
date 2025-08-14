@@ -47,7 +47,7 @@ hyperdx:
   appUrl: "http://localhost"
   # The URL that will be use to access the frontend. Defaults to the http://localhost:3000.
   # If you have an ingress enabled, you should set this to the ingress host with the protocol. E.g. https://hdx-my-domain.com
-  frontendUrl: http://{{ .Values.hyperdx.appUrl }}:{{ .Values.hyperdx.appPort }}
+  frontendUrl: "{{ .Values.hyperdx.appUrl }}:{{ .Values.hyperdx.appPort }}"
   logLevel: "info"
   usageStatsEnabled: true
   # Endpoint to send hyperdx logs/traces/metrics to.Defaults to the chart's otel collector endpoint.
