@@ -1,5 +1,15 @@
 # helm-charts
 
+## 0.7.0
+
+### Minor Changes
+
+- 10737b0: fix: Allow for frontend url to be explicitly configured
+
+### Patch Changes
+
+- 33e0405: feat: Add secret support for default connections and sources
+
 ## 0.6.9
 
 ### Patch Changes
