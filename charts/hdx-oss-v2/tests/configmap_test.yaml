@@ -7,7 +7,7 @@ tests:
       hyperdx:
         apiPort: 8000
         appPort: 3000
-        appUrl: http://localhost
+        frontendUrl: http://localhost:3000
         logLevel: info
         usageStatsEnabled: true
       mongodb:
@@ -41,48 +41,3 @@ tests:
       - matchRegex:
           path: data.MONGO_URI
           pattern: mongodb://.*-mongodb:27017/hyperdx
-
-  - it: should use ingress URL for FRONTEND_URL when ingress is enabled
-    set:
-      hyperdx:
-        apiPort: 8000
-        appPort: 3000
-        appUrl: http://localhost
-        ingress:
-          enabled: true
-          host: hyperdx.example.com
-          tls:
-            enabled: false
-    asserts:
-      - equal:
-          path: data.FRONTEND_URL
-          value: "http://hyperdx.example.com"
-
-  - it: should use ingress HTTPS URL for FRONTEND_URL when TLS is enabled
-    set:
-      hyperdx:
-        apiPort: 8000
-        appPort: 3000
-        appUrl: http://localhost
-        ingress:
-          enabled: true
-          host: hyperdx.example.com
-          tls:
-            enabled: true
-    asserts:
-      - equal:
-          path: data.FRONTEND_URL
-          value: "https://hyperdx.example.com"
-
-  - it: should fallback to appUrl:port when ingress is disabled
-    set:
-      hyperdx:
-        apiPort: 8000
-        appPort: 4000
-        appUrl: http://custom-host
-        ingress:
-          enabled: false
-    asserts:
-      - equal:
-          path: data.FRONTEND_URL
-          value: "http://custom-host:4000"

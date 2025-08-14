@@ -7,14 +7,9 @@ metadata:
 data:
   APP_PORT: {{ .Values.hyperdx.appPort | quote }}
   API_PORT: {{ .Values.hyperdx.apiPort | quote }}
-  {{- if .Values.hyperdx.ingress.enabled }}
-  FRONTEND_URL: "{{ if .Values.hyperdx.ingress.tls.enabled }}https{{ else }}http{{ end }}://{{ .Values.hyperdx.ingress.host }}"
-  {{- else }}
-  FRONTEND_URL: "{{ .Values.hyperdx.appUrl }}:{{ .Values.hyperdx.appPort }}"
-  {{- end }}
+  FRONTEND_URL: "{{ tpl .Values.hyperdx.frontendUrl . }}"
   HYPERDX_API_PORT: "{{ .Values.hyperdx.apiPort }}"
   HYPERDX_APP_PORT: "{{ .Values.hyperdx.appPort }}"
-  HYPERDX_APP_URL: "{{ .Values.hyperdx.appUrl }}"
   HYPERDX_LOG_LEVEL: "{{ .Values.hyperdx.logLevel }}"
   MINER_API_URL: "http://{{ include "hdx-oss.fullname" . }}-miner:5123"
   MONGO_URI: "{{ tpl .Values.hyperdx.mongoUri . }}"
