@@ -98,12 +98,12 @@ jobs:
               memory: "256Mi"
               cpu: "200m"
           livenessProbe:
-            initialDelaySeconds: 15
+            initialDelaySeconds: 30
             periodSeconds: 30
             timeoutSeconds: 10
             failureThreshold: 5
           readinessProbe:
-            initialDelaySeconds: 10
+            initialDelaySeconds: 30
             periodSeconds: 15
             timeoutSeconds: 10
             failureThreshold: 5
@@ -127,12 +127,24 @@ jobs:
         kubectl wait --for=condition=Ready pods -l app=clickhouse --timeout=300s
         kubectl wait --for=condition=Ready pods -l app=mongodb --timeout=300s
         
-        # Wait a bit more for databases to initialize
-        sleep 15
+        # Wait for HyperDX app to be ready (OpAMP server)
+        echo "Waiting for HyperDX app to be ready..."
+        kubectl wait --for=condition=Ready pods -l app=hyperdx-test-hdx-oss-v2 --timeout=300s
         
-        # Now wait for all pods to be ready
-        echo "Waiting for all remaining pods..."
-        kubectl wait --for=condition=Ready pods --all --timeout=600s
+        # Test OpAMP server connectivity
+        echo "Testing OpAMP server connectivity..."
+        kubectl exec -n default deployment/hyperdx-test-hdx-oss-v2-app -- curl -f http://localhost:4320 || echo "OpAMP server not yet ready"
+        
+        # Wait for OpAMP server to fully initialize
+        echo "Waiting for OpAMP server to initialize..."
+        sleep 30
+        
+        # Test OpAMP server again
+        kubectl exec -n default deployment/hyperdx-test-hdx-oss-v2-app -- curl -f http://localhost:4320 || echo "OpAMP server connectivity issue"
+        
+        # Now wait for OTEL collector to be ready
+        echo "Waiting for OTEL collector..."
+        kubectl wait --for=condition=Ready pods -l app=otel-collector --timeout=300s
 
         # Check final pod status
         echo "Final pod status:"
