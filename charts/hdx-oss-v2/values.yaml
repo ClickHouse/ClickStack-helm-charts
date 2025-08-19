@@ -378,6 +378,26 @@ otel:
     #     secretKeyRef:
     #       name: my-secret
     #       key: secret-key
+  # Custom OTEL Collector config - allows you to provide your own OTEL Collector configuration
+  # Provide your OTEL Collector configuration as a multi-line string
+  # This will be mounted as /etc/otelcol-contrib/custom.config.yaml and
+  # the CUSTOM_OTELCOL_CONFIG_FILE environment variable will point to it
+  # Example:
+  # customConfig: |
+  #   receivers:
+  #     hostmetrics:
+  #       collection_interval: 5s
+  #       scrapers:
+  #         cpu:
+  #         load:
+  #         memory:
+  #   service:
+  #     pipelines:
+  #       metrics/hostmetrics:
+  #         receivers: [hostmetrics]
+  #         processors: [memory_limiter, batch]
+  #         exporters: [clickhouse]
+  customConfig:
   # Opamp server URL - defaults to the app service. Customize if you want to use a different Opamp server.
   # Leave empty if you want to use the app service.
   # Example: opampServerUrl: "http://custom-opamp-server:4320"
