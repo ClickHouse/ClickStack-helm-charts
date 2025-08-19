@@ -74,6 +74,9 @@ jobs:
           apiKey: "test-api-key-for-ci"
           frontendUrl: "http://localhost:3000"
           replicas: 1
+          service:
+            type: NodePort
+            nodePort: 30000
 
         clickhouse:
           persistence:
@@ -86,20 +89,28 @@ jobs:
             enabled: true
             dataSize: 2Gi
 
-        # Enable NodePort services for testing
-        hyperdx:
-          service:
-            type: NodePort
-            nodePort: 30000
-
         otel:
-          service:
-            type: NodePort
-            nodePort: 30001
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
+          livenessProbe:
+            initialDelaySeconds: 15
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 5
+          readinessProbe:
+            initialDelaySeconds: 10
+            periodSeconds: 15
+            timeoutSeconds: 10
+            failureThreshold: 5
         EOF
 
         # Install the chart
-        helm install hyperdx-test ./charts/hdx-oss-v2 -f test-values.yaml --timeout=2m
+        helm install hyperdx-test ./charts/hdx-oss-v2 -f test-values.yaml --timeout=5m
 
         # Give services time to initialize after pods are running
         echo "Waiting for services to initialize..."
@@ -107,10 +118,24 @@ jobs:
 
     - name: Verify deployment
       run: |
-        # Wait for all pods to be ready
-        kubectl wait --for=condition=Ready pods --all --timeout=300s
+        # Check initial pod status
+        echo "Initial pod status:"
+        kubectl get pods -o wide
+        
+        # Wait for ClickHouse and MongoDB first (OTEL collector dependencies)
+        echo "Waiting for ClickHouse and MongoDB to be ready..."
+        kubectl wait --for=condition=Ready pods -l app=clickhouse --timeout=300s
+        kubectl wait --for=condition=Ready pods -l app=mongodb --timeout=300s
+        
+        # Wait a bit more for databases to initialize
+        sleep 15
+        
+        # Now wait for all pods to be ready
+        echo "Waiting for all remaining pods..."
+        kubectl wait --for=condition=Ready pods --all --timeout=600s
 
-        # Check pod status
+        # Check final pod status
+        echo "Final pod status:"
         kubectl get pods -o wide
 
         # Check services
