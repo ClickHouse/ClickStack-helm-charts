@@ -74,6 +74,9 @@ jobs:
           apiKey: "test-api-key-for-ci"
           frontendUrl: "http://localhost:3000"
           replicas: 1
+          service:
+            type: NodePort
+            nodePort: 30000
 
         clickhouse:
           persistence:
@@ -86,42 +89,70 @@ jobs:
             enabled: true
             dataSize: 2Gi
 
-        # Enable NodePort services for testing
-        hyperdx:
-          service:
-            type: NodePort
-            nodePort: 30000
-
         otel:
-          service:
-            type: NodePort
-            nodePort: 30001
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
         EOF
 
         # Install the chart
-        helm install hyperdx-test ./charts/hdx-oss-v2 -f test-values.yaml --timeout=2m
+        helm install hyperdx-test ./charts/hdx-oss-v2 -f test-values.yaml --timeout=5m
 
         # Give services time to initialize after pods are running
         echo "Waiting for services to initialize..."
         sleep 20
 
+    - name: Bootstrap team in MongoDB
+      run: |
+        # Wait for MongoDB to be ready
+        kubectl wait --for=condition=Ready pods -l app=mongodb --timeout=300s
+        
+        echo "Creating test team in MongoDB..."
+        kubectl exec -n default deployment/hyperdx-test-hdx-oss-v2-mongodb -- mongosh hyperdx --eval "
+          db.teams.insertOne({
+            name: 'CI Test Team',
+            apiKey: 'test-api-key-for-ci',
+            collectorAuthenticationEnforced: false,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          })
+        "
+        
+        echo "Verifying team creation..."
+        kubectl exec -n default deployment/hyperdx-test-hdx-oss-v2-mongodb -- mongosh hyperdx --eval "
+          const team = db.teams.findOne({ apiKey: 'test-api-key-for-ci' });
+          if (team) {
+            print('Team created successfully:', team.name);
+          } else {
+            print('Team creation failed');
+            exit(1);
+          }
+        "
+        
+        echo "Waiting for OpAMP server to reconfigure collectors..."
+        sleep 30
+
     - name: Verify deployment
       run: |
-        # Wait for all pods to be ready
-        kubectl wait --for=condition=Ready pods --all --timeout=300s
+        echo "Initial pod status:"
+        kubectl get pods -o wide
+        
+        echo "Waiting for all pods to be ready..."
+        kubectl wait --for=condition=Ready pods --all --timeout=600s
 
-        # Check pod status
+        echo "Final pod status:"
         kubectl get pods -o wide
 
-        # Check services
         kubectl get services
 
     - name: Run comprehensive smoke tests
       run: |
-        # Make smoke test script executable
         chmod +x ./scripts/smoke-test.sh
 
-        # Run the smoke test with CI-specific environment
         RELEASE_NAME=hyperdx-test NAMESPACE=default ./scripts/smoke-test.sh
 
     - name: Collect logs on failure
