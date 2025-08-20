@@ -1,4 +1,4 @@
-suite: Test ConfigMap
+suite: Test App ConfigMap
 templates:
   - configmaps/app-configmap.yaml
 tests:
@@ -118,7 +118,7 @@ tests:
         apiPort: 8000
         appPort: 3000
         appUrl: "http://localhost"
-        frontendUrl: "{{ if eq .Values.env \"production\" }}https://prod.example.com{{ else }}{{ .Values.hyperdx.appUrl }}:{{ .Values.hyperdx.appPort }}{{ end }}"
+        frontendUrl: '{{ if eq .Values.env "production" }}https://prod.example.com{{ else }}{{ .Values.hyperdx.appUrl }}:{{ .Values.hyperdx.appPort }}{{ end }}'
       env: "development"
       mongodb:
         port: 27017
