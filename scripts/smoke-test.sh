@@ -88,6 +88,26 @@ kubectl port-forward service/$RELEASE_NAME-hdx-oss-v2-otel-collector 4318:4318 -
 pf_pid=$!
 sleep 10
 
+echo "Debugging OTEL collector before testing data ingestion..."
+
+# Check if team exists in MongoDB
+echo "Checking team in MongoDB..."
+kubectl exec -n $NAMESPACE deployment/$RELEASE_NAME-hdx-oss-v2-mongodb -- mongosh hyperdx --eval "db.teams.find({ apiKey: 'test-api-key-for-ci' }).pretty()" || echo "Could not query MongoDB"
+
+# Check OTEL collector logs and processes
+echo "OTEL collector logs:"
+kubectl logs -l app=otel-collector --tail=20 -n $NAMESPACE || echo "Could not get OTEL logs"
+
+echo "OTEL collector processes:"
+kubectl exec -n $NAMESPACE deployment/$RELEASE_NAME-hdx-oss-v2-otel-collector -- ps aux || echo "Could not get process list"
+
+echo "OTEL collector listening ports:"
+kubectl exec -n $NAMESPACE deployment/$RELEASE_NAME-hdx-oss-v2-otel-collector -- netstat -tlnp | grep -E '4318|4317' || echo "OTLP ports not listening"
+
+# Check HyperDX app logs for OpAMP activity
+echo "HyperDX OpAMP logs:"
+kubectl logs -l app=$RELEASE_NAME-hdx-oss-v2 --tail=20 -n $NAMESPACE | grep -i opamp || echo "No OpAMP activity in logs"
+
 wait_for_service "http://localhost:4318" "OTEL HTTP endpoint"
 
 # Send test log
