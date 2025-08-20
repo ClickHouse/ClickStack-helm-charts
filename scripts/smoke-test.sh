@@ -102,17 +102,17 @@ if ! kill -0 $pf_pid 2>/dev/null; then
     sleep 10
 fi
 
-# Test port-forward connectivity first
-echo "Testing port-forward connectivity..."
-if curl -s --connect-timeout 5 http://localhost:4318 >/dev/null 2>&1; then
-    echo "Port-forward to 4318 is working"
+# OTLP endpoints don't respond to GET requests, test with netcat
+echo "Testing OTLP HTTP endpoint connectivity..."
+if nc -z localhost 4318; then
+    echo "OTEL HTTP endpoint is ready"
 else
-    echo "Port-forward to 4318 failed, checking port-forward status..."
+    echo "ERROR: OTEL HTTP endpoint not accessible"
+    echo "Port-forward status:"
     jobs
     netstat -tlnp | grep 4318 || echo "Port 4318 not listening locally"
+    exit 1
 fi
-
-wait_for_service "http://localhost:4318" "OTEL HTTP endpoint"
 
 # Send test log
 echo "Sending test log..."
