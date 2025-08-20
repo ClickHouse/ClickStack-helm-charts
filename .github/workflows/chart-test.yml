@@ -77,9 +77,6 @@ jobs:
           service:
             type: NodePort
             nodePort: 30000
-          env:
-            - name: IS_LOCAL_APP_MODE
-              value: "DANGEROUSLY_is_local_app_mode💀"
 
         clickhouse:
           persistence:
@@ -119,35 +116,48 @@ jobs:
         echo "Waiting for services to initialize..."
         sleep 20
 
+    - name: Bootstrap team in MongoDB
+      run: |
+        # Wait for MongoDB to be ready
+        kubectl wait --for=condition=Ready pods -l app=mongodb --timeout=300s
+        
+        # Create a team in MongoDB so OpAMP server can configure OTEL collector
+        echo "Creating test team in MongoDB..."
+        kubectl exec -n default deployment/hyperdx-test-hdx-oss-v2-mongodb -- mongosh hyperdx --eval "
+          db.teams.insertOne({
+            name: 'CI Test Team',
+            apiKey: 'test-api-key-for-ci',
+            collectorAuthenticationEnforced: false,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          })
+        "
+        
+        # Verify team was created
+        echo "Verifying team creation..."
+        kubectl exec -n default deployment/hyperdx-test-hdx-oss-v2-mongodb -- mongosh hyperdx --eval "
+          const team = db.teams.findOne({ apiKey: 'test-api-key-for-ci' });
+          if (team) {
+            print('✅ Team created successfully:', team.name);
+          } else {
+            print('❌ Team creation failed');
+            exit(1);
+          }
+        "
+        
+        # Wait for OpAMP server to detect the new team and reconfigure collectors
+        echo "Waiting for OpAMP server to reconfigure collectors..."
+        sleep 30
+
     - name: Verify deployment
       run: |
         # Check initial pod status
         echo "Initial pod status:"
         kubectl get pods -o wide
         
-        # Wait for ClickHouse and MongoDB first (OTEL collector dependencies)
-        echo "Waiting for ClickHouse and MongoDB to be ready..."
-        kubectl wait --for=condition=Ready pods -l app=clickhouse --timeout=300s
-        kubectl wait --for=condition=Ready pods -l app=mongodb --timeout=300s
-        
-        # Wait for HyperDX app to be ready (OpAMP server)
-        echo "Waiting for HyperDX app to be ready..."
-        kubectl wait --for=condition=Ready pods -l app=hyperdx-test-hdx-oss-v2 --timeout=300s
-        
-        # Test OpAMP server connectivity
-        echo "Testing OpAMP server connectivity..."
-        kubectl exec -n default deployment/hyperdx-test-hdx-oss-v2-app -- curl -f http://localhost:4320 || echo "OpAMP server not yet ready"
-        
-        # Wait for OpAMP server to fully initialize
-        echo "Waiting for OpAMP server to initialize..."
-        sleep 30
-        
-        # Test OpAMP server again
-        kubectl exec -n default deployment/hyperdx-test-hdx-oss-v2-app -- curl -f http://localhost:4320 || echo "OpAMP server connectivity issue"
-        
-        # Now wait for OTEL collector to be ready
-        echo "Waiting for OTEL collector..."
-        kubectl wait --for=condition=Ready pods -l app=otel-collector --timeout=300s
+        # Wait for all pods to be ready (team bootstrap ensures proper OpAMP configuration)
+        echo "Waiting for all pods to be ready..."
+        kubectl wait --for=condition=Ready pods --all --timeout=600s
 
         # Check final pod status
         echo "Final pod status:"
