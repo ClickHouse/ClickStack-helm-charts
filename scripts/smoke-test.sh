@@ -84,29 +84,33 @@ sleep 2
 
 # Test data ingestion
 echo "Testing data ingestion..."
+
+# Start port-forward with better error handling
+echo "Starting port-forward to OTEL collector..."
 kubectl port-forward service/$RELEASE_NAME-hdx-oss-v2-otel-collector 4318:4318 -n $NAMESPACE &
 pf_pid=$!
-sleep 10
 
-echo "Debugging OTEL collector before testing data ingestion..."
+# Give port-forward more time to establish and verify it's working
+sleep 15
 
-# Check if team exists in MongoDB
-echo "Checking team in MongoDB..."
-kubectl exec -n $NAMESPACE deployment/$RELEASE_NAME-hdx-oss-v2-mongodb -- mongosh hyperdx --eval "db.teams.find({ apiKey: 'test-api-key-for-ci' }).pretty()" || echo "Could not query MongoDB"
+# Check if port-forward process is still running
+if ! kill -0 $pf_pid 2>/dev/null; then
+    echo "Port-forward process died, trying direct pod connection..."
+    POD_NAME=$(kubectl get pods -l app=otel-collector -n $NAMESPACE -o jsonpath='{.items[0].metadata.name}')
+    kubectl port-forward pod/$POD_NAME 4318:4318 -n $NAMESPACE &
+    pf_pid=$!
+    sleep 10
+fi
 
-# Check OTEL collector logs and processes
-echo "OTEL collector logs:"
-kubectl logs -l app=otel-collector --tail=20 -n $NAMESPACE || echo "Could not get OTEL logs"
-
-echo "OTEL collector processes:"
-kubectl exec -n $NAMESPACE deployment/$RELEASE_NAME-hdx-oss-v2-otel-collector -- ps aux || echo "Could not get process list"
-
-echo "OTEL collector listening ports:"
-kubectl exec -n $NAMESPACE deployment/$RELEASE_NAME-hdx-oss-v2-otel-collector -- netstat -tlnp | grep -E '4318|4317' || echo "OTLP ports not listening"
-
-# Check HyperDX app logs for OpAMP activity
-echo "HyperDX OpAMP logs:"
-kubectl logs -l app=$RELEASE_NAME-hdx-oss-v2 --tail=20 -n $NAMESPACE | grep -i opamp || echo "No OpAMP activity in logs"
+# Test port-forward connectivity first
+echo "Testing port-forward connectivity..."
+if curl -s --connect-timeout 5 http://localhost:4318 >/dev/null 2>&1; then
+    echo "Port-forward to 4318 is working"
+else
+    echo "Port-forward to 4318 failed, checking port-forward status..."
+    jobs
+    netstat -tlnp | grep 4318 || echo "Port 4318 not listening locally"
+fi
 
 wait_for_service "http://localhost:4318" "OTEL HTTP endpoint"
 
