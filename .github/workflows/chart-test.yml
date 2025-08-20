@@ -77,6 +77,9 @@ jobs:
           service:
             type: NodePort
             nodePort: 30000
+          env:
+            - name: IS_LOCAL_APP_MODE
+              value: "DANGEROUSLY_is_local_app_mode💀"
 
         clickhouse:
           persistence:
