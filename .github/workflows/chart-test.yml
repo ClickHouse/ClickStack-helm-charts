@@ -111,7 +111,6 @@ jobs:
         # Wait for MongoDB to be ready
         kubectl wait --for=condition=Ready pods -l app=mongodb --timeout=300s
         
-        # Create a team in MongoDB so OpAMP server can configure OTEL collector
         echo "Creating test team in MongoDB..."
         kubectl exec -n default deployment/hyperdx-test-hdx-oss-v2-mongodb -- mongosh hyperdx --eval "
           db.teams.insertOne({
@@ -123,7 +122,6 @@ jobs:
           })
         "
         
-        # Verify team was created
         echo "Verifying team creation..."
         kubectl exec -n default deployment/hyperdx-test-hdx-oss-v2-mongodb -- mongosh hyperdx --eval "
           const team = db.teams.findOne({ apiKey: 'test-api-key-for-ci' });
@@ -135,33 +133,26 @@ jobs:
           }
         "
         
-        # Wait for OpAMP server to detect the new team and reconfigure collectors
         echo "Waiting for OpAMP server to reconfigure collectors..."
         sleep 30
 
     - name: Verify deployment
       run: |
-        # Check initial pod status
         echo "Initial pod status:"
         kubectl get pods -o wide
         
-        # Wait for all pods to be ready (team bootstrap ensures proper OpAMP configuration)
         echo "Waiting for all pods to be ready..."
         kubectl wait --for=condition=Ready pods --all --timeout=600s
 
-        # Check final pod status
         echo "Final pod status:"
         kubectl get pods -o wide
 
-        # Check services
         kubectl get services
 
     - name: Run comprehensive smoke tests
       run: |
-        # Make smoke test script executable
         chmod +x ./scripts/smoke-test.sh
 
-        # Run the smoke test with CI-specific environment
         RELEASE_NAME=hyperdx-test NAMESPACE=default ./scripts/smoke-test.sh
 
     - name: Collect logs on failure
