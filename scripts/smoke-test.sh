@@ -84,33 +84,13 @@ sleep 2
 
 # Test data ingestion
 echo "Testing data ingestion..."
-
-# Start port-forward with better error handling
-echo "Starting port-forward to OTEL collector..."
 kubectl port-forward service/$RELEASE_NAME-hdx-oss-v2-otel-collector 4318:4318 -n $NAMESPACE &
 pf_pid=$!
+sleep 10
 
-# Give port-forward more time to establish and verify it's working
-sleep 15
-
-# Check if port-forward process is still running
-if ! kill -0 $pf_pid 2>/dev/null; then
-    echo "Port-forward process died, trying direct pod connection..."
-    POD_NAME=$(kubectl get pods -l app=otel-collector -n $NAMESPACE -o jsonpath='{.items[0].metadata.name}')
-    kubectl port-forward pod/$POD_NAME 4318:4318 -n $NAMESPACE &
-    pf_pid=$!
-    sleep 10
-fi
-
-# OTLP endpoints don't respond to GET requests, test with netcat
-echo "Testing OTLP HTTP endpoint connectivity..."
-if nc -z localhost 4318; then
-    echo "OTEL HTTP endpoint is ready"
-else
+# Test OTLP endpoint connectivity
+if ! nc -z localhost 4318; then
     echo "ERROR: OTEL HTTP endpoint not accessible"
-    echo "Port-forward status:"
-    jobs
-    netstat -tlnp | grep 4318 || echo "Port 4318 not listening locally"
     exit 1
 fi
 

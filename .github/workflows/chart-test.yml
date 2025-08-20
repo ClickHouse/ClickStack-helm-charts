@@ -97,16 +97,6 @@ jobs:
             limits:
               memory: "256Mi"
               cpu: "200m"
-          livenessProbe:
-            initialDelaySeconds: 30
-            periodSeconds: 30
-            timeoutSeconds: 10
-            failureThreshold: 5
-          readinessProbe:
-            initialDelaySeconds: 30
-            periodSeconds: 15
-            timeoutSeconds: 10
-            failureThreshold: 5
         EOF
 
         # Install the chart
@@ -138,33 +128,16 @@ jobs:
         kubectl exec -n default deployment/hyperdx-test-hdx-oss-v2-mongodb -- mongosh hyperdx --eval "
           const team = db.teams.findOne({ apiKey: 'test-api-key-for-ci' });
           if (team) {
-            print('✅ Team created successfully:', team.name);
+            print('Team created successfully:', team.name);
           } else {
-            print('❌ Team creation failed');
+            print('Team creation failed');
             exit(1);
           }
         "
         
-        # Restart OTEL collector to force reconnection with new team configuration
-        echo "Restarting OTEL collector to apply new team configuration..."
-        kubectl rollout restart deployment/hyperdx-test-hdx-oss-v2-otel-collector -n default
-        kubectl rollout status deployment/hyperdx-test-hdx-oss-v2-otel-collector -n default --timeout=300s
-        
-        # Wait for OpAMP reconfiguration
-        echo "Waiting for OpAMP reconfiguration..."
+        # Wait for OpAMP server to detect the new team and reconfigure collectors
+        echo "Waiting for OpAMP server to reconfigure collectors..."
         sleep 30
-        
-        # Debug: Check OTEL collector logs to see if it received configuration
-        echo "Checking OTEL collector logs..."
-        kubectl logs -l app=otel-collector --tail=50 || true
-        
-        # Debug: Check if OTLP ports are listening inside the container
-        echo "Checking OTLP port status..."
-        kubectl exec -n default deployment/hyperdx-test-hdx-oss-v2-otel-collector -- netstat -tlnp | grep -E '4318|4317' || echo "OTLP ports not yet listening"
-        
-        # Debug: Check HyperDX app logs for OpAMP activity
-        echo "Checking HyperDX OpAMP server logs..."
-        kubectl logs -l app=hyperdx-test-hdx-oss-v2 --tail=50 | grep -i opamp || echo "No OpAMP logs found"
 
     - name: Verify deployment
       run: |
