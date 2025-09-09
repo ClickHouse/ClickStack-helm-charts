@@ -1,5 +1,12 @@
 # helm-charts
 
+## 0.7.2
+
+### Patch Changes
+
+- d13a098: feat: support custom otelcol config
+- 3a36cf3: chore: update appVersion to 2.2.1
+
 ## 0.7.1
 
 ### Patch Changes
