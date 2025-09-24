@@ -270,3 +270,35 @@ tests:
       - lengthEqual:
           path: spec.template.spec.imagePullSecrets
           count: 3
+
+  - it: should include initContainers resources when configured and mongodb is enabled
+    set:
+      mongodb:
+        enabled: true
+      hyperdx:
+        initContainers:
+          resources:
+            limits:
+              cpu: 1
+              memory: 1Gi
+            requests:
+              cpu: 2
+              memory: 2Gi
+    asserts:
+      - isNotEmpty:
+          path: spec.template.spec.initContainers
+      - equal:
+          path: spec.template.spec.initContainers[0].name
+          value: wait-for-mongodb
+      - isNotEmpty:
+          path: spec.template.spec.initContainers[0].resources
+      - equal:
+          path: spec.template.spec.initContainers[0].resources.limits
+          content:
+            cpu: 1
+            memory: 1Gi
+      - equal:
+          path: spec.template.spec.initContainers[0].resources.requests
+          content:
+            cpu: 2
+            memory: 2Gi
