@@ -52,6 +52,10 @@ spec:
         - name: wait-for-mongodb
           image: busybox
           command: ['sh', '-c', 'until nc -z {{ include "hdx-oss.fullname" . }}-mongodb {{ .Values.mongodb.port }}; do echo waiting for mongodb; sleep 2; done;']
+          {{- if .Values.hyperdx.initContainers.resources }}
+          resources:
+            {{- toYaml .Values.hyperdx.initContainers.resources | nindent 12 }}
+          {{- end }}
       {{- end }}
       containers:
         - name: app
