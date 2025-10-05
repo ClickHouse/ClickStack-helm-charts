@@ -302,3 +302,18 @@ tests:
           content:
             cpu: 2
             memory: 2Gi
+
+- it: should not include initContainers resources when not configured and mongodb is enabled
+    set:
+      mongodb:
+        enabled: true
+      hyperdx:
+        initContainers:
+    asserts:
+      - isNotEmpty:
+          path: spec.template.spec.initContainers
+      - equal:
+          path: spec.template.spec.initContainers[0].name
+          value: wait-for-mongodb
+      - isEmpty:
+          path: spec.template.spec.initContainers[0].resources
