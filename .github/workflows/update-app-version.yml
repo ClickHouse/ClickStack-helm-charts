@@ -30,9 +30,9 @@ jobs:
           mkdir -p .changeset
           cat > .changeset/update-app-version-${{ github.event.inputs.tag }}.md << 'EOF'
           ---
-          "hdx-oss-v2": patch
+          "helm-charts": patch
           ---
-          
+
           chore: update appVersion to ${{ github.event.inputs.tag }}
           EOF
 
