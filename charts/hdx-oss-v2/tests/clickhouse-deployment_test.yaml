@@ -385,3 +385,171 @@ tests:
         equal:
           path: spec.template.spec.imagePullSecrets[0].name
           value: regcred
+
+  - it: should have Recreate deployment strategy
+    set:
+      clickhouse:
+        enabled: true
+    asserts:
+      - documentSelector: *deployment-selector
+        equal:
+          path: spec.strategy.type
+          value: Recreate
+
+  - it: should have imagePullPolicy set to IfNotPresent
+    set:
+      clickhouse:
+        enabled: true
+    asserts:
+      - documentSelector: *deployment-selector
+        equal:
+          path: spec.template.spec.containers[0].imagePullPolicy
+          value: IfNotPresent
+
+  - it: should include resources when configured
+    set:
+      clickhouse:
+        enabled: true
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "2000m"
+    asserts:
+      - documentSelector: *deployment-selector
+        equal:
+          path: spec.template.spec.containers[0].resources.requests.memory
+          value: "512Mi"
+      - documentSelector: *deployment-selector
+        equal:
+          path: spec.template.spec.containers[0].resources.requests.cpu
+          value: "500m"
+      - documentSelector: *deployment-selector
+        equal:
+          path: spec.template.spec.containers[0].resources.limits.memory
+          value: "2Gi"
+      - documentSelector: *deployment-selector
+        equal:
+          path: spec.template.spec.containers[0].resources.limits.cpu
+          value: "2000m"
+
+  - it: should not include resources when not configured
+    set:
+      clickhouse:
+        enabled: true
+        resources: {}
+    asserts:
+      - documentSelector: *deployment-selector
+        isNull:
+          path: spec.template.spec.containers[0].resources
+
+  - it: should include preStop lifecycle hook with correct commands
+    set:
+      clickhouse:
+        enabled: true
+    asserts:
+      - documentSelector: *deployment-selector
+        isNotNull:
+          path: spec.template.spec.containers[0].lifecycle.preStop
+      - documentSelector: *deployment-selector
+        equal:
+          path: spec.template.spec.containers[0].lifecycle.preStop.exec.command[0]
+          value: /bin/sh
+      - documentSelector: *deployment-selector
+        equal:
+          path: spec.template.spec.containers[0].lifecycle.preStop.exec.command[1]
+          value: -c
+      - documentSelector: *deployment-selector
+        matchRegex:
+          path: spec.template.spec.containers[0].lifecycle.preStop.exec.command[2]
+          pattern: ".*SYSTEM STOP MERGES.*"
+      - documentSelector: *deployment-selector
+        matchRegex:
+          path: spec.template.spec.containers[0].lifecycle.preStop.exec.command[2]
+          pattern: ".*SYSTEM STOP MOVES.*"
+      - documentSelector: *deployment-selector
+        matchRegex:
+          path: spec.template.spec.containers[0].lifecycle.preStop.exec.command[2]
+          pattern: ".*SYSTEM FLUSH LOGS.*"
+
+  - it: should include startupProbe with default values when enabled
+    set:
+      clickhouse:
+        enabled: true
+        port: 8123
+        startupProbe:
+          enabled: true
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 30
+    asserts:
+      - documentSelector: *deployment-selector
+        isSubset:
+          path: spec.template.spec.containers[0].startupProbe
+          content:
+            httpGet:
+              path: /ping
+              port: 8123
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
+
+  - it: should not include startupProbe when disabled
+    set:
+      clickhouse:
+        enabled: true
+        startupProbe:
+          enabled: false
+    asserts:
+      - documentSelector: *deployment-selector
+        isNull:
+          path: spec.template.spec.containers[0].startupProbe
+
+  - it: should use custom startupProbe values when provided
+    set:
+      clickhouse:
+        enabled: true
+        port: 8123
+        startupProbe:
+          enabled: true
+          initialDelaySeconds: 10
+          periodSeconds: 15
+          timeoutSeconds: 10
+          failureThreshold: 60
+    asserts:
+      - documentSelector: *deployment-selector
+        isSubset:
+          path: spec.template.spec.containers[0].startupProbe
+          content:
+            httpGet:
+              path: /ping
+              port: 8123
+            initialDelaySeconds: 10
+            periodSeconds: 15
+            timeoutSeconds: 10
+            failureThreshold: 60
+
+  - it: should have default terminationGracePeriodSeconds of 90
+    set:
+      clickhouse:
+        enabled: true
+    asserts:
+      - documentSelector: *deployment-selector
+        equal:
+          path: spec.template.spec.terminationGracePeriodSeconds
+          value: 90
+
+  - it: should use custom terminationGracePeriodSeconds when provided
+    set:
+      clickhouse:
+        enabled: true
+        terminationGracePeriodSeconds: 120
+    asserts:
+      - documentSelector: *deployment-selector
+        equal:
+          path: spec.template.spec.terminationGracePeriodSeconds
+          value: 120
