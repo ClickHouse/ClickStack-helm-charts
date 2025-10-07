@@ -276,7 +276,7 @@ tests:
       mongodb:
         enabled: true
       hyperdx:
-        initContainers:
+        initContainer:
           resources:
             limits:
               cpu: 1
@@ -308,7 +308,7 @@ tests:
       mongodb:
         enabled: true
       hyperdx:
-        initContainers:
+        initContainer:
     asserts:
       - isNotEmpty:
           path: spec.template.spec.initContainers
