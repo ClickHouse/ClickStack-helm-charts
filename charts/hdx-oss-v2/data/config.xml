@@ -33,6 +33,9 @@
     <timezone>UTC</timezone>
     <mlock_executable>false</mlock_executable>
 
+    <!-- Graceful shutdown settings -->
+    <shutdown_wait_unfinished>60</shutdown_wait_unfinished>
+
     {{- if .Values.clickhouse.prometheus.enabled }}
     <!-- Prometheus exporter -->
     <prometheus>

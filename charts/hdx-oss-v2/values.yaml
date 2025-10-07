@@ -286,6 +286,7 @@ clickhouse:
   image: "clickhouse/clickhouse-server:25.7-alpine"
   port: 8123
   nativePort: 9000
+  terminationGracePeriodSeconds: 90
   resources:
     {}
     # Example:

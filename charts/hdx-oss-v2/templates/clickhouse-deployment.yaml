@@ -20,6 +20,7 @@ spec:
         {{- include "hdx-oss.selectorLabels" . | nindent 8 }}
         app: clickhouse
     spec:
+      terminationGracePeriodSeconds: {{ .Values.clickhouse.terminationGracePeriodSeconds | default 90 }}
       {{- if .Values.clickhouse.nodeSelector }}
       nodeSelector:
         {{- toYaml .Values.clickhouse.nodeSelector | nindent 8 }}
