@@ -1,5 +1,13 @@
 # helm-charts
 
+## 0.7.3
+
+### Patch Changes
+
+- 38e5d05: chore: update appVersion to 2.4.0
+- 910ae39: chore: update appVersion to 2.5.0
+- 9b374cb: chore: update appVersion to 2.6.0
+
 ## 0.7.2
 
 ### Patch Changes
