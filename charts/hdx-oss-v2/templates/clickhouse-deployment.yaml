@@ -8,6 +8,8 @@ metadata:
     app: clickhouse
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       {{- include "hdx-oss.selectorLabels" . | nindent 6 }}
@@ -33,12 +35,28 @@ spec:
       containers:
         - name: clickhouse
           image: "{{ .Values.clickhouse.image }}"
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: {{ .Values.clickhouse.port }}
             - containerPort: {{ .Values.clickhouse.nativePort }}
           env:
             - name: CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT
               value: "1"
+          {{- if .Values.clickhouse.resources }}
+          resources:
+            {{- toYaml .Values.clickhouse.resources | nindent 12 }}
+          {{- end }}
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - /bin/sh
+                  - -c
+                  - |
+                    clickhouse-client --query "SYSTEM STOP MERGES" || true
+                    clickhouse-client --query "SYSTEM STOP MOVES" || true
+                    clickhouse-client --query "SYSTEM FLUSH LOGS" || true
+                    sleep 5
           {{- if .Values.clickhouse.livenessProbe.enabled }}
           livenessProbe:
             httpGet:
@@ -58,6 +76,16 @@ spec:
             periodSeconds: {{ .Values.clickhouse.readinessProbe.periodSeconds }}
             timeoutSeconds: {{ .Values.clickhouse.readinessProbe.timeoutSeconds }}
             failureThreshold: {{ .Values.clickhouse.readinessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.clickhouse.startupProbe.enabled }}
+          startupProbe:
+            httpGet:
+              path: /ping
+              port: {{ .Values.clickhouse.port }}
+            initialDelaySeconds: {{ .Values.clickhouse.startupProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.clickhouse.startupProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.clickhouse.startupProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.clickhouse.startupProbe.failureThreshold }}
           {{- end }}
           volumeMounts:
             - name: config

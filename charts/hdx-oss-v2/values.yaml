@@ -286,6 +286,15 @@ clickhouse:
   image: "clickhouse/clickhouse-server:25.7-alpine"
   port: 8123
   nativePort: 9000
+  resources:
+    {}
+    # Example:
+    # requests:
+    #   memory: "512Mi"
+    #   cpu: "500m"
+    # limits:
+    #   memory: "2Gi"
+    #   cpu: "2000m"
   livenessProbe:
     enabled: true
     initialDelaySeconds: 10
@@ -298,6 +307,12 @@ clickhouse:
     periodSeconds: 10
     timeoutSeconds: 5
     failureThreshold: 3
+  startupProbe:
+    enabled: true
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 30
   enabled: true
   # Add nodeSelector and tolerations for clickhouse service
   nodeSelector:
