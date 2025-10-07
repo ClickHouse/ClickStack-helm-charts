@@ -29,11 +29,13 @@ hyperdx:
     timeoutSeconds: 5
     failureThreshold: 3
   # Add nodeSelector and tolerations for hyperdx service
-  nodeSelector: {}
+  nodeSelector:
+    {}
     # Example:
     # kubernetes.io/os: linux
     # node-role.kubernetes.io/worker: "true"
-  tolerations: []
+  tolerations:
+    []
     # Example:
     # - key: "key1"
     #   operator: "Equal"
@@ -55,19 +57,22 @@ hyperdx:
   mongoUri: mongodb://{{ include "hdx-oss.fullname" . }}-mongodb:{{ .Values.mongodb.port }}/hyperdx
 
   # Pod-level annotations (applied to the deployment pods)
-  annotations: {}
+  annotations:
+    {}
     # myAnnotation: "myValue"
 
   # Pod-level labels (applied to the deployment pods)
-  labels: {}
+  labels:
+    {}
     # myLabel: "myValue"
-  env: []
+  env:
+    []
     # Additional environment variables can be configured here
     # This is preserved for backward compatibility and advanced use cases
 
   # Default connections and sources (ENABLED BY DEFAULT)
   # Set to empty string to disable: defaultConnections: "" or defaultSources: ""
-  # 
+  #
   # To use an existing secret instead of inline configuration, set:
   # useExistingConfigSecret: true
   # existingConfigSecret: "my-hyperdx-config"
@@ -79,7 +84,7 @@ hyperdx:
   existingConfigSecret: ""
   existingConfigConnectionsKey: "connections.json"
   existingConfigSourcesKey: "sources.json"
-  
+
   defaultConnections: |
     [
       {
@@ -200,7 +205,7 @@ hyperdx:
     ingressClassName: nginx
     annotations: {}
     # The host to use for the ingress. Defaults to localhost. Be sure to update hyperdx.frontendUrl with this host value + protocol
-    host: "localhost"  # Production domain
+    host: "localhost" # Production domain
     path: "/(.*)"
     pathType: "ImplementationSpecific"
     proxyBodySize: "100m"
@@ -236,9 +241,10 @@ hyperdx:
 
   # Service configuration
   service:
-    type: ClusterIP  # Use ClusterIP for security. For external access, use ingress with proper TLS and authentication
+    type: ClusterIP # Use ClusterIP for security. For external access, use ingress with proper TLS and authentication
     # Service-level annotations (applied to the Kubernetes service resource)
-    annotations: {}
+    annotations:
+      {}
       # Example service annotations:
       # service.beta.kubernetes.io/aws-load-balancer-internal: "true"
       # cloud.google.com/load-balancer-type: "Internal"
@@ -248,11 +254,13 @@ mongodb:
   port: 27017
   enabled: true
   # Add nodeSelector and tolerations for mongodb service
-  nodeSelector: {}
+  nodeSelector:
+    {}
     # Example:
     # kubernetes.io/os: linux
     # node-role.kubernetes.io/worker: "true"
-  tolerations: []
+  tolerations:
+    []
     # Example:
     # - key: "key1"
     #   operator: "Equal"
@@ -275,7 +283,7 @@ mongodb:
     failureThreshold: 3
 
 clickhouse:
-  image: "clickhouse/clickhouse-server:24-alpine"
+  image: "clickhouse/clickhouse-server:25.7-alpine"
   port: 8123
   nativePort: 9000
   livenessProbe:
@@ -292,11 +300,13 @@ clickhouse:
     failureThreshold: 3
   enabled: true
   # Add nodeSelector and tolerations for clickhouse service
-  nodeSelector: {}
+  nodeSelector:
+    {}
     # Example:
     # kubernetes.io/os: linux
     # node-role.kubernetes.io/worker: "true"
-  tolerations: []
+  tolerations:
+    []
     # Example:
     # - key: "key1"
     #   operator: "Equal"
@@ -305,9 +315,10 @@ clickhouse:
 
   # Service configuration
   service:
-    type: ClusterIP  # Use ClusterIP for security. For external access, use ingress with proper TLS and authentication
+    type: ClusterIP # Use ClusterIP for security. For external access, use ingress with proper TLS and authentication
     # Service-level annotations (applied to the Kubernetes service resource)
-    annotations: {}
+    annotations:
+      {}
       # Example service annotations:
       # service.beta.kubernetes.io/aws-load-balancer-internal: "true"
       # cloud.google.com/load-balancer-type: "Internal"
@@ -330,9 +341,9 @@ clickhouse:
     # For PRODUCTION: Remove development CIDRs and keep only your cluster's specific CIDR
     # For DEVELOPMENT: Multiple common CIDRs are included for convenience
     clusterCidrs:
-      - "10.0.0.0/8"        # Most Kubernetes clusters (including GKE, EKS, AKS)
-      - "172.16.0.0/12"     # Some cloud providers and Docker Desktop
-      - "192.168.0.0/16"    # OrbStack, Minikube, and local development
+      - "10.0.0.0/8" # Most Kubernetes clusters (including GKE, EKS, AKS)
+      - "172.16.0.0/12" # Some cloud providers and Docker Desktop
+      - "192.168.0.0/16" # OrbStack, Minikube, and local development
 
 otel:
   image:
@@ -340,7 +351,8 @@ otel:
     tag:
     pullPolicy: IfNotPresent
   replicas: 1
-  resources: {}
+  resources:
+    {}
     # Example:
     # requests:
     #   memory: "127Mi"
@@ -349,14 +361,17 @@ otel:
     #   memory: "256Mi"
     #   cpu: "200m"
   # Pod-level annotations (applied to the deployment pods)
-  annotations: {}
+  annotations:
+    {}
     # myAnnotation: "myValue"
   # Add nodeSelector and tolerations for otel-collector service
-  nodeSelector: {}
+  nodeSelector:
+    {}
     # Example:
     # kubernetes.io/os: linux
     # node-role.kubernetes.io/worker: "true"
-  tolerations: []
+  tolerations:
+    []
     # Example:
     # - key: "key1"
     #   operator: "Equal"
@@ -368,7 +383,8 @@ otel:
   httpPort: 4318
   healthPort: 8888
   enabled: true
-  env: []
+  env:
+    []
     # Additional environment variables can be configured here
     # Example:
     # - name: CUSTOM_VAR
@@ -430,7 +446,7 @@ otel:
 tasks:
   enabled: false
   checkAlerts:
-    schedule: "*/1 * * * *"  # Runs every 1 minute
+    schedule: "*/1 * * * *" # Runs every 1 minute
     resources:
       limits:
         cpu: 200m
