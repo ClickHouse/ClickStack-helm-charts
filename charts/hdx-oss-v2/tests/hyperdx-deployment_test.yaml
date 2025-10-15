@@ -119,7 +119,7 @@ tests:
           value: wait-for-mongodb
       - equal:
           path: spec.template.spec.initContainers[0].image
-          value: busybox
+          value: busybox@sha256:1fcf5df59121b92d61e066df1788e8df0cc35623f5d62d9679a41e163b6a0cdb
       - contains:
           path: spec.template.spec.initContainers[0].command
           content: sh
