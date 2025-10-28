@@ -120,6 +120,9 @@ tests:
       - equal:
           path: spec.template.spec.initContainers[0].image
           value: busybox@sha256:1fcf5df59121b92d61e066df1788e8df0cc35623f5d62d9679a41e163b6a0cdb
+      - equal:
+          path: spec.template.spec.initContainers[0].imagePullPolicy
+          value: IfNotPresent
       - contains:
           path: spec.template.spec.initContainers[0].command
           content: sh
@@ -129,6 +132,22 @@ tests:
       - matchRegex:
           path: spec.template.spec.initContainers[0].command[2]
           pattern: "until nc -z .+-mongodb [0-9]+; do echo waiting for mongodb; sleep 2; done;"
+
+  - it: should allow overriding initContainer image and pullPolicy
+    set:
+      mongodb:
+        enabled: true
+      hyperdx:
+        waitForMongodb:
+          image: busybox:1.36.1
+          pullPolicy: Always
+    asserts:
+      - equal:
+          path: spec.template.spec.initContainers[0].image
+          value: busybox:1.36.1
+      - equal:
+          path: spec.template.spec.initContainers[0].imagePullPolicy
+          value: Always
 
   - it: should include livenessProbe with default values when enabled
     asserts:
