@@ -1,5 +1,12 @@
 # helm-charts
 
+## 0.8.1
+
+### Patch Changes
+
+- 521b5a1: refactor: Parameterize hyperdx-deployment initContainer image and pullPolicy
+- db5d20f: chore: update appVersion to 2.7.0
+
 ## 0.8.0
 
 ### Minor Changes
