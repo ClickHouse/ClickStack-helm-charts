@@ -1,5 +1,11 @@
 # helm-charts
 
+## 0.8.2
+
+### Patch Changes
+
+- e97c3d4: chore: update appVersion to 2.7.1
+
 ## 0.8.1
 
 ### Patch Changes
