@@ -9,7 +9,7 @@ tests:
     asserts:
       - hasDocuments:
           count: 0
-          
+
   - it: should render correctly when tasks are enabled
     set:
       tasks:
@@ -24,7 +24,7 @@ tests:
               cpu: 150m
               memory: 150Mi
       hyperdx:
-        image: 
+        image:
           repository: hyperdx/hyperdx
           tag: 2-beta
     asserts:
@@ -38,7 +38,7 @@ tests:
           value: hyperdx/hyperdx:2-beta
       - equal:
           path: spec.jobTemplate.spec.template.spec.containers[0].command
-          value: ["node", "/app/packages/api/tasks/index", "check-alerts"]
+          value: ["node", "/app/api/build/tasks/index.js", "check-alerts"]
       - isSubset:
           path: spec.jobTemplate.spec.template.spec.containers[0].resources
           content:
@@ -63,7 +63,7 @@ tests:
           content:
             name: OTEL_SERVICE_NAME
             value: "hdx-oss-task-check-alerts"
-            
+
   - it: should use default schedule when not provided
     set:
       tasks:
@@ -94,3 +94,63 @@ tests:
       - equal:
           path: spec.jobTemplate.spec.template.spec.imagePullSecrets[0].name
           value: regcred
+
+  - it: should use esbuild command path for versions before 2.7.1
+    set:
+      tasks:
+        enabled: true
+      hyperdx:
+        image:
+          tag: "2.7.0"
+    asserts:
+      - equal:
+          path: spec.jobTemplate.spec.template.spec.containers[0].command
+          value: ["node", "/app/packages/api/tasks/index", "check-alerts"]
+
+  - it: should use esbuild command path for version 2.6.0
+    set:
+      tasks:
+        enabled: true
+      hyperdx:
+        image:
+          tag: "2.6.0"
+    asserts:
+      - equal:
+          path: spec.jobTemplate.spec.template.spec.containers[0].command
+          value: ["node", "/app/packages/api/tasks/index", "check-alerts"]
+
+  - it: should use post-esbuild command path for version 2.7.1
+    set:
+      tasks:
+        enabled: true
+      hyperdx:
+        image:
+          tag: "2.7.1"
+    asserts:
+      - equal:
+          path: spec.jobTemplate.spec.template.spec.containers[0].command
+          value: ["node", "/app/api/build/tasks/index.js", "check-alerts"]
+
+  - it: should use post-esbuild command path for versions after 2.7.1
+    set:
+      tasks:
+        enabled: true
+      hyperdx:
+        image:
+          tag: "2.8.0"
+    asserts:
+      - equal:
+          path: spec.jobTemplate.spec.template.spec.containers[0].command
+          value: ["node", "/app/api/build/tasks/index.js", "check-alerts"]
+
+  - it: should use post-esbuild command path for version 3.0.0
+    set:
+      tasks:
+        enabled: true
+      hyperdx:
+        image:
+          tag: "3.0.0"
+    asserts:
+      - equal:
+          path: spec.jobTemplate.spec.template.spec.containers[0].command
+          value: ["node", "/app/api/build/tasks/index.js", "check-alerts"]
