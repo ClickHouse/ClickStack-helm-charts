@@ -37,11 +37,11 @@ Welcome to the official ClickStack Helm charts repository. ClickStack brings tog
 
 ```sh
 # Add the ClickStack Helm repository
-helm repo add hyperdx https://hyperdxio.github.io/helm-charts
+helm repo add clickstack https://hyperdxio.github.io/helm-charts
 helm repo update
 
 # Install with default values (includes ClickHouse, OTEL collector, MongoDB, HyperDX)
-helm install my-clickstack hyperdx/clickstack
+helm install my-clickstack clickstack/clickstack
 
 # Get the external IP (for cloud deployments)
 kubectl get services
@@ -64,7 +64,7 @@ By default, this Helm chart deploys the complete ClickStack including:
 To install the full stack with default values:
 
 ```sh
-helm install my-clickstack hyperdx/clickstack
+helm install my-clickstack clickstack/clickstack
 ```
 
 ### External ClickHouse
@@ -255,19 +255,19 @@ hyperdx:
 Then upgrade your deployment:
 
 ```sh
-helm upgrade my-hyperdx hyperdx/clickstack -f values.yaml
+helm upgrade my-clickstack clickstack/clickstack -f values.yaml
 ```
 
 #### Method 2: Update via Helm upgrade with --set flag
 
 ```sh
-helm upgrade my-hyperdx hyperdx/clickstack --set hyperdx.apiKey="your-api-key-here"
+helm upgrade my-clickstack clickstack/clickstack --set hyperdx.apiKey="your-api-key-here"
 ```
 
 **Important:** After updating the API key, you need to restart the pods to pick up the new configuration:
 
 ```sh
-kubectl rollout restart deployment my-hyperdx-clickstack-app my-hyperdx-clickstack-otel-collector
+kubectl rollout restart deployment my-clickstack-clickstack-app my-clickstack-clickstack-otel-collector
 ```
 
 **Note:** The chart automatically creates a Kubernetes secret (`<release-name>-app-secrets`) with your API key. No additional secret configuration is needed unless you want to use an external secret.
@@ -506,21 +506,21 @@ hyperdx:
 To upgrade to a newer version:
 
 ```sh
-helm upgrade my-hyperdx hyperdx/clickstack -f values.yaml
+helm upgrade my-clickstack clickstack/clickstack -f values.yaml
 ```
 
 To check available chart versions:
 
 ```sh
-helm search repo hyperdx
+helm search repo clickstack
 ```
 
-### Uninstalling HyperDX
+### Uninstalling ClickStack
 
 To remove the deployment:
 
 ```sh
-helm uninstall my-hyperdx
+helm uninstall my-clickstack
 ```
 
 This will remove all resources associated with the release, but persistent data (if any) may remain.
@@ -543,9 +543,9 @@ GKE's LoadBalancer service can cause internal DNS resolution issues where pod-to
 Use the fully qualified domain name (FQDN) for the OpAMP server URL:
 
 ```bash
-helm install my-hyperdx hyperdx/clickstack \
+helm install my-clickstack clickstack/clickstack \
   --set hyperdx.frontendUrl="http://your-external-ip-or-domain.com" \
-  --set otel.opampServerUrl="http://my-hyperdx-clickstack-app.default.svc.cluster.local:4320"
+  --set otel.opampServerUrl="http://my-clickstack-clickstack-app.default.svc.cluster.local:4320"
 ```
 
 #### Other GKE Considerations
@@ -556,7 +556,7 @@ hyperdx:
   frontendUrl: "http://34.123.61.99"  # Use your LoadBalancer external IP
 
 otel:
-  opampServerUrl: "http://my-hyperdx-clickstack-app.default.svc.cluster.local:4320"
+  opampServerUrl: "http://my-clickstack-clickstack-app.default.svc.cluster.local:4320"
 
 # Adjust for GKE pod networking if needed
 clickhouse:
