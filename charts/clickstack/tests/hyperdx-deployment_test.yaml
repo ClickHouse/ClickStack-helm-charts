@@ -1,0 +1,291 @@
+suite: Test HyperDX Deployment
+templates:
+  - hyperdx-deployment.yaml
+tests:
+  - it: should render deployment correctly with default values
+    asserts:
+      - isKind:
+          of: Deployment
+      - equal:
+          path: spec.replicas
+          value: 1
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: ^docker\.hyperdx\.io/hyperdx/hyperdx:\d+\.\d+\.\d+$
+      - equal:
+          path: spec.template.spec.containers[0].ports[0].containerPort
+          value: 3000
+      - equal:
+          path: spec.template.spec.containers[0].ports[1].containerPort
+          value: 8000
+      - equal:
+          path: spec.template.spec.containers[0].ports[2].containerPort
+          value: 4320
+      - isSubset:
+          path: spec.template.spec.containers[0].envFrom[0]
+          content:
+            configMapRef:
+              name: RELEASE-NAME-clickstack-app-config
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: HYPERDX_API_KEY
+            valueFrom:
+              secretKeyRef:
+                key: api-key
+                name: RELEASE-NAME-clickstack-app-secrets
+
+  - it: should set custom replicas when provided
+    set:
+      hyperdx:
+        replicas: 3
+    asserts:
+      - equal:
+          path: spec.replicas
+          value: 3
+
+  - it: should add custom annotations when provided
+    set:
+      hyperdx:
+        annotations:
+          prometheus.io/scrape: "true"
+          prometheus.io/port: "3000"
+    asserts:
+      - isSubset:
+          path: spec.template.metadata.annotations
+          content:
+            prometheus.io/scrape: "true"
+            prometheus.io/port: "3000"
+            
+  - it: should add custom labels when provided
+    set:
+      hyperdx:
+        labels:
+          environment: production
+          team: platform
+    asserts:
+      - isSubset:
+          path: metadata.labels
+          content:
+            environment: production
+            team: platform
+            
+  - it: should add custom environment variables when provided
+    set:
+      hyperdx:
+        env:
+          - name: CUSTOM_ENV
+            value: "test-value"
+          - name: ANOTHER_ENV
+            value: "another-value"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CUSTOM_ENV
+            value: "test-value"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: ANOTHER_ENV
+            value: "another-value"
+
+  - it: should expose OpAMP container port with default values
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].ports[2].containerPort
+          value: 4320
+      - equal:
+          path: spec.template.spec.containers[0].ports[2].name
+          value: opamp-port
+  
+  - it: should use custom OpAMP port when provided
+    set:
+      hyperdx:
+        opampPort: 5320
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].ports[2].containerPort
+          value: 5320
+  - it: should include initContainers when mongodb.enabled is true
+    set:
+      mongodb:
+        enabled: true
+    asserts:
+      - isNotEmpty:
+          path: spec.template.spec.initContainers
+      - equal:
+          path: spec.template.spec.initContainers[0].name
+          value: wait-for-mongodb
+      - equal:
+          path: spec.template.spec.initContainers[0].image
+          value: busybox@sha256:1fcf5df59121b92d61e066df1788e8df0cc35623f5d62d9679a41e163b6a0cdb
+      - equal:
+          path: spec.template.spec.initContainers[0].imagePullPolicy
+          value: IfNotPresent
+      - contains:
+          path: spec.template.spec.initContainers[0].command
+          content: sh
+      - contains:
+          path: spec.template.spec.initContainers[0].command
+          content: -c
+      - matchRegex:
+          path: spec.template.spec.initContainers[0].command[2]
+          pattern: "until nc -z .+-mongodb [0-9]+; do echo waiting for mongodb; sleep 2; done;"
+
+  - it: should allow overriding initContainer image and pullPolicy
+    set:
+      mongodb:
+        enabled: true
+      hyperdx:
+        waitForMongodb:
+          image: busybox:1.36.1
+          pullPolicy: Always
+    asserts:
+      - equal:
+          path: spec.template.spec.initContainers[0].image
+          value: busybox:1.36.1
+      - equal:
+          path: spec.template.spec.initContainers[0].imagePullPolicy
+          value: Always
+
+  - it: should include livenessProbe with default values when enabled
+    asserts:
+      - isSubset:
+          path: spec.template.spec.containers[0].livenessProbe
+          content:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+  - it: should include readinessProbe with default values when enabled
+    asserts:
+      - isSubset:
+          path: spec.template.spec.containers[0].readinessProbe
+          content:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 1
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+  - it: should not include livenessProbe when disabled
+    set:
+      hyperdx:
+        livenessProbe:
+          enabled: false
+    asserts:
+      - isNull:
+          path: spec.template.spec.containers[0].livenessProbe
+
+  - it: should not include readinessProbe when disabled
+    set:
+      hyperdx:
+        readinessProbe:
+          enabled: false
+    asserts:
+      - isNull:
+          path: spec.template.spec.containers[0].readinessProbe
+
+  - it: should use custom livenessProbe values when provided
+    set:
+      hyperdx:
+        livenessProbe:
+          enabled: true
+          initialDelaySeconds: 20
+          periodSeconds: 60
+          timeoutSeconds: 10
+          failureThreshold: 5
+    asserts:
+      - isSubset:
+          path: spec.template.spec.containers[0].livenessProbe
+          content:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 20
+            periodSeconds: 60
+            timeoutSeconds: 10
+            failureThreshold: 5
+
+  - it: should use custom readinessProbe values when provided
+    set:
+      hyperdx:
+        readinessProbe:
+          enabled: true
+          initialDelaySeconds: 5
+          periodSeconds: 20
+          timeoutSeconds: 3
+          failureThreshold: 2
+    asserts:
+      - isSubset:
+          path: spec.template.spec.containers[0].readinessProbe
+          content:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 2
+
+  - it: should use custom apiPort in probes when provided
+    set:
+      hyperdx:
+        apiPort: 9000
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].livenessProbe.httpGet.port
+          value: 9000
+      - equal:
+          path: spec.template.spec.containers[0].readinessProbe.httpGet.port
+          value: 9000
+
+  - it: should not include imagePullSecrets when not configured
+    asserts:
+      - isNull:
+          path: spec.template.spec.imagePullSecrets
+
+  - it: should include imagePullSecrets when configured with single secret
+    set:
+      global:
+        imagePullSecrets:
+          - name: regcred
+    asserts:
+      - isNotNull:
+          path: spec.template.spec.imagePullSecrets
+      - equal:
+          path: spec.template.spec.imagePullSecrets[0].name
+          value: regcred
+      - lengthEqual:
+          path: spec.template.spec.imagePullSecrets
+          count: 1
+
+  - it: should include imagePullSecrets when configured with multiple secrets
+    set:
+      global:
+        imagePullSecrets:
+          - name: regcred
+          - name: docker-hub-secret
+          - name: private-registry-secret
+    asserts:
+      - isNotNull:
+          path: spec.template.spec.imagePullSecrets
+      - equal:
+          path: spec.template.spec.imagePullSecrets[0].name
+          value: regcred
+      - equal:
+          path: spec.template.spec.imagePullSecrets[1].name
+          value: docker-hub-secret
+      - equal:
+          path: spec.template.spec.imagePullSecrets[2].name
+          value: private-registry-secret
+      - lengthEqual:
+          path: spec.template.spec.imagePullSecrets
+          count: 3

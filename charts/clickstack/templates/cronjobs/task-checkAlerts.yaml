@@ -1,0 +1,47 @@
+{{- if .Values.tasks.enabled }}
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "clickstack.fullname" . }}-check-alerts
+  labels:
+    {{- include "clickstack.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.tasks.checkAlerts.schedule | quote }}
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            {{- include "clickstack.selectorLabels" . | nindent 12 }}
+            app.kubernetes.io/component: task
+        spec:
+          {{- if .Values.global.imagePullSecrets }}
+          imagePullSecrets:
+            {{- toYaml .Values.global.imagePullSecrets | nindent 12 }}
+          {{- end }}
+          restartPolicy: OnFailure
+          containers:
+            - name: task
+              image: "{{ .Values.hyperdx.image.repository }}:{{ .Values.hyperdx.image.tag | default .Chart.AppVersion }}"
+              imagePullPolicy: {{ .Values.hyperdx.image.pullPolicy }}
+              {{- $tag := .Values.hyperdx.image.tag | default .Chart.AppVersion -}}
+              {{- if and (regexMatch "^[0-9]+\\.[0-9]+\\.[0-9]+" $tag) (semverCompare "< 2.7.0" $tag) }} # before esbuild revert
+              command: ["node", "/app/packages/api/tasks/index", "check-alerts"]
+              {{- else }}
+              command: ["node", "/app/packages/api/build/tasks/index.js", "check-alerts"] # after esbuild revert
+              {{- end }}
+              envFrom:
+                - configMapRef:
+                    name: {{ include "clickstack.fullname" . }}-app-config
+              env:
+                - name: NODE_ENV
+                  value: "production"
+                - name: OTEL_SERVICE_NAME
+                  value: "hdx-oss-task-check-alerts"
+                - name: APP_TYPE
+                  value: "scheduled-task"
+              resources:
+                {{- toYaml .Values.tasks.checkAlerts.resources | nindent 16 }}
+{{- end }}

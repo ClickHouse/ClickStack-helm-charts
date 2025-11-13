@@ -1,0 +1,476 @@
+global:
+  imageRegistry: ""
+  # List of image pull secrets to use for pulling images from private registries
+  # This helps avoid rate limiting (429 errors) when pulling from Docker Hub
+  # Example:
+  # imagePullSecrets:
+  #   - name: regcred
+  #   - name: docker-hub-secret
+  imagePullSecrets: []
+  storageClassName: "local-path"
+  # Keep PVCs when uninstalling helm release to preserve data
+  keepPVC: false
+
+hyperdx:
+  image:
+    repository: docker.hyperdx.io/hyperdx/hyperdx
+    tag:
+    pullPolicy: IfNotPresent
+  waitForMongodb:
+    # Image used by the init container that waits for MongoDB to be reachable.
+    image: "busybox@sha256:1fcf5df59121b92d61e066df1788e8df0cc35623f5d62d9679a41e163b6a0cdb"
+    pullPolicy: IfNotPresent
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 10
+    periodSeconds: 30
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readinessProbe:
+    enabled: true
+    initialDelaySeconds: 1
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+  # Add nodeSelector and tolerations for hyperdx service
+  nodeSelector:
+    {}
+    # Example:
+    # kubernetes.io/os: linux
+    # node-role.kubernetes.io/worker: "true"
+  tolerations:
+    []
+    # Example:
+    # - key: "key1"
+    #   operator: "Equal"
+    #   value: "value1"
+    #   effect: "NoSchedule"
+  apiKey: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+  apiPort: 8000
+  appPort: 3000
+  opampPort: 4320
+  # deprecated: use frontendUrl instead
+  appUrl: "http://localhost"
+  # The URL that will be use to access the frontend. Defaults to the http://localhost:3000.
+  # If you have an ingress enabled, you should set this to the ingress host with the protocol. E.g. https://hdx-my-domain.com
+  frontendUrl: "{{ .Values.hyperdx.appUrl }}:{{ .Values.hyperdx.appPort }}"
+  logLevel: "info"
+  usageStatsEnabled: true
+  # Endpoint to send hyperdx logs/traces/metrics to.Defaults to the chart's otel collector endpoint.
+  otelExporterEndpoint: http://{{ include "clickstack.fullname" . }}-otel-collector:{{ .Values.otel.httpPort }}
+  mongoUri: mongodb://{{ include "clickstack.fullname" . }}-mongodb:{{ .Values.mongodb.port }}/hyperdx
+
+  # Pod-level annotations (applied to the deployment pods)
+  annotations:
+    {}
+    # myAnnotation: "myValue"
+
+  # Pod-level labels (applied to the deployment pods)
+  labels:
+    {}
+    # myLabel: "myValue"
+  env:
+    []
+    # Additional environment variables can be configured here
+    # This is preserved for backward compatibility and advanced use cases
+
+  # Default connections and sources (ENABLED BY DEFAULT)
+  # Set to empty string to disable: defaultConnections: "" or defaultSources: ""
+  #
+  # To use an existing secret instead of inline configuration, set:
+  # useExistingConfigSecret: true
+  # existingConfigSecret: "my-hyperdx-config"
+  # existingConfigConnectionsKey: "connections.json"  # defaults to "connections.json"
+  # existingConfigSourcesKey: "sources.json"  # defaults to "sources.json"
+  #
+  # The secret should contain separate keys for connections and sources JSON arrays
+  useExistingConfigSecret: false
+  existingConfigSecret: ""
+  existingConfigConnectionsKey: "connections.json"
+  existingConfigSourcesKey: "sources.json"
+
+  defaultConnections: |
+    [
+      {
+        "name": "Local ClickHouse",
+        "host": "http://{{ include "clickstack.fullname" . }}-clickhouse:8123",
+        "port": 8123,
+        "username": "app",
+        "password": "{{ .Values.clickhouse.config.users.appUserPassword }}"
+      }
+    ]
+
+  # Set to empty string to disable: defaultSources: ""
+  defaultSources: |
+    [
+      {
+        "from": {
+          "databaseName": "default",
+          "tableName": "otel_logs"
+        },
+        "kind": "log",
+        "timestampValueExpression": "TimestampTime",
+        "name": "Logs",
+        "displayedTimestampValueExpression": "Timestamp",
+        "implicitColumnExpression": "Body",
+        "serviceNameExpression": "ServiceName",
+        "bodyExpression": "Body",
+        "eventAttributesExpression": "LogAttributes",
+        "resourceAttributesExpression": "ResourceAttributes",
+        "defaultTableSelectExpression": "Timestamp,ServiceName,SeverityText,Body",
+        "severityTextExpression": "SeverityText",
+        "traceIdExpression": "TraceId",
+        "spanIdExpression": "SpanId",
+        "connection": "Local ClickHouse",
+        "traceSourceId": "Traces",
+        "sessionSourceId": "Sessions",
+        "metricSourceId": "Metrics"
+      },
+      {
+        "from": {
+          "databaseName": "default",
+          "tableName": "otel_traces"
+        },
+        "kind": "trace",
+        "timestampValueExpression": "Timestamp",
+        "name": "Traces",
+        "displayedTimestampValueExpression": "Timestamp",
+        "implicitColumnExpression": "SpanName",
+        "serviceNameExpression": "ServiceName",
+        "bodyExpression": "SpanName",
+        "eventAttributesExpression": "SpanAttributes",
+        "resourceAttributesExpression": "ResourceAttributes",
+        "defaultTableSelectExpression": "Timestamp,ServiceName,StatusCode,round(Duration/1e6),SpanName",
+        "traceIdExpression": "TraceId",
+        "spanIdExpression": "SpanId",
+        "durationExpression": "Duration",
+        "durationPrecision": 9,
+        "parentSpanIdExpression": "ParentSpanId",
+        "spanNameExpression": "SpanName",
+        "spanKindExpression": "SpanKind",
+        "statusCodeExpression": "StatusCode",
+        "statusMessageExpression": "StatusMessage",
+        "connection": "Local ClickHouse",
+        "logSourceId": "Logs",
+        "sessionSourceId": "Sessions",
+        "metricSourceId": "Metrics"
+      },
+      {
+        "from": {
+          "databaseName": "default",
+          "tableName": ""
+        },
+        "kind": "metric",
+        "timestampValueExpression": "TimeUnix",
+        "name": "Metrics",
+        "resourceAttributesExpression": "ResourceAttributes",
+        "metricTables": {
+          "gauge": "otel_metrics_gauge",
+          "histogram": "otel_metrics_histogram",
+          "sum": "otel_metrics_sum",
+          "_id": "682586a8b1f81924e628e808",
+          "id": "682586a8b1f81924e628e808"
+        },
+        "connection": "Local ClickHouse",
+        "logSourceId": "Logs",
+        "traceSourceId": "Traces",
+        "sessionSourceId": "Sessions"
+      },
+      {
+        "from": {
+          "databaseName": "default",
+          "tableName": "hyperdx_sessions"
+        },
+        "kind": "session",
+        "timestampValueExpression": "TimestampTime",
+        "name": "Sessions",
+        "displayedTimestampValueExpression": "Timestamp",
+        "implicitColumnExpression": "Body",
+        "serviceNameExpression": "ServiceName",
+        "bodyExpression": "Body",
+        "eventAttributesExpression": "LogAttributes",
+        "resourceAttributesExpression": "ResourceAttributes",
+        "defaultTableSelectExpression": "Timestamp,ServiceName,SeverityText,Body",
+        "severityTextExpression": "SeverityText",
+        "traceIdExpression": "TraceId",
+        "spanIdExpression": "SpanId",
+        "connection": "Local ClickHouse",
+        "logSourceId": "Logs",
+        "traceSourceId": "Traces",
+        "metricSourceId": "Metrics"
+      }
+    ]
+
+  # See https://github.com/hyperdxio/hyperdx/blob/v2/packages/api/docs/auto_provision/AUTO_PROVISION.md
+  # for detailed configuration options
+
+  ingress:
+    enabled: false
+    ingressClassName: nginx
+    annotations: {}
+    # The host to use for the ingress. Defaults to localhost. Be sure to update hyperdx.frontendUrl with this host value + protocol
+    host: "localhost" # Production domain
+    path: "/(.*)"
+    pathType: "ImplementationSpecific"
+    proxyBodySize: "100m"
+    proxyConnectTimeout: "60"
+    proxySendTimeout: "60"
+    proxyReadTimeout: "60"
+    tls:
+      enabled: false
+      secretName: "hyperdx-tls"
+
+    # Additional ingresses - these will only be rendered if the whole ingress object is enabled
+    # This should be used to expose other deployments/services from the helm chart on the cluster
+    # e.g. expose the OTEL collector.
+    additionalIngresses: []
+    # - name: otel-collector
+    #   annotations: {}
+    #   ingressClassName: nginx
+    #   hosts:
+    #     - host: collector.example.com
+    #       paths:
+    #         - path: /
+    #           pathType: Prefix
+    #           port: 4318
+    #   tls:
+    #     - secretName: otel-collector-tls
+    #       hosts:
+    #         - collector.example.com
+
+  replicas: 1
+
+  podDisruptionBudget:
+    enabled: false
+
+  # Service configuration
+  service:
+    type: ClusterIP # Use ClusterIP for security. For external access, use ingress with proper TLS and authentication
+    # Service-level annotations (applied to the Kubernetes service resource)
+    annotations:
+      {}
+      # Example service annotations:
+      # service.beta.kubernetes.io/aws-load-balancer-internal: "true"
+      # cloud.google.com/load-balancer-type: "Internal"
+
+mongodb:
+  image: "mongo:5.0.14-focal"
+  port: 27017
+  enabled: true
+  # Add nodeSelector and tolerations for mongodb service
+  nodeSelector:
+    {}
+    # Example:
+    # kubernetes.io/os: linux
+    # node-role.kubernetes.io/worker: "true"
+  tolerations:
+    []
+    # Example:
+    # - key: "key1"
+    #   operator: "Equal"
+    #   value: "value1"
+    #   effect: "NoSchedule"
+  persistence:
+    enabled: true
+    dataSize: 10Gi
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 10
+    periodSeconds: 30
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readinessProbe:
+    enabled: true
+    initialDelaySeconds: 1
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+clickhouse:
+  image: "clickhouse/clickhouse-server:25.7-alpine"
+  port: 8123
+  nativePort: 9000
+  terminationGracePeriodSeconds: 90
+  resources:
+    {}
+    # Example:
+    # requests:
+    #   memory: "512Mi"
+    #   cpu: "500m"
+    # limits:
+    #   memory: "2Gi"
+    #   cpu: "2000m"
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 10
+    periodSeconds: 30
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readinessProbe:
+    enabled: true
+    initialDelaySeconds: 1
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+  startupProbe:
+    enabled: true
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 30
+  enabled: true
+  # Add nodeSelector and tolerations for clickhouse service
+  nodeSelector:
+    {}
+    # Example:
+    # kubernetes.io/os: linux
+    # node-role.kubernetes.io/worker: "true"
+  tolerations:
+    []
+    # Example:
+    # - key: "key1"
+    #   operator: "Equal"
+    #   value: "value1"
+    #   effect: "NoSchedule"
+
+  # Service configuration
+  service:
+    type: ClusterIP # Use ClusterIP for security. For external access, use ingress with proper TLS and authentication
+    # Service-level annotations (applied to the Kubernetes service resource)
+    annotations:
+      {}
+      # Example service annotations:
+      # service.beta.kubernetes.io/aws-load-balancer-internal: "true"
+      # cloud.google.com/load-balancer-type: "Internal"
+
+  persistence:
+    enabled: true
+    dataSize: 10Gi
+    logSize: 5Gi
+  prometheus:
+    enabled: true
+    port: 9363
+    endpoint: "/metrics"
+  config:
+    users:
+      appUserPassword: "hyperdx"
+      otelUserPassword: "otelcollectorpass"
+      otelUserName: "otelcollector"
+    # Network CIDRs for Kubernetes cluster access control
+    # These CIDRs ensure ClickHouse connections are locked down to intra-cluster only
+    # For PRODUCTION: Remove development CIDRs and keep only your cluster's specific CIDR
+    # For DEVELOPMENT: Multiple common CIDRs are included for convenience
+    clusterCidrs:
+      - "10.0.0.0/8" # Most Kubernetes clusters (including GKE, EKS, AKS)
+      - "172.16.0.0/12" # Some cloud providers and Docker Desktop
+      - "192.168.0.0/16" # OrbStack, Minikube, and local development
+
+otel:
+  image:
+    repository: docker.hyperdx.io/hyperdx/hyperdx-otel-collector
+    tag:
+    pullPolicy: IfNotPresent
+  replicas: 1
+  resources:
+    {}
+    # Example:
+    # requests:
+    #   memory: "127Mi"
+    #   cpu: "100m"
+    # limits:
+    #   memory: "256Mi"
+    #   cpu: "200m"
+  # Pod-level annotations (applied to the deployment pods)
+  annotations:
+    {}
+    # myAnnotation: "myValue"
+  # Add nodeSelector and tolerations for otel-collector service
+  nodeSelector:
+    {}
+    # Example:
+    # kubernetes.io/os: linux
+    # node-role.kubernetes.io/worker: "true"
+  tolerations:
+    []
+    # Example:
+    # - key: "key1"
+    #   operator: "Equal"
+    #   value: "value1"
+    #   effect: "NoSchedule"
+  port: 13133
+  nativePort: 24225
+  grpcPort: 4317
+  httpPort: 4318
+  healthPort: 8888
+  enabled: true
+  env:
+    []
+    # Additional environment variables can be configured here
+    # Example:
+    # - name: CUSTOM_VAR
+    #   value: "my-value"
+    # - name: SECRET_VAR
+    #   valueFrom:
+    #     secretKeyRef:
+    #       name: my-secret
+    #       key: secret-key
+  # Custom OTEL Collector config - allows you to provide your own OTEL Collector configuration
+  # Provide your OTEL Collector configuration as a multi-line string
+  # This will be mounted as /etc/otelcol-contrib/custom.config.yaml and
+  # the CUSTOM_OTELCOL_CONFIG_FILE environment variable will point to it
+  # Example:
+  # customConfig: |
+  #   receivers:
+  #     hostmetrics:
+  #       collection_interval: 5s
+  #       scrapers:
+  #         cpu:
+  #         load:
+  #         memory:
+  #   service:
+  #     pipelines:
+  #       metrics/hostmetrics:
+  #         receivers: [hostmetrics]
+  #         processors: [memory_limiter, batch]
+  #         exporters: [clickhouse]
+  customConfig:
+  # Opamp server URL - defaults to the app service. Customize if you want to use a different Opamp server.
+  # Leave empty if you want to use the app service.
+  # Example: opampServerUrl: "http://custom-opamp-server:4320"
+  opampServerUrl:
+  # Clickhouse endpoint - defaults to chart's Clickhouse service. Customize if you want to use a different Clickhouse service.
+  # Leave empty if you want to use the chart's Clickhouse service.
+  # Example: clickhouseEndpoint: "tcp://custom-clickhouse-service:9000"
+  clickhouseEndpoint:
+  clickhouseUser:
+  clickhousePassword:
+  # Clickhouse Prometheus endpoint - defaults to chart's Clickhouse prometheus service. Customize if you want to use a different Clickhouse prometheus service.
+  # Leave empty if prometheus is disabled.
+  # Example: clickhousePrometheusEndpoint: "http://custom-clickhouse-service:9363"
+  clickhousePrometheusEndpoint:
+  # Clickhouse database to send logs/traces/metrics to. Defaults to "default"
+  clickhouseDatabase: "default"
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 10
+    periodSeconds: 30
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readinessProbe:
+    enabled: true
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+tasks:
+  enabled: false
+  checkAlerts:
+    schedule: "*/1 * * * *" # Runs every 1 minute
+    resources:
+      limits:
+        cpu: 200m
+        memory: 256Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi

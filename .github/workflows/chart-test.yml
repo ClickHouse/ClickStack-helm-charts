@@ -30,9 +30,9 @@ jobs:
       if: github.event_name == 'schedule'
       run: |
         echo "Updating appVersion to 2-nightly for scheduled builds"
-        sed -i 's/^appVersion:.*/appVersion: 2-nightly/' charts/hdx-oss-v2/Chart.yaml
+        sed -i 's/^appVersion:.*/appVersion: 2-nightly/' charts/clickstack/Chart.yaml
         echo "Updated Chart.yaml:"
-        cat charts/hdx-oss-v2/Chart.yaml
+        cat charts/clickstack/Chart.yaml
 
     - name: Create kind cluster config
       run: |
@@ -64,9 +64,9 @@ jobs:
     - name: Run Helm unit tests
       run: |
         helm plugin install https://github.com/helm-unittest/helm-unittest.git || true
-        helm unittest charts/hdx-oss-v2
+        helm unittest charts/clickstack
 
-    - name: Deploy HyperDX chart
+    - name: Deploy ClickStack chart
       run: |
         # Create test values for faster deployment
         cat > test-values.yaml << EOF
@@ -100,7 +100,7 @@ jobs:
         EOF
 
         # Install the chart
-        helm install hyperdx-test ./charts/hdx-oss-v2 -f test-values.yaml --timeout=5m
+        helm install hyperdx-test ./charts/clickstack -f test-values.yaml --timeout=5m
 
         # Give services time to initialize after pods are running
         echo "Waiting for services to initialize..."
@@ -112,7 +112,7 @@ jobs:
         kubectl wait --for=condition=Ready pods -l app=mongodb --timeout=300s
         
         echo "Creating test team in MongoDB..."
-        kubectl exec -n default deployment/hyperdx-test-hdx-oss-v2-mongodb -- mongosh hyperdx --eval "
+        kubectl exec -n default deployment/hyperdx-test-clickstack-mongodb -- mongosh hyperdx --eval "
           db.teams.insertOne({
             name: 'CI Test Team',
             apiKey: 'test-api-key-for-ci',
@@ -123,7 +123,7 @@ jobs:
         "
         
         echo "Verifying team creation..."
-        kubectl exec -n default deployment/hyperdx-test-hdx-oss-v2-mongodb -- mongosh hyperdx --eval "
+        kubectl exec -n default deployment/hyperdx-test-clickstack-mongodb -- mongosh hyperdx --eval "
           const team = db.teams.findOne({ apiKey: 'test-api-key-for-ci' });
           if (team) {
             print('Team created successfully:', team.name);
@@ -164,7 +164,7 @@ jobs:
         echo "=== Events ==="
         kubectl get events --sort-by=.metadata.creationTimestamp
 
-        echo "=== HyperDX App Logs ==="
+        echo "=== ClickStack App Logs ==="
         kubectl logs -l app=app --tail=100 || true
 
         echo "=== ClickHouse Logs ==="

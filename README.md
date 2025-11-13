@@ -1,6 +1,6 @@
-# HyperDX V2 Helm Charts
+# ClickStack Helm Charts
 
-Welcome to the official HyperDX Helm charts repository. This guide provides instructions on how to install, configure, and manage your HyperDX V2 deployment using Helm.
+Welcome to the official ClickStack Helm charts repository. ClickStack brings together the best of observability: **ClickHouse + OpenTelemetry + HyperDX**. This guide provides instructions on how to install, configure, and manage your ClickStack deployment using Helm.
 
 ## Table of Contents
 
@@ -33,15 +33,15 @@ Welcome to the official HyperDX Helm charts repository. This guide provides inst
 - Kubernetes cluster (v1.20+ recommended)
 - `kubectl` configured to interact with your cluster
 
-### Install HyperDX (Full Stack)
+### Install ClickStack (Full Stack)
 
 ```sh
-# Add the HyperDX Helm repository
+# Add the ClickStack Helm repository
 helm repo add hyperdx https://hyperdxio.github.io/helm-charts
 helm repo update
 
-# Install with default values (includes ClickHouse, OTEL collector, MongoDB)
-helm install my-hyperdx hyperdx/hdx-oss-v2
+# Install with default values (includes ClickHouse, OTEL collector, MongoDB, HyperDX)
+helm install my-clickstack hyperdx/clickstack
 
 # Get the external IP (for cloud deployments)
 kubectl get services
@@ -49,13 +49,13 @@ kubectl get services
 # Access the UI at http://<EXTERNAL-IP>:3000
 ```
 
-**That's it!** HyperDX is now running with all components included.
+**That's it!** ClickStack is now running with all components included.
 
 ## Deployment Options
 
 ### Full Stack (Default)
 
-By default, this Helm chart deploys the complete HyperDX stack including:
+By default, this Helm chart deploys the complete ClickStack including:
 - **HyperDX Application** (API, UI, and OpAMP server)
 - **ClickHouse** (for storing logs, traces, and metrics)
 - **OTEL Collector** (for receiving and processing telemetry data)
@@ -64,7 +64,7 @@ By default, this Helm chart deploys the complete HyperDX stack including:
 To install the full stack with default values:
 
 ```sh
-helm install my-hyperdx hyperdx/hdx-oss-v2
+helm install my-clickstack hyperdx/clickstack
 ```
 
 ### External ClickHouse
@@ -255,19 +255,19 @@ hyperdx:
 Then upgrade your deployment:
 
 ```sh
-helm upgrade my-hyperdx hyperdx/hdx-oss-v2 -f values.yaml
+helm upgrade my-hyperdx hyperdx/clickstack -f values.yaml
 ```
 
 #### Method 2: Update via Helm upgrade with --set flag
 
 ```sh
-helm upgrade my-hyperdx hyperdx/hdx-oss-v2 --set hyperdx.apiKey="your-api-key-here"
+helm upgrade my-hyperdx hyperdx/clickstack --set hyperdx.apiKey="your-api-key-here"
 ```
 
 **Important:** After updating the API key, you need to restart the pods to pick up the new configuration:
 
 ```sh
-kubectl rollout restart deployment my-hyperdx-hdx-oss-v2-app my-hyperdx-hdx-oss-v2-otel-collector
+kubectl rollout restart deployment my-hyperdx-clickstack-app my-hyperdx-clickstack-otel-collector
 ```
 
 **Note:** The chart automatically creates a Kubernetes secret (`<release-name>-app-secrets`) with your API key. No additional secret configuration is needed unless you want to use an external secret.
@@ -278,7 +278,7 @@ For handling sensitive data such as API keys or database credentials, use Kubern
 
 ### Using Pre-Configured Secrets
 
-The Helm chart includes a default secret template located at [`charts/hdx-oss-v2/templates/secrets.yaml`](https://github.com/hyperdxio/helm-charts/blob/main/charts/hdx-oss-v2/templates/secrets.yaml). This file provides a base structure for managing secrets.
+The Helm chart includes a default secret template located at [`charts/clickstack/templates/secrets.yaml`](https://github.com/hyperdxio/helm-charts/blob/main/charts/clickstack/templates/secrets.yaml). This file provides a base structure for managing secrets.
 
 
 If you need to manually apply a secret, modify and apply the provided `secrets.yaml` template:
@@ -506,7 +506,7 @@ hyperdx:
 To upgrade to a newer version:
 
 ```sh
-helm upgrade my-hyperdx hyperdx/hdx-oss-v2 -f values.yaml
+helm upgrade my-hyperdx hyperdx/clickstack -f values.yaml
 ```
 
 To check available chart versions:
@@ -543,9 +543,9 @@ GKE's LoadBalancer service can cause internal DNS resolution issues where pod-to
 Use the fully qualified domain name (FQDN) for the OpAMP server URL:
 
 ```bash
-helm install my-hyperdx hyperdx/hdx-oss-v2 \
+helm install my-hyperdx hyperdx/clickstack \
   --set hyperdx.frontendUrl="http://your-external-ip-or-domain.com" \
-  --set otel.opampServerUrl="http://my-hyperdx-hdx-oss-v2-app.default.svc.cluster.local:4320"
+  --set otel.opampServerUrl="http://my-hyperdx-clickstack-app.default.svc.cluster.local:4320"
 ```
 
 #### Other GKE Considerations
@@ -556,7 +556,7 @@ hyperdx:
   frontendUrl: "http://34.123.61.99"  # Use your LoadBalancer external IP
 
 otel:
-  opampServerUrl: "http://my-hyperdx-hdx-oss-v2-app.default.svc.cluster.local:4320"
+  opampServerUrl: "http://my-hyperdx-clickstack-app.default.svc.cluster.local:4320"
 
 # Adjust for GKE pod networking if needed
 clickhouse:
@@ -627,5 +627,5 @@ For HTTP-only deployments (development/testing), some browsers may show crypto A
 ### Checking Logs
 
 ```sh
-kubectl logs -l app.kubernetes.io/name=hdx-oss-v2
+kubectl logs -l app.kubernetes.io/name=clickstack
 ```

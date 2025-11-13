@@ -1,0 +1,49 @@
+suite: Test Helper Templates
+templates:
+  - hyperdx-deployment.yaml
+tests:
+  - it: should render helper name correctly
+    asserts:
+      - matchRegex:
+          path: metadata.name
+          pattern: .*-clickstack-app$
+          
+  - it: should render helper name with nameOverride when provided
+    set:
+      nameOverride: custom-name
+    asserts:
+      - matchRegex:
+          path: metadata.name
+          pattern: .*-custom-name-app$
+          
+  - it: should render helper name with fullnameOverride when provided
+    set:
+      fullnameOverride: direct-override
+    asserts:
+      - equal:
+          path: metadata.name
+          value: direct-override-app
+          
+  - it: should render common labels correctly
+    asserts:
+      - matchRegex:
+          path: metadata.labels["helm.sh/chart"]
+          pattern: ^clickstack-\d+\.\d+\.\d+$
+      - isSubset:
+          path: metadata.labels
+          content:
+            app.kubernetes.io/name: clickstack
+      - isSubset:
+          path: metadata.labels
+          content:
+            app.kubernetes.io/instance: RELEASE-NAME
+      - isSubset:
+          path: metadata.labels
+          content:
+            app.kubernetes.io/managed-by: Helm
+          
+  - it: should render chart version in labels when available
+    asserts:
+      - matchRegex:
+          path: metadata.labels["app.kubernetes.io/version"]
+          pattern: ^\d+\.\d+\.\d+$

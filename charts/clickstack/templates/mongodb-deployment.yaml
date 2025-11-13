@@ -1,0 +1,103 @@
+{{- if .Values.mongodb.enabled }}
+{{- if .Values.mongodb.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "clickstack.fullname" . }}-mongodb
+  labels:
+    {{- include "clickstack.labels" . | nindent 4 }}
+  {{- if .Values.global.keepPVC }}
+  annotations:
+    "helm.sh/resource-policy": keep
+  {{- end }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  {{- if .Values.global.storageClassName }}
+  storageClassName: {{ .Values.global.storageClassName }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.mongodb.persistence.dataSize }}
+---
+{{- end }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "clickstack.fullname" . }}-mongodb
+  labels:
+    {{- include "clickstack.labels" . | nindent 4 }}
+    app: mongodb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "clickstack.selectorLabels" . | nindent 6 }}
+      app: mongodb
+  template:
+    metadata:
+      labels:
+        {{- include "clickstack.selectorLabels" . | nindent 8 }}
+        app: mongodb
+    spec:
+      {{- if .Values.mongodb.nodeSelector }}
+      nodeSelector:
+        {{- toYaml .Values.mongodb.nodeSelector | nindent 8 }}
+      {{- end }}
+      {{- if .Values.mongodb.tolerations }}
+      tolerations:
+        {{- toYaml .Values.mongodb.tolerations | nindent 8 }}
+      {{- end }}
+      {{- if .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml .Values.global.imagePullSecrets | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: mongodb
+          image: "{{ .Values.mongodb.image }}"
+          ports:
+            - containerPort: {{ .Values.mongodb.port }}
+          {{- if .Values.mongodb.livenessProbe.enabled }}
+          livenessProbe:
+            tcpSocket:
+              port: {{ .Values.mongodb.port }}
+            initialDelaySeconds: {{ .Values.mongodb.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.mongodb.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.mongodb.livenessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.mongodb.livenessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.mongodb.readinessProbe.enabled }}
+          readinessProbe:
+            tcpSocket:
+              port: {{ .Values.mongodb.port }}
+            initialDelaySeconds: {{ .Values.mongodb.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.mongodb.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.mongodb.readinessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.mongodb.readinessProbe.failureThreshold }}
+          {{- end }}
+          volumeMounts:
+            - name: mongodb-data
+              mountPath: /data/db
+      volumes:
+        - name: mongodb-data
+          {{- if .Values.mongodb.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "clickstack.fullname" . }}-mongodb
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "clickstack.fullname" . }}-mongodb
+  labels:
+    {{- include "clickstack.labels" . | nindent 4 }}
+spec:
+  ports:
+    - port: {{ .Values.mongodb.port }}
+      targetPort: {{ .Values.mongodb.port }}
+  selector:
+    {{- include "clickstack.selectorLabels" . | nindent 4 }}
+    app: mongodb
+{{- end }}

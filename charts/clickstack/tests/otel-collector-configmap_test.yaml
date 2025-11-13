@@ -1,0 +1,259 @@
+suite: Test OTEL Collector ConfigMap
+templates:
+  - configmaps/otel-collector-configmap.yaml
+tests:
+  - it: should not render when otel is disabled
+    set:
+      otel:
+        enabled: false
+        customConfig: |
+          receivers:
+            otlp:
+              protocols:
+                grpc:
+                  endpoint: 0.0.0.0:4317
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should not render when customConfig is not provided
+    set:
+      otel:
+        enabled: true
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should render when both enabled and customConfig are set
+    set:
+      otel:
+        enabled: true
+        customConfig: |
+          receivers:
+            otlp:
+              protocols:
+                grpc:
+                  endpoint: 0.0.0.0:4317
+                http:
+                  endpoint: 0.0.0.0:4318
+    release:
+      name: my-release
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: ConfigMap
+      - equal:
+          path: metadata.name
+          value: my-release-clickstack-otel-custom-config
+      - matchRegex:
+          path: data["custom.config.yaml"]
+          pattern: "receivers:"
+      - matchRegex:
+          path: data["custom.config.yaml"]
+          pattern: "endpoint: 0.0.0.0:4317"
+      - matchRegex:
+          path: data["custom.config.yaml"]
+          pattern: "endpoint: 0.0.0.0:4318"
+
+  - it: should include proper labels
+    set:
+      otel:
+        enabled: true
+        customConfig: |
+          test: config
+    release:
+      name: test-release
+    chart:
+      version: 1.0.0
+    asserts:
+      - equal:
+          path: metadata.labels.app
+          value: otel-collector
+      - matchRegex:
+          path: metadata.labels["helm.sh/chart"]
+          pattern: "clickstack-"
+      - equal:
+          path: metadata.labels["app.kubernetes.io/name"]
+          value: clickstack
+      - equal:
+          path: metadata.labels["app.kubernetes.io/instance"]
+          value: test-release
+
+  - it: should handle multi-line config with proper indentation
+    set:
+      otel:
+        enabled: true
+        customConfig: |
+          receivers:
+            otlp:
+              protocols:
+                grpc:
+                  endpoint: 0.0.0.0:4317
+                  keepalive:
+                    server_parameters:
+                      max_connection_idle: 30s
+                      max_connection_age: 60s
+          processors:
+            batch:
+              timeout: 10s
+              send_batch_size: 1024
+            memory_limiter:
+              limit_mib: 512
+          exporters:
+            logging:
+              loglevel: debug
+          service:
+            pipelines:
+              traces:
+                receivers: [otlp]
+                processors: [memory_limiter, batch]
+                exporters: [logging]
+    asserts:
+      - matchRegex:
+          path: data["custom.config.yaml"]
+          pattern: "keepalive:"
+      - matchRegex:
+          path: data["custom.config.yaml"]
+          pattern: "server_parameters:"
+      - matchRegex:
+          path: data["custom.config.yaml"]
+          pattern: "max_connection_idle: 30s"
+      - matchRegex:
+          path: data["custom.config.yaml"]
+          pattern: "memory_limiter:"
+      - matchRegex:
+          path: data["custom.config.yaml"]
+          pattern: "limit_mib: 512"
+      - matchRegex:
+          path: data["custom.config.yaml"]
+          pattern: "pipelines:"
+      - matchRegex:
+          path: data["custom.config.yaml"]
+          pattern: "processors: \\[memory_limiter, batch\\]"
+
+  - it: should preserve environment variable references
+    set:
+      otel:
+        enabled: true
+        customConfig: |
+          receivers:
+            otlp:
+              protocols:
+                grpc:
+                  endpoint: ${OTEL_GRPC_ENDPOINT:-0.0.0.0:4317}
+          exporters:
+            clickhouse:
+              endpoint: ${CLICKHOUSE_ENDPOINT}
+              database: ${HYPERDX_OTEL_EXPORTER_CLICKHOUSE_DATABASE}
+              username: ${CLICKHOUSE_USER}
+              password: ${CLICKHOUSE_PASSWORD}
+    asserts:
+      - matchRegex:
+          path: data["custom.config.yaml"]
+          pattern: "\\$\\{OTEL_GRPC_ENDPOINT:-0.0.0.0:4317\\}"
+      - matchRegex:
+          path: data["custom.config.yaml"]
+          pattern: "\\$\\{CLICKHOUSE_ENDPOINT\\}"
+      - matchRegex:
+          path: data["custom.config.yaml"]
+          pattern: "\\$\\{HYPERDX_OTEL_EXPORTER_CLICKHOUSE_DATABASE\\}"
+      - matchRegex:
+          path: data["custom.config.yaml"]
+          pattern: "\\$\\{CLICKHOUSE_USER\\}"
+      - matchRegex:
+          path: data["custom.config.yaml"]
+          pattern: "\\$\\{CLICKHOUSE_PASSWORD\\}"
+
+  - it: should handle empty customConfig string
+    set:
+      otel:
+        enabled: true
+        customConfig: ""
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should render with minimal config
+    set:
+      otel:
+        enabled: true
+        customConfig: |
+          test: minimal
+    release:
+      name: minimal-test
+    asserts:
+      - hasDocuments:
+          count: 1
+      - equal:
+          path: metadata.name
+          value: minimal-test-clickstack-otel-custom-config
+      - matchRegex:
+          path: data["custom.config.yaml"]
+          pattern: "test: minimal"
+
+  - it: should handle config with special characters
+    set:
+      otel:
+        enabled: true
+        customConfig: |
+          receivers:
+            prometheus:
+              config:
+                scrape_configs:
+                  - job_name: 'otel-collector'
+                    metrics_path: /metrics
+                    static_configs:
+                      - targets: ['localhost:8888']
+                        labels:
+                          env: "prod-us-west-2"
+                          cluster: "k8s-cluster-1"
+    asserts:
+      - matchRegex:
+          path: data["custom.config.yaml"]
+          pattern: "job_name: 'otel-collector'"
+      - matchRegex:
+          path: data["custom.config.yaml"]
+          pattern: "metrics_path: /metrics"
+      - matchRegex:
+          path: data["custom.config.yaml"]
+          pattern: "targets: \\['localhost:8888'\\]"
+      - matchRegex:
+          path: data["custom.config.yaml"]
+          pattern: "env: \"prod-us-west-2\""
+      - matchRegex:
+          path: data["custom.config.yaml"]
+          pattern: "cluster: \"k8s-cluster-1\""
+
+  - it: should handle config with yaml anchors and references
+    set:
+      otel:
+        enabled: true
+        customConfig: |
+          extensions:
+            health_check:
+              endpoint: 0.0.0.0:13133
+          
+          receivers:
+            otlp: &otlp-receiver
+              protocols:
+                grpc:
+                  endpoint: 0.0.0.0:4317
+                http:
+                  endpoint: 0.0.0.0:4318
+            
+            otlp/secondary:
+              <<: *otlp-receiver
+              protocols:
+                grpc:
+                  endpoint: 0.0.0.0:14317
+    asserts:
+      - matchRegex:
+          path: data["custom.config.yaml"]
+          pattern: "otlp: &otlp-receiver"
+      - matchRegex:
+          path: data["custom.config.yaml"]
+          pattern: "<<: \\*otlp-receiver"
+      - matchRegex:
+          path: data["custom.config.yaml"]
+          pattern: "endpoint: 0.0.0.0:14317"

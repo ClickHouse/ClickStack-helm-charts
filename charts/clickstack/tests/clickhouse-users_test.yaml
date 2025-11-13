@@ -1,0 +1,132 @@
+suite: Test ClickHouse Users Configuration
+templates:
+  - clickhouse-deployment.yaml
+
+# Common documentSelector patterns using YAML anchors
+_selectors:
+  deployment: &deployment-selector
+    path: kind
+    value: Deployment
+  users-configmap: &users-configmap-selector
+    path: metadata.name
+    value: RELEASE-NAME-clickstack-clickhouse-users
+tests:
+  - it: should render Deployment with users volume mount
+    asserts:
+      - documentSelector:
+          path: kind
+          value: Deployment
+        isKind:
+          of: Deployment
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: users
+            mountPath: /etc/clickhouse-server/users.xml
+            subPath: users.xml
+        documentSelector: *deployment-selector
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: users
+            configMap:
+              name: RELEASE-NAME-clickstack-clickhouse-users
+        documentSelector: *deployment-selector
+
+  - it: should render users ConfigMap with default values
+    asserts:
+      - isKind:
+          of: ConfigMap
+        documentSelector: *users-configmap-selector
+      - equal:
+          path: metadata.name
+          value: RELEASE-NAME-clickstack-clickhouse-users
+        documentSelector: *users-configmap-selector
+      - isNotEmpty:
+          path: data
+        documentSelector: *users-configmap-selector
+
+  - it: should render users ConfigMap with custom clusterCidrs
+    set:
+      clickhouse:
+        config:
+          users:
+            appUserPassword: "customapppass"
+            otelUserPassword: "customotelpass"
+          clusterCidrs:
+            - "10.0.0.0/8"
+            - "172.16.0.0/12"
+            - "192.168.0.0/16"
+    asserts:
+      - isKind:
+          of: ConfigMap
+        documentSelector: *users-configmap-selector
+      - equal:
+          path: metadata.name
+          value: RELEASE-NAME-clickstack-clickhouse-users
+        documentSelector: *users-configmap-selector
+      - isNotEmpty:
+          path: data
+        documentSelector: *users-configmap-selector
+
+  - it: should render users ConfigMap with single clusterCidr
+    set:
+      clickhouse:
+        config:
+          users:
+            appUserPassword: "singleapppass"
+            otelUserPassword: "singleotelpass"
+          clusterCidrs:
+            - "10.244.0.0/16"
+    asserts:
+      - isKind:
+          of: ConfigMap
+        documentSelector: *users-configmap-selector
+      - equal:
+          path: metadata.name
+          value: RELEASE-NAME-clickstack-clickhouse-users
+        documentSelector: *users-configmap-selector
+      - isNotEmpty:
+          path: data
+        documentSelector: *users-configmap-selector
+
+  - it: should render users ConfigMap with empty clusterCidrs
+    set:
+      clickhouse:
+        config:
+          users:
+            appUserPassword: "emptyapppass"
+            otelUserPassword: "emptyotelpass"
+          clusterCidrs: []
+    asserts:
+      - isKind:
+          of: ConfigMap
+        documentSelector: *users-configmap-selector
+      - equal:
+          path: metadata.name
+          value: RELEASE-NAME-clickstack-clickhouse-users
+        documentSelector: *users-configmap-selector
+      - isNotEmpty:
+          path: data
+        documentSelector: *users-configmap-selector
+
+  - it: should render users ConfigMap with custom passwords
+    set:
+      clickhouse:
+        config:
+          users:
+            appUserPassword: "mySecretAppPassword"
+            otelUserPassword: "mySecretOtelPassword"
+          clusterCidrs:
+            - "10.0.0.0/8"
+    asserts:
+      - isKind:
+          of: ConfigMap
+        documentSelector: *users-configmap-selector
+      - equal:
+          path: metadata.name
+          value: RELEASE-NAME-clickstack-clickhouse-users
+        documentSelector: *users-configmap-selector
+      - isNotEmpty:
+          path: data
+        documentSelector: *users-configmap-selector

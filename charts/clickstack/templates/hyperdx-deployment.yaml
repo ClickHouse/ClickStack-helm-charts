@@ -1,0 +1,126 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "clickstack.fullname" . }}-app
+  labels:
+    {{- include "clickstack.labels" . | nindent 4 }}
+    app: {{ include "clickstack.fullname" . }}
+    {{- if .Values.hyperdx.labels }}
+    {{- with .Values.hyperdx.labels }}
+    {{- toYaml . | nindent 4 }} 
+    {{- end -}}
+    {{- end }}
+spec:
+  replicas: {{ .Values.hyperdx.replicas | default 1 }}
+  selector:
+    matchLabels:
+      {{- include "clickstack.selectorLabels" . | nindent 6 }}
+      app: {{ include "clickstack.fullname" . }}
+  template:
+    metadata:
+      labels:
+        {{- include "clickstack.selectorLabels" . | nindent 8 }}
+        app: {{ include "clickstack.fullname" . }}
+      annotations:
+      {{- if .Values.hyperdx.annotations }}
+        {{- with .Values.hyperdx.annotations }}
+        {{- toYaml . | nindent 8 }} 
+        {{- end -}}
+      {{- end }}
+    spec:
+      {{- if .Values.hyperdx.nodeSelector }}
+      nodeSelector:
+        {{- toYaml .Values.hyperdx.nodeSelector | nindent 8 }}
+      {{- end }}
+      {{- if .Values.hyperdx.tolerations }}
+      tolerations:
+        {{- toYaml .Values.hyperdx.tolerations | nindent 8 }}
+      {{- end }}
+      {{- if .Values.hyperdx.topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- toYaml .Values.hyperdx.topologySpreadConstraints | nindent 8 }}
+      {{- end }}
+      {{- if .Values.hyperdx.priorityClassName }}
+      priorityClassName: {{ .Values.hyperdx.priorityClassName | quote }}
+      {{- end }}
+      {{- if .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml .Values.global.imagePullSecrets | nindent 8 }}
+      {{- end }}
+      {{- if .Values.mongodb.enabled }}
+      initContainers:
+        - name: wait-for-mongodb
+          image: {{ .Values.hyperdx.waitForMongodb.image }}
+          imagePullPolicy: {{ .Values.hyperdx.waitForMongodb.pullPolicy }}
+          command: ['sh', '-c', 'until nc -z {{ include "clickstack.fullname" . }}-mongodb {{ .Values.mongodb.port }}; do echo waiting for mongodb; sleep 2; done;']
+      {{- end }}
+      containers:
+        - name: app
+          image: "{{ .Values.hyperdx.image.repository }}:{{ .Values.hyperdx.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.hyperdx.image.pullPolicy }}
+          ports:
+            - name: app-port
+              containerPort: {{ .Values.hyperdx.appPort }}
+            - name: api-port
+              containerPort: {{ .Values.hyperdx.apiPort }}
+            - name: opamp-port
+              containerPort: {{ .Values.hyperdx.opampPort }}
+          {{- if .Values.hyperdx.resources }}
+          resources:
+            {{- toYaml .Values.hyperdx.resources | nindent 12 }}
+          {{- end }}
+          {{- if .Values.hyperdx.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.hyperdx.apiPort }}
+            initialDelaySeconds: {{ .Values.hyperdx.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.hyperdx.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.hyperdx.livenessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.hyperdx.livenessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.hyperdx.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.hyperdx.apiPort }}
+            initialDelaySeconds: {{ .Values.hyperdx.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.hyperdx.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.hyperdx.readinessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.hyperdx.readinessProbe.failureThreshold }}
+          {{- end }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "clickstack.fullname" . }}-app-config
+          env:
+            - name: HYPERDX_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "clickstack.fullname" . }}-app-secrets
+                  key: api-key
+            {{- if .Values.hyperdx.useExistingConfigSecret }}
+            - name: DEFAULT_CONNECTIONS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.hyperdx.existingConfigSecret | quote }}
+                  key: {{ .Values.hyperdx.existingConfigConnectionsKey | quote }}
+                  optional: false
+            - name: DEFAULT_SOURCES
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.hyperdx.existingConfigSecret | quote }}
+                  key: {{ .Values.hyperdx.existingConfigSourcesKey | quote }}
+                  optional: false
+            {{- else }}
+            {{- if .Values.hyperdx.defaultConnections }}
+            - name: DEFAULT_CONNECTIONS
+              value: {{ tpl .Values.hyperdx.defaultConnections . | quote }}
+            {{- end }}
+            {{- if .Values.hyperdx.defaultSources }}
+            - name: DEFAULT_SOURCES
+              value: {{ tpl .Values.hyperdx.defaultSources . | quote }}
+            {{- end }}
+            {{- end }}
+            {{- with .Values.hyperdx.env }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}

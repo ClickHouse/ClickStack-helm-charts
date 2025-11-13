@@ -1,0 +1,481 @@
+suite: Test OTEL Collector Custom Config
+templates:
+  - otel-collector-deployment.yaml
+  - configmaps/otel-collector-configmap.yaml
+
+# Common documentSelector patterns using YAML anchors
+_selectors:
+  deployment: &deployment-selector
+    path: kind
+    value: Deployment
+  configmap: &configmap-selector
+    path: kind
+    value: ConfigMap
+
+tests:
+  - it: should not render configmap or volume when customConfig is not set
+    set:
+      otel:
+        enabled: true
+        image:
+          repository: hyperdx/hyperdx-otel-collector
+          tag: 2-beta
+    asserts:
+      # ConfigMap template should render 0 documents
+      - template: configmaps/otel-collector-configmap.yaml
+        hasDocuments:
+          count: 0
+      # Deployment template should render 2 documents (deployment and service)
+      - template: otel-collector-deployment.yaml
+        hasDocuments:
+          count: 2
+      # Deployment should not have volumes
+      - template: otel-collector-deployment.yaml
+        documentSelector: *deployment-selector
+        isNull:
+          path: spec.template.spec.volumes
+      # Container should not have volumeMounts
+      - template: otel-collector-deployment.yaml
+        documentSelector: *deployment-selector
+        isNull:
+          path: spec.template.spec.containers[0].volumeMounts
+      # CUSTOM_OTELCOL_CONFIG_FILE env var should not be set
+      - template: otel-collector-deployment.yaml
+        documentSelector: *deployment-selector
+        notContains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CUSTOM_OTELCOL_CONFIG_FILE
+
+  - it: should render configmap when customConfig is set
+    set:
+      otel:
+        enabled: true
+        customConfig: |
+          receivers:
+            otlp:
+              protocols:
+                grpc:
+                  endpoint: 0.0.0.0:4317
+                http:
+                  endpoint: 0.0.0.0:4318
+          processors:
+            batch:
+              timeout: 5s
+          exporters:
+            logging:
+              loglevel: debug
+          service:
+            pipelines:
+              traces:
+                receivers: [otlp]
+                processors: [batch]
+                exporters: [logging]
+    release:
+      name: test-release
+    asserts:
+      # ConfigMap template should render 1 document
+      - template: configmaps/otel-collector-configmap.yaml
+        hasDocuments:
+          count: 1
+      # Deployment template should render 2 documents
+      - template: otel-collector-deployment.yaml
+        hasDocuments:
+          count: 2
+      # ConfigMap should exist
+      - template: configmaps/otel-collector-configmap.yaml
+        documentIndex: 0
+        isKind:
+          of: ConfigMap
+      # ConfigMap should have correct name
+      - template: configmaps/otel-collector-configmap.yaml
+        documentIndex: 0
+        equal:
+          path: metadata.name
+          value: test-release-clickstack-otel-custom-config
+      # ConfigMap should contain the custom config
+      - template: configmaps/otel-collector-configmap.yaml
+        documentIndex: 0
+        matchRegex:
+          path: data["custom.config.yaml"]
+          pattern: "receivers:"
+      - template: configmaps/otel-collector-configmap.yaml
+        documentIndex: 0
+        matchRegex:
+          path: data["custom.config.yaml"]
+          pattern: "otlp:"
+      - template: configmaps/otel-collector-configmap.yaml
+        documentIndex: 0
+        matchRegex:
+          path: data["custom.config.yaml"]
+          pattern: "grpc:"
+      - template: configmaps/otel-collector-configmap.yaml
+        documentIndex: 0
+        matchRegex:
+          path: data["custom.config.yaml"]
+          pattern: "endpoint: 0.0.0.0:4317"
+
+  - it: should mount configmap as volume when customConfig is set
+    set:
+      otel:
+        enabled: true
+        customConfig: |
+          receivers:
+            otlp:
+              protocols:
+                grpc:
+                  endpoint: 0.0.0.0:4317
+    release:
+      name: test-release
+    asserts:
+      # Deployment should have volumes
+      - template: otel-collector-deployment.yaml
+        documentSelector: *deployment-selector
+        isNotNull:
+          path: spec.template.spec.volumes
+      # Volume should reference the configmap
+      - template: otel-collector-deployment.yaml
+        documentSelector: *deployment-selector
+        contains:
+          path: spec.template.spec.volumes
+          content:
+            name: custom-config
+            configMap:
+              name: test-release-clickstack-otel-custom-config
+      # Container should have volumeMounts
+      - template: otel-collector-deployment.yaml
+        documentSelector: *deployment-selector
+        isNotNull:
+          path: spec.template.spec.containers[0].volumeMounts
+      # VolumeMount should mount the config file
+      - template: otel-collector-deployment.yaml
+        documentSelector: *deployment-selector
+        contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: custom-config
+            mountPath: /etc/otelcol-contrib/custom.config.yaml
+            subPath: custom.config.yaml
+            readOnly: true
+
+  - it: should set CUSTOM_OTELCOL_CONFIG_FILE env var when customConfig is set
+    set:
+      otel:
+        enabled: true
+        customConfig: |
+          receivers:
+            otlp:
+              protocols:
+                grpc:
+                  endpoint: 0.0.0.0:4317
+    asserts:
+      # CUSTOM_OTELCOL_CONFIG_FILE env var should be set
+      - template: otel-collector-deployment.yaml
+        documentSelector: *deployment-selector
+        contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CUSTOM_OTELCOL_CONFIG_FILE
+            value: /etc/otelcol-contrib/custom.config.yaml
+
+  - it: should handle complex multi-line customConfig correctly
+    set:
+      otel:
+        enabled: true
+        customConfig: |
+          receivers:
+            otlp:
+              protocols:
+                grpc:
+                  endpoint: 0.0.0.0:4317
+                  max_recv_msg_size_mib: 4
+                http:
+                  endpoint: 0.0.0.0:4318
+                  cors:
+                    allowed_origins:
+                      - http://localhost:3000
+                      - https://*.example.com
+            prometheus:
+              config:
+                scrape_configs:
+                  - job_name: 'otel-collector'
+                    scrape_interval: 10s
+                    static_configs:
+                      - targets: ['localhost:8888']
+          processors:
+            batch:
+              timeout: 10s
+              send_batch_size: 1024
+            memory_limiter:
+              check_interval: 1s
+              limit_mib: 512
+              spike_limit_mib: 128
+          exporters:
+            logging:
+              loglevel: debug
+            otlp:
+              endpoint: remote-collector:4317
+              tls:
+                insecure: true
+          service:
+            pipelines:
+              traces:
+                receivers: [otlp]
+                processors: [memory_limiter, batch]
+                exporters: [logging, otlp]
+              metrics:
+                receivers: [prometheus, otlp]
+                processors: [memory_limiter, batch]
+                exporters: [logging]
+    release:
+      name: complex-test
+    asserts:
+      # ConfigMap should be created
+      - template: configmaps/otel-collector-configmap.yaml
+        documentIndex: 0
+        isKind:
+          of: ConfigMap
+      # ConfigMap should contain all the complex config
+      - template: configmaps/otel-collector-configmap.yaml
+        documentIndex: 0
+        matchRegex:
+          path: data["custom.config.yaml"]
+          pattern: "max_recv_msg_size_mib: 4"
+      - template: configmaps/otel-collector-configmap.yaml
+        documentIndex: 0
+        matchRegex:
+          path: data["custom.config.yaml"]
+          pattern: "allowed_origins:"
+      - template: configmaps/otel-collector-configmap.yaml
+        documentIndex: 0
+        matchRegex:
+          path: data["custom.config.yaml"]
+          pattern: "prometheus:"
+      - template: configmaps/otel-collector-configmap.yaml
+        documentIndex: 0
+        matchRegex:
+          path: data["custom.config.yaml"]
+          pattern: "memory_limiter:"
+      - template: configmaps/otel-collector-configmap.yaml
+        documentIndex: 0
+        matchRegex:
+          path: data["custom.config.yaml"]
+          pattern: "check_interval: 1s"
+      - template: configmaps/otel-collector-configmap.yaml
+        documentIndex: 0
+        matchRegex:
+          path: data["custom.config.yaml"]
+          pattern: "pipelines:"
+      - template: configmaps/otel-collector-configmap.yaml
+        documentIndex: 0
+        matchRegex:
+          path: data["custom.config.yaml"]
+          pattern: "traces:"
+      - template: configmaps/otel-collector-configmap.yaml
+        documentIndex: 0
+        matchRegex:
+          path: data["custom.config.yaml"]
+          pattern: "metrics:"
+
+  - it: should not create configmap when otel is disabled even with customConfig
+    set:
+      otel:
+        enabled: false
+        customConfig: |
+          receivers:
+            otlp:
+              protocols:
+                grpc:
+                  endpoint: 0.0.0.0:4317
+    asserts:
+      # Should have no documents (neither deployment nor configmap)
+      - hasDocuments:
+          count: 0
+
+  - it: should maintain proper indentation in configmap data
+    set:
+      otel:
+        enabled: true
+        customConfig: |
+          receivers:
+            otlp:
+              protocols:
+                grpc:
+                  endpoint: 0.0.0.0:4317
+                  keepalive:
+                    server_parameters:
+                      max_connection_idle: 30s
+                      max_connection_age: 60s
+                      max_connection_age_grace: 10s
+                      time: 30s
+                      timeout: 10s
+    release:
+      name: indent-test
+    asserts:
+      # ConfigMap should be created
+      - template: configmaps/otel-collector-configmap.yaml
+        documentIndex: 0
+        isKind:
+          of: ConfigMap
+      # Check nested configuration is preserved
+      - template: configmaps/otel-collector-configmap.yaml
+        documentIndex: 0
+        matchRegex:
+          path: data["custom.config.yaml"]
+          pattern: "keepalive:"
+      - template: configmaps/otel-collector-configmap.yaml
+        documentIndex: 0
+        matchRegex:
+          path: data["custom.config.yaml"]
+          pattern: "server_parameters:"
+      - template: configmaps/otel-collector-configmap.yaml
+        documentIndex: 0
+        matchRegex:
+          path: data["custom.config.yaml"]
+          pattern: "max_connection_idle: 30s"
+
+  - it: should handle customConfig with environment variable references
+    set:
+      otel:
+        enabled: true
+        customConfig: |
+          receivers:
+            otlp:
+              protocols:
+                grpc:
+                  endpoint: ${OTLP_GRPC_ENDPOINT:-0.0.0.0:4317}
+                http:
+                  endpoint: ${OTLP_HTTP_ENDPOINT:-0.0.0.0:4318}
+          exporters:
+            clickhouse:
+              endpoint: ${CLICKHOUSE_ENDPOINT}
+              database: ${HYPERDX_OTEL_EXPORTER_CLICKHOUSE_DATABASE}
+              username: ${CLICKHOUSE_USER}
+              password: ${CLICKHOUSE_PASSWORD}
+    asserts:
+      # ConfigMap should contain environment variable references
+      - template: configmaps/otel-collector-configmap.yaml
+        documentIndex: 0
+        matchRegex:
+          path: data["custom.config.yaml"]
+          pattern: "\\$\\{OTLP_GRPC_ENDPOINT:-0.0.0.0:4317\\}"
+      - template: configmaps/otel-collector-configmap.yaml
+        documentIndex: 0
+        matchRegex:
+          path: data["custom.config.yaml"]
+          pattern: "\\$\\{CLICKHOUSE_ENDPOINT\\}"
+      - template: configmaps/otel-collector-configmap.yaml
+        documentIndex: 0
+        matchRegex:
+          path: data["custom.config.yaml"]
+          pattern: "\\$\\{CLICKHOUSE_USER\\}"
+
+  - it: should work with other otel configurations alongside customConfig
+    set:
+      otel:
+        enabled: true
+        replicas: 3
+        customConfig: |
+          receivers:
+            otlp:
+              protocols:
+                grpc:
+                  endpoint: 0.0.0.0:4317
+        resources:
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+        env:
+          - name: CUSTOM_ENV_VAR
+            value: "custom-value"
+        annotations:
+          prometheus.io/scrape: "true"
+    asserts:
+      # Should have all configurations applied
+      - template: otel-collector-deployment.yaml
+        documentSelector: *deployment-selector
+        equal:
+          path: spec.replicas
+          value: 3
+      - template: otel-collector-deployment.yaml
+        documentSelector: *deployment-selector
+        equal:
+          path: spec.template.spec.containers[0].resources.limits.memory
+          value: "1Gi"
+      - template: otel-collector-deployment.yaml
+        documentSelector: *deployment-selector
+        contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CUSTOM_ENV_VAR
+            value: "custom-value"
+      - template: otel-collector-deployment.yaml
+        documentSelector: *deployment-selector
+        contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CUSTOM_OTELCOL_CONFIG_FILE
+            value: /etc/otelcol-contrib/custom.config.yaml
+      - template: otel-collector-deployment.yaml
+        documentSelector: *deployment-selector
+        equal:
+          path: spec.template.metadata.annotations["prometheus.io/scrape"]
+          value: "true"
+      # ConfigMap should still be created
+      - template: configmaps/otel-collector-configmap.yaml
+        documentIndex: 0
+        isKind:
+          of: ConfigMap
+
+  - it: should handle empty customConfig string
+    set:
+      otel:
+        enabled: true
+        customConfig: ""
+    asserts:
+      # ConfigMap template should render 0 documents
+      - template: configmaps/otel-collector-configmap.yaml
+        hasDocuments:
+          count: 0
+      # Deployment template should render 2 documents
+      - template: otel-collector-deployment.yaml
+        hasDocuments:
+          count: 2
+      # Deployment should not have volumes
+      - template: otel-collector-deployment.yaml
+        documentSelector: *deployment-selector
+        isNull:
+          path: spec.template.spec.volumes
+      # Container should not have volumeMounts
+      - template: otel-collector-deployment.yaml
+        documentSelector: *deployment-selector
+        isNull:
+          path: spec.template.spec.containers[0].volumeMounts
+
+  - it: should correctly set labels on configmap
+    set:
+      otel:
+        enabled: true
+        customConfig: |
+          receivers:
+            otlp:
+              protocols:
+                grpc:
+                  endpoint: 0.0.0.0:4317
+    release:
+      name: label-test
+    chart:
+      version: 1.2.3
+    asserts:
+      # ConfigMap should have correct labels
+      - template: configmaps/otel-collector-configmap.yaml
+        documentIndex: 0
+        equal:
+          path: metadata.labels.app
+          value: otel-collector
+      - template: configmaps/otel-collector-configmap.yaml
+        documentIndex: 0
+        isSubset:
+          path: metadata.labels
+          content:
+            app: otel-collector

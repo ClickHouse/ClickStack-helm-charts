@@ -1,0 +1,12 @@
+{{- if and .Values.otel.enabled .Values.otel.customConfig }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "clickstack.fullname" . }}-otel-custom-config
+  labels:
+    {{- include "clickstack.labels" . | nindent 4 }}
+    app: otel-collector
+data:
+  custom.config.yaml: |
+{{ .Values.otel.customConfig | indent 4 }}
+{{- end }}

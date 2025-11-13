@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "clickstack.fullname" . }}-app
+  labels:
+    {{- include "clickstack.labels" . | nindent 4 }}
+  {{- if .Values.hyperdx.service.annotations }}
+  annotations:
+    {{- with .Values.hyperdx.service.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- end }}
+spec:
+  type: {{ .Values.hyperdx.service.type | default "ClusterIP" }}
+  ports:
+    - port: {{ .Values.hyperdx.appPort }}
+      targetPort: {{ .Values.hyperdx.appPort }}
+      name: app
+    - port: {{ .Values.hyperdx.opampPort }}
+      targetPort: {{ .Values.hyperdx.opampPort }}
+      name: opamp
+  selector:
+    {{- include "clickstack.selectorLabels" . | nindent 4 }}
+    app: {{ include "clickstack.fullname" . }}

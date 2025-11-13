@@ -33,4 +33,4 @@ jobs:
 
       - name: Run helm-unittest
         run: |
-          helm unittest charts/hdx-oss-v2
+          helm unittest charts/clickstack

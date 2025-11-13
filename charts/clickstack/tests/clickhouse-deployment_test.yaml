@@ -1,0 +1,555 @@
+suite: Test ClickHouse Deployment
+templates:
+  - clickhouse-deployment.yaml
+
+# Common documentSelector patterns using YAML anchors
+_selectors:
+  deployment: &deployment-selector
+    path: kind
+    value: Deployment
+  service: &service-selector
+    path: kind
+    value: Service
+  config-configmap: &config-configmap-selector
+    path: metadata.name
+    value: RELEASE-NAME-clickstack-clickhouse-config
+  users-configmap: &users-configmap-selector
+    path: metadata.name
+    value: RELEASE-NAME-clickstack-clickhouse-users
+  data-pvc: &data-pvc-selector
+    path: metadata.name
+    value: RELEASE-NAME-clickstack-clickhouse-data
+  logs-pvc: &logs-pvc-selector
+    path: metadata.name
+    value: RELEASE-NAME-clickstack-clickhouse-logs
+tests:
+  - it: should render expected kubernetes resources
+    set:
+      clickhouse:
+        image: clickhouse/clickhouse-server:24-alpine
+        port: 8123
+        nativePort: 9000
+        enabled: true
+        persistence:
+          enabled: true
+          dataSize: 10Gi
+          logSize: 5Gi
+    asserts:
+      - hasDocuments:
+          count: 6
+      - documentSelector: *deployment-selector
+        isKind:
+          of: Deployment
+      - documentSelector: *service-selector
+        isKind:
+          of: Service
+      - documentSelector: *config-configmap-selector
+        isKind:
+          of: ConfigMap
+      - documentSelector: *users-configmap-selector
+        isKind:
+          of: ConfigMap
+      - documentSelector: *data-pvc-selector
+        isKind:
+          of: PersistentVolumeClaim
+      - documentSelector: *logs-pvc-selector
+        isKind:
+          of: PersistentVolumeClaim
+
+  - it: should include storageClassName when global.storageClassName is set
+    set:
+      global:
+        storageClassName: "fast-ssd"
+      clickhouse:
+        enabled: true
+        persistence:
+          enabled: true
+          dataSize: 10Gi
+          logSize: 5Gi
+    asserts:
+      - documentSelector: *data-pvc-selector
+        equal:
+          path: spec.storageClassName
+          value: "fast-ssd"
+      - documentSelector: *logs-pvc-selector
+        equal:
+          path: spec.storageClassName
+          value: "fast-ssd"
+
+  - it: should omit storageClassName when global.storageClassName is empty
+    set:
+      global:
+        storageClassName: ""
+      clickhouse:
+        enabled: true
+        persistence:
+          enabled: true
+          dataSize: 10Gi
+          logSize: 5Gi
+    asserts:
+      - documentSelector: *data-pvc-selector
+        isNull:
+          path: spec.storageClassName
+      - documentSelector: *logs-pvc-selector
+        isNull:
+          path: spec.storageClassName
+
+  - it: should use PVCs when persistence is enabled
+    set:
+      clickhouse:
+        enabled: true
+        persistence:
+          enabled: true
+          dataSize: 10Gi
+          logSize: 5Gi
+    asserts:
+      - documentSelector: *deployment-selector
+        isKind:
+          of: Deployment
+      - documentSelector: *deployment-selector
+        equal:
+          path: spec.template.spec.volumes[2].name
+          value: data
+      - documentSelector: *deployment-selector
+        isNotNull:
+          path: spec.template.spec.volumes[2].persistentVolumeClaim
+      - documentSelector: *deployment-selector
+        matchRegex:
+          path: spec.template.spec.volumes[2].persistentVolumeClaim.claimName
+          pattern: .*-clickhouse-data$
+      - documentSelector: *deployment-selector
+        isNull:
+          path: spec.template.spec.volumes[2].emptyDir
+      - documentSelector: *deployment-selector
+        equal:
+          path: spec.template.spec.volumes[3].name
+          value: logs
+      - documentSelector: *deployment-selector
+        isNotNull:
+          path: spec.template.spec.volumes[3].persistentVolumeClaim
+      - documentSelector: *deployment-selector
+        matchRegex:
+          path: spec.template.spec.volumes[3].persistentVolumeClaim.claimName
+          pattern: .*-clickhouse-logs$
+      - documentSelector: *deployment-selector
+        isNull:
+          path: spec.template.spec.volumes[3].emptyDir
+
+  - it: should use emptyDir when persistence is disabled
+    set:
+      clickhouse:
+        enabled: true
+        persistence:
+          enabled: false
+    asserts:
+      - hasDocuments:
+          count: 4
+      - documentSelector: *deployment-selector
+        isKind:
+          of: Deployment
+      - documentSelector: *deployment-selector
+        equal:
+          path: spec.template.spec.volumes[2].name
+          value: data
+      - documentSelector: *deployment-selector
+        isNotNull:
+          path: spec.template.spec.volumes[2].emptyDir
+      - documentSelector: *deployment-selector
+        isNull:
+          path: spec.template.spec.volumes[2].persistentVolumeClaim
+      - documentSelector: *deployment-selector
+        equal:
+          path: spec.template.spec.volumes[3].name
+          value: logs
+      - documentSelector: *deployment-selector
+        isNotNull:
+          path: spec.template.spec.volumes[3].emptyDir
+      - documentSelector: *deployment-selector
+        isNull:
+          path: spec.template.spec.volumes[3].persistentVolumeClaim
+
+  - it: should include livenessProbe with default values when enabled
+    set:
+      clickhouse:
+        enabled: true
+        port: 8123
+    asserts:
+      - documentSelector: *deployment-selector
+        isSubset:
+          path: spec.template.spec.containers[0].livenessProbe
+          content:
+            httpGet:
+              path: /ping
+              port: 8123
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+  - it: should include readinessProbe with default values when enabled
+    set:
+      clickhouse:
+        enabled: true
+        port: 8123
+    asserts:
+      - documentSelector: *deployment-selector
+        isSubset:
+          path: spec.template.spec.containers[0].readinessProbe
+          content:
+            httpGet:
+              path: /ping
+              port: 8123
+            initialDelaySeconds: 1
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+  - it: should not include livenessProbe when disabled
+    set:
+      clickhouse:
+        enabled: true
+        livenessProbe:
+          enabled: false
+    asserts:
+      - documentSelector: *deployment-selector
+        isNull:
+          path: spec.template.spec.containers[0].livenessProbe
+
+  - it: should not include readinessProbe when disabled
+    set:
+      clickhouse:
+        enabled: true
+        readinessProbe:
+          enabled: false
+    asserts:
+      - documentSelector: *deployment-selector
+        isNull:
+          path: spec.template.spec.containers[0].readinessProbe
+
+  - it: should use custom livenessProbe values when provided
+    set:
+      clickhouse:
+        enabled: true
+        port: 8123
+        livenessProbe:
+          enabled: true
+          initialDelaySeconds: 20
+          periodSeconds: 60
+          timeoutSeconds: 10
+          failureThreshold: 5
+    asserts:
+      - documentSelector: *deployment-selector
+        isSubset:
+          path: spec.template.spec.containers[0].livenessProbe
+          content:
+            httpGet:
+              path: /ping
+              port: 8123
+            initialDelaySeconds: 20
+            periodSeconds: 60
+            timeoutSeconds: 10
+            failureThreshold: 5
+
+  - it: should use custom readinessProbe values when provided
+    set:
+      clickhouse:
+        enabled: true
+        port: 8123
+        readinessProbe:
+          enabled: true
+          initialDelaySeconds: 5
+          periodSeconds: 20
+          timeoutSeconds: 3
+          failureThreshold: 2
+    asserts:
+      - documentSelector: *deployment-selector
+        isSubset:
+          path: spec.template.spec.containers[0].readinessProbe
+          content:
+            httpGet:
+              path: /ping
+              port: 8123
+            initialDelaySeconds: 5
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 2
+
+  - it: should use custom port in probes when provided
+    set:
+      clickhouse:
+        enabled: true
+        port: 8124
+    asserts:
+      - documentSelector: *deployment-selector
+        equal:
+          path: spec.template.spec.containers[0].livenessProbe.httpGet.port
+          value: 8124
+      - documentSelector: *deployment-selector
+        equal:
+          path: spec.template.spec.containers[0].readinessProbe.httpGet.port
+          value: 8124
+
+  - it: should add keep annotation to PVCs when global.keepPVC is true
+    set:
+      clickhouse:
+        enabled: true
+        persistence:
+          enabled: true
+          dataSize: 10Gi
+          logSize: 5Gi
+      global:
+        keepPVC: true
+    asserts:
+      - documentSelector: *data-pvc-selector
+        isKind:
+          of: PersistentVolumeClaim
+      - documentSelector: *data-pvc-selector
+        equal:
+          path: metadata.annotations["helm.sh/resource-policy"]
+          value: keep
+      - documentSelector: *logs-pvc-selector
+        isKind:
+          of: PersistentVolumeClaim
+      - documentSelector: *logs-pvc-selector
+        equal:
+          path: metadata.annotations["helm.sh/resource-policy"]
+          value: keep
+
+  - it: should not add keep annotation to PVCs when global.keepPVC is false
+    set:
+      clickhouse:
+        enabled: true
+        persistence:
+          enabled: true
+          dataSize: 10Gi
+          logSize: 5Gi
+      global:
+        keepPVC: false
+    asserts:
+      - documentSelector: *data-pvc-selector
+        isKind:
+          of: PersistentVolumeClaim
+      - documentSelector: *data-pvc-selector
+        isNull:
+          path: metadata.annotations
+      - documentSelector: *logs-pvc-selector
+        isKind:
+          of: PersistentVolumeClaim
+      - documentSelector: *logs-pvc-selector
+        isNull:
+          path: metadata.annotations
+
+  - it: should not add keep annotation to PVCs when global.keepPVC is not set
+    set:
+      clickhouse:
+        enabled: true
+        persistence:
+          enabled: true
+          dataSize: 10Gi
+          logSize: 5Gi
+    asserts:
+      - documentSelector: *data-pvc-selector
+        isKind:
+          of: PersistentVolumeClaim
+      - documentSelector: *data-pvc-selector
+        isNull:
+          path: metadata.annotations
+      - documentSelector: *logs-pvc-selector
+        isKind:
+          of: PersistentVolumeClaim
+      - documentSelector: *logs-pvc-selector
+        isNull:
+          path: metadata.annotations
+
+  - it: should not include imagePullSecrets when not configured
+    set:
+      clickhouse:
+        enabled: true
+    asserts:
+      - documentIndex: 0
+        isNull:
+          path: spec.template.spec.imagePullSecrets
+
+  - it: should include imagePullSecrets when configured
+    set:
+      clickhouse:
+        enabled: true
+      global:
+        imagePullSecrets:
+          - name: regcred
+    asserts:
+      - documentIndex: 0
+        isNotNull:
+          path: spec.template.spec.imagePullSecrets
+      - documentIndex: 0
+        equal:
+          path: spec.template.spec.imagePullSecrets[0].name
+          value: regcred
+
+  - it: should have Recreate deployment strategy
+    set:
+      clickhouse:
+        enabled: true
+    asserts:
+      - documentSelector: *deployment-selector
+        equal:
+          path: spec.strategy.type
+          value: Recreate
+
+  - it: should have imagePullPolicy set to IfNotPresent
+    set:
+      clickhouse:
+        enabled: true
+    asserts:
+      - documentSelector: *deployment-selector
+        equal:
+          path: spec.template.spec.containers[0].imagePullPolicy
+          value: IfNotPresent
+
+  - it: should include resources when configured
+    set:
+      clickhouse:
+        enabled: true
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "2000m"
+    asserts:
+      - documentSelector: *deployment-selector
+        equal:
+          path: spec.template.spec.containers[0].resources.requests.memory
+          value: "512Mi"
+      - documentSelector: *deployment-selector
+        equal:
+          path: spec.template.spec.containers[0].resources.requests.cpu
+          value: "500m"
+      - documentSelector: *deployment-selector
+        equal:
+          path: spec.template.spec.containers[0].resources.limits.memory
+          value: "2Gi"
+      - documentSelector: *deployment-selector
+        equal:
+          path: spec.template.spec.containers[0].resources.limits.cpu
+          value: "2000m"
+
+  - it: should not include resources when not configured
+    set:
+      clickhouse:
+        enabled: true
+        resources: {}
+    asserts:
+      - documentSelector: *deployment-selector
+        isNull:
+          path: spec.template.spec.containers[0].resources
+
+  - it: should include preStop lifecycle hook with correct commands
+    set:
+      clickhouse:
+        enabled: true
+    asserts:
+      - documentSelector: *deployment-selector
+        isNotNull:
+          path: spec.template.spec.containers[0].lifecycle.preStop
+      - documentSelector: *deployment-selector
+        equal:
+          path: spec.template.spec.containers[0].lifecycle.preStop.exec.command[0]
+          value: /bin/sh
+      - documentSelector: *deployment-selector
+        equal:
+          path: spec.template.spec.containers[0].lifecycle.preStop.exec.command[1]
+          value: -c
+      - documentSelector: *deployment-selector
+        matchRegex:
+          path: spec.template.spec.containers[0].lifecycle.preStop.exec.command[2]
+          pattern: ".*SYSTEM STOP MERGES.*"
+      - documentSelector: *deployment-selector
+        matchRegex:
+          path: spec.template.spec.containers[0].lifecycle.preStop.exec.command[2]
+          pattern: ".*SYSTEM STOP MOVES.*"
+      - documentSelector: *deployment-selector
+        matchRegex:
+          path: spec.template.spec.containers[0].lifecycle.preStop.exec.command[2]
+          pattern: ".*SYSTEM FLUSH LOGS.*"
+
+  - it: should include startupProbe with default values when enabled
+    set:
+      clickhouse:
+        enabled: true
+        port: 8123
+        startupProbe:
+          enabled: true
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 30
+    asserts:
+      - documentSelector: *deployment-selector
+        isSubset:
+          path: spec.template.spec.containers[0].startupProbe
+          content:
+            httpGet:
+              path: /ping
+              port: 8123
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
+
+  - it: should not include startupProbe when disabled
+    set:
+      clickhouse:
+        enabled: true
+        startupProbe:
+          enabled: false
+    asserts:
+      - documentSelector: *deployment-selector
+        isNull:
+          path: spec.template.spec.containers[0].startupProbe
+
+  - it: should use custom startupProbe values when provided
+    set:
+      clickhouse:
+        enabled: true
+        port: 8123
+        startupProbe:
+          enabled: true
+          initialDelaySeconds: 10
+          periodSeconds: 15
+          timeoutSeconds: 10
+          failureThreshold: 60
+    asserts:
+      - documentSelector: *deployment-selector
+        isSubset:
+          path: spec.template.spec.containers[0].startupProbe
+          content:
+            httpGet:
+              path: /ping
+              port: 8123
+            initialDelaySeconds: 10
+            periodSeconds: 15
+            timeoutSeconds: 10
+            failureThreshold: 60
+
+  - it: should have default terminationGracePeriodSeconds of 90
+    set:
+      clickhouse:
+        enabled: true
+    asserts:
+      - documentSelector: *deployment-selector
+        equal:
+          path: spec.template.spec.terminationGracePeriodSeconds
+          value: 90
+
+  - it: should use custom terminationGracePeriodSeconds when provided
+    set:
+      clickhouse:
+        enabled: true
+        terminationGracePeriodSeconds: 120
+    asserts:
+      - documentSelector: *deployment-selector
+        equal:
+          path: spec.template.spec.terminationGracePeriodSeconds
+          value: 120

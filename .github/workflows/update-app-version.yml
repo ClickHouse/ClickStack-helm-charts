@@ -23,7 +23,7 @@ jobs:
 
       - name: Update appVersion in Chart.yaml
         run: |
-          sed -i "s/^appVersion: .*/appVersion: ${{ github.event.inputs.tag }}/" charts/hdx-oss-v2/Chart.yaml
+          sed -i "s/^appVersion: .*/appVersion: ${{ github.event.inputs.tag }}/" charts/clickstack/Chart.yaml
 
       - name: Create changeset
         run: |
@@ -45,6 +45,6 @@ jobs:
           body: |
             This PR updates the appVersion in Chart.yaml to `${{ github.event.inputs.tag }}`.
             
-            - Updated `charts/hdx-oss-v2/Chart.yaml`
+            - Updated `charts/clickstack/Chart.yaml`
           branch: update-app-version-${{ github.event.inputs.tag }}
           delete-branch: true

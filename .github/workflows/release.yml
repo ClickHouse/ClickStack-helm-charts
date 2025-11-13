@@ -38,7 +38,7 @@ jobs:
         uses: changesets/action@v1
         with:
           commit: 'chore(release): bump version'
-          title: 'Release HyperDX Helm Charts'
+          title: 'Release ClickStack Helm Charts'
           version: yarn run version
           publish: yarn run release
         env:

@@ -3,7 +3,7 @@ const yaml = require("js-yaml");
 const { version } = require("../package.json");
 
 // Update Chart.yaml files with the new version
-const charts = ["./charts/hdx-oss-v2"];
+const charts = ["./charts/clickstack"];
 
 charts.forEach((chartPath) => {
   const chartFile = `${chartPath}/Chart.yaml`;

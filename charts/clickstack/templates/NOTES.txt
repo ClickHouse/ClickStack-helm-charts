@@ -1,0 +1,31 @@
+ClickStack has been installed.
+
+Note: By default, this chart installs the complete ClickStack: ClickHouse, OpenTelemetry Collector, MongoDB, and HyperDX.
+For production, it is recommended that you use the ClickHouse and OTEL Collector operators instead.
+
+To disable clickhouse and otel-collector, set the following values:
+helm install myrelease <chart-name-or-path> --set clickhouse.enabled=false --set clickhouse.persistence.enabled=false --set otel.enabled=false
+
+{{- if .Values.hyperdx.ingress.enabled }}
+Application URL: {{ if .Values.hyperdx.ingress.tls.enabled }}https{{ else }}http{{ end }}://{{ .Values.hyperdx.ingress.host }}
+{{- else }}
+Application Access:
+  For security, the service uses ClusterIP and is not exposed externally by default.
+  Choose one of the following secure access methods:
+  
+  1. Enable Ingress with TLS (Recommended for Production):
+     helm upgrade {{ .Release.Name }} <chart-name-or-path> \
+       --set hyperdx.ingress.enabled=true \
+       --set hyperdx.ingress.host=your-domain.com \
+       --set hyperdx.ingress.tls.enabled=true
+  
+  2. Port Forward (Development/Testing):
+     kubectl port-forward svc/{{ include "clickstack.fullname" . }}-app {{ .Values.hyperdx.appPort }}:{{ .Values.hyperdx.appPort }}
+     Then access: http://localhost:{{ .Values.hyperdx.appPort }}
+  
+  Note: This application handles sensitive telemetry data and should not be exposed
+  directly to the internet without proper authentication and encryption.
+{{- end }}
+
+To verify the deployment status, run:
+  kubectl get pods -l "app.kubernetes.io/name={{ include "clickstack.name" . }}" 

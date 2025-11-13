@@ -1,0 +1,217 @@
+{{- if .Values.clickhouse.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "clickstack.fullname" . }}-clickhouse
+  labels:
+    {{- include "clickstack.labels" . | nindent 4 }}
+    app: clickhouse
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "clickstack.selectorLabels" . | nindent 6 }}
+      app: clickhouse
+  template:
+    metadata:
+      labels:
+        {{- include "clickstack.selectorLabels" . | nindent 8 }}
+        app: clickhouse
+    spec:
+      terminationGracePeriodSeconds: {{ .Values.clickhouse.terminationGracePeriodSeconds | default 90 }}
+      {{- if .Values.clickhouse.nodeSelector }}
+      nodeSelector:
+        {{- toYaml .Values.clickhouse.nodeSelector | nindent 8 }}
+      {{- end }}
+      {{- if .Values.clickhouse.tolerations }}
+      tolerations:
+        {{- toYaml .Values.clickhouse.tolerations | nindent 8 }}
+      {{- end }}
+      {{- if .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml .Values.global.imagePullSecrets | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: clickhouse
+          image: "{{ .Values.clickhouse.image }}"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: {{ .Values.clickhouse.port }}
+            - containerPort: {{ .Values.clickhouse.nativePort }}
+          env:
+            - name: CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT
+              value: "1"
+          {{- if .Values.clickhouse.resources }}
+          resources:
+            {{- toYaml .Values.clickhouse.resources | nindent 12 }}
+          {{- end }}
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - /bin/sh
+                  - -c
+                  - |
+                    clickhouse-client --query "SYSTEM STOP MERGES" || true
+                    clickhouse-client --query "SYSTEM STOP MOVES" || true
+                    clickhouse-client --query "SYSTEM FLUSH LOGS" || true
+                    sleep 5
+          {{- if .Values.clickhouse.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              path: /ping
+              port: {{ .Values.clickhouse.port }}
+            initialDelaySeconds: {{ .Values.clickhouse.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.clickhouse.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.clickhouse.livenessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.clickhouse.livenessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.clickhouse.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              path: /ping
+              port: {{ .Values.clickhouse.port }}
+            initialDelaySeconds: {{ .Values.clickhouse.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.clickhouse.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.clickhouse.readinessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.clickhouse.readinessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.clickhouse.startupProbe.enabled }}
+          startupProbe:
+            httpGet:
+              path: /ping
+              port: {{ .Values.clickhouse.port }}
+            initialDelaySeconds: {{ .Values.clickhouse.startupProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.clickhouse.startupProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.clickhouse.startupProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.clickhouse.startupProbe.failureThreshold }}
+          {{- end }}
+          volumeMounts:
+            - name: config
+              mountPath: /etc/clickhouse-server/config.xml
+              subPath: config.xml
+            - name: users
+              mountPath: /etc/clickhouse-server/users.xml
+              subPath: users.xml
+            - name: data
+              mountPath: /var/lib/clickhouse
+            - name: logs
+              mountPath: /var/log/clickhouse-server
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "clickstack.fullname" . }}-clickhouse-config
+        - name: users
+          configMap:
+            name: {{ include "clickstack.fullname" . }}-clickhouse-users
+        - name: data
+          {{- if .Values.clickhouse.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "clickstack.fullname" . }}-clickhouse-data
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        - name: logs
+          {{- if .Values.clickhouse.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "clickstack.fullname" . }}-clickhouse-logs
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "clickstack.fullname" . }}-clickhouse
+  labels:
+    {{- include "clickstack.labels" . | nindent 4 }}
+  {{- if .Values.clickhouse.service.annotations }}
+  annotations:
+    {{- with .Values.clickhouse.service.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- end }}
+spec:
+  type: {{ .Values.clickhouse.service.type | default "ClusterIP" }}
+  ports:
+    - port: {{ .Values.clickhouse.port }}
+      targetPort: {{ .Values.clickhouse.port }}
+      name: http
+    - port: {{ .Values.clickhouse.nativePort }}
+      targetPort: {{ .Values.clickhouse.nativePort }}
+      name: native
+    {{- if .Values.clickhouse.prometheus.enabled }}
+    - port: {{ .Values.clickhouse.prometheus.port }}
+      targetPort: {{ .Values.clickhouse.prometheus.port }}
+      name: prometheus
+    {{- end }}
+  selector:
+    {{- include "clickstack.selectorLabels" . | nindent 4 }}
+    app: clickhouse
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "clickstack.fullname" . }}-clickhouse-config
+  labels:
+    {{- include "clickstack.labels" . | nindent 4 }}
+data:
+  config.xml: |-
+    {{- tpl (.Files.Get "data/config.xml") . | nindent 4 }}
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "clickstack.fullname" . }}-clickhouse-users
+  labels:
+    {{- include "clickstack.labels" . | nindent 4 }}
+data:
+  users.xml: |-
+    {{- tpl (.Files.Get "data/users.xml") . | nindent 4 }}
+
+{{- if .Values.clickhouse.persistence.enabled }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "clickstack.fullname" . }}-clickhouse-data
+  labels:
+    {{- include "clickstack.labels" . | nindent 4 }}
+  {{- if .Values.global.keepPVC }}
+  annotations:
+    "helm.sh/resource-policy": keep
+  {{- end }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  {{- if .Values.global.storageClassName }}
+  storageClassName: {{ .Values.global.storageClassName }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.clickhouse.persistence.dataSize }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "clickstack.fullname" . }}-clickhouse-logs
+  labels:
+    {{- include "clickstack.labels" . | nindent 4 }}
+  {{- if .Values.global.keepPVC }}
+  annotations:
+    "helm.sh/resource-policy": keep
+  {{- end }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  {{- if .Values.global.storageClassName }}
+  storageClassName: {{ .Values.global.storageClassName }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.clickhouse.persistence.logSize }}
+{{- end }}
+{{- end }}

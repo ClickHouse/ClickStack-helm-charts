@@ -1,0 +1,96 @@
+{{- if .Values.hyperdx.ingress.enabled -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "clickstack.fullname" . }}-app-ingress
+  labels:
+    {{- include "clickstack.labels" . | nindent 4 }}
+  annotations:
+    {{ $reqAnnotations := dict }}
+    {{- if eq .Values.hyperdx.ingress.ingressClassName "nginx" }}
+      {{ $reqAnnotations = dict "nginx.ingress.kubernetes.io/rewrite-target" "/$1"
+                               "nginx.ingress.kubernetes.io/use-regex" "true"
+                               "nginx.ingress.kubernetes.io/proxy-body-size" .Values.hyperdx.ingress.proxyBodySize
+                               "nginx.ingress.kubernetes.io/proxy-connect-timeout" .Values.hyperdx.ingress.proxyConnectTimeout
+                               "nginx.ingress.kubernetes.io/proxy-send-timeout" .Values.hyperdx.ingress.proxySendTimeout
+                               "nginx.ingress.kubernetes.io/proxy-read-timeout" .Values.hyperdx.ingress.proxyReadTimeout
+      }}
+      {{- if .Values.hyperdx.ingress.tls.enabled }}
+        {{ $_ := set $reqAnnotations "nginx.ingress.kubernetes.io/ssl-redirect" "true" }}
+        {{ $_ := set $reqAnnotations "nginx.ingress.kubernetes.io/force-ssl-redirect" "true" }}
+      {{- end }}
+    {{- end }}
+    {{ toYaml (mergeOverwrite .Values.hyperdx.ingress.annotations $reqAnnotations) | nindent 4}}
+spec:
+  ingressClassName: {{ .Values.hyperdx.ingress.ingressClassName }}
+  {{- if .Values.hyperdx.ingress.tls.enabled }}
+  tls:
+  - hosts:
+    - {{ .Values.hyperdx.ingress.host | default "localhost" }}
+    secretName: {{ .Values.hyperdx.ingress.tls.secretName | default "hyperdx-tls" }}
+  {{- end }}
+  rules:
+    - host: {{ .Values.hyperdx.ingress.host | default "localhost" }}
+      http:
+        paths:
+          - path: {{ .Values.hyperdx.ingress.path | default "/(.*)" }}
+            pathType: {{ .Values.hyperdx.ingress.pathType | default "ImplementationSpecific" }}
+            backend:
+              service:
+                name: {{ include "clickstack.fullname" . }}-app
+                port:
+                  number: {{ .Values.hyperdx.appPort }}
+{{- range .Values.hyperdx.ingress.additionalIngresses}}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ printf "%s-%s" (include "clickstack.fullname" $) .name }}
+  labels:
+    {{- include "clickstack.labels" $ | nindent 4 }}
+  {{- if .annotations }}
+  {{- if not (kindIs "map" .annotations) }}
+  {{- fail "annotations must be a map of string key-value pairs" }}
+  {{- end }}
+  annotations:
+    {{ toYaml .annotations | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if .ingressClassName }}
+  ingressClassName: {{ .ingressClassName }}
+  {{- end -}}
+  {{- if .tls }}
+  tls:
+    {{- range .tls }}
+    {{- if not .hosts }}
+    {{- fail "TLS configuration must contain hosts property" }}
+    {{- end }}
+    - hosts:
+        {{- range .hosts }}
+        - {{ tpl . $ | quote }}
+        {{- end }}
+      {{- with .secretName }}
+      secretName: {{ . }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+  rules:
+    {{- range .hosts }}
+    - host: {{ tpl .host $ | quote }}
+      http:
+        paths:
+          {{- range .paths }}
+          {{- if or (not .path) (not .pathType) (not .port) }}
+          {{- fail "Each path in additional ingress must contain path, pathType, and port properties" }}
+          {{- end }}
+          - path: {{ .path }}
+            pathType: {{ .pathType }}
+            backend:
+              service:
+                name: {{ if .name }}{{ printf "%s-%s" (include "clickstack.fullname" $) .name }}{{ else }}{{ include "clickstack.fullname" $ }}{{ end }}
+                port:
+                  number: {{ .port }}
+          {{- end }}
+    {{- end }}
+{{- end }}
+{{- end }}

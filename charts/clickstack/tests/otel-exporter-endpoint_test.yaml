@@ -1,0 +1,36 @@
+suite: Test OTEL Exporter Endpoint Configuration
+templates:
+  - configmaps/app-configmap.yaml
+tests:
+  - it: should use httpPort (4318) for otelExporterEndpoint by default
+    asserts:
+      - equal:
+          path: data.OTEL_EXPORTER_OTLP_ENDPOINT
+          value: "http://RELEASE-NAME-clickstack-otel-collector:4318"
+
+  - it: should use custom httpPort when otel.httpPort is overridden
+    set:
+      otel:
+        httpPort: 9999
+    asserts:
+      - equal:
+          path: data.OTEL_EXPORTER_OTLP_ENDPOINT
+          value: "http://RELEASE-NAME-clickstack-otel-collector:9999"
+
+  - it: should use custom otelExporterEndpoint when explicitly set
+    set:
+      hyperdx:
+        otelExporterEndpoint: "http://custom-otel-collector:4318"
+    asserts:
+      - equal:
+          path: data.OTEL_EXPORTER_OTLP_ENDPOINT
+          value: "http://custom-otel-collector:4318"
+
+  - it: should set empty string when otelExporterEndpoint is empty
+    set:
+      hyperdx:
+        otelExporterEndpoint: ""
+    asserts:
+      - equal:
+          path: data.OTEL_EXPORTER_OTLP_ENDPOINT
+          value: ""

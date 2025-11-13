@@ -1,0 +1,843 @@
+suite: Test OTEL Collector Deployment
+templates:
+  - otel-collector-deployment.yaml
+
+# Common documentSelector patterns using YAML anchors
+_selectors:
+  deployment: &deployment-selector
+    path: kind
+    value: Deployment
+  service: &service-selector
+    path: kind
+    value: Service
+tests:
+  - it: should render both deployment and service when enabled
+    set:
+      otel:
+        image:
+          repository: hyperdx/hyperdx-otel-collector
+          tag: 2-beta
+        port: 13133
+        nativePort: 24225
+        grpcPort: 4317
+        httpPort: 4318
+        healthPort: 8888
+        enabled: true
+    asserts:
+      - hasDocuments:
+          count: 2
+      - documentSelector: *deployment-selector
+        isKind:
+          of: Deployment
+      - documentSelector: *service-selector
+        isKind:
+          of: Service
+
+  - it: should not render otel collector when disabled
+    set:
+      otel:
+        enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should render environment variables correctly with default values
+    set:
+      otel:
+        enabled: true
+        image:
+          repository: hyperdx/hyperdx-otel-collector
+          tag: 2-beta
+      hyperdx:
+        image:
+          repository: hyperdx/hyperdx
+          tag: 2-beta
+        logLevel: info
+      clickhouse:
+        nativePort: 9000
+        prometheus:
+          enabled: true
+          port: 9363
+          endpoint: "/metrics"
+        config:
+          users:
+            otelUserPassword: test-password
+    release:
+      name: test-release
+    asserts:
+      - documentSelector: *deployment-selector
+        isKind:
+          of: Deployment
+      - documentSelector: *deployment-selector
+        contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CLICKHOUSE_ENDPOINT
+            value: "tcp://test-release-clickstack-clickhouse:9000?dial_timeout=10s"
+      - documentSelector: *deployment-selector
+        contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CLICKHOUSE_SERVER_ENDPOINT
+            value: "test-release-clickstack-clickhouse:9000"
+      - documentSelector: *deployment-selector
+        contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CLICKHOUSE_PROMETHEUS_METRICS_ENDPOINT
+            value: "test-release-clickstack-clickhouse:9363"
+      - documentSelector: *deployment-selector
+        contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: HYPERDX_LOG_LEVEL
+            value: info
+      - documentSelector: *deployment-selector
+        contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CLICKHOUSE_USER
+            value: "otelcollector"
+      - documentSelector: *deployment-selector
+        contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CLICKHOUSE_PASSWORD
+            value: test-password
+      - documentSelector: *deployment-selector
+        contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: OPAMP_SERVER_URL
+            value: http://test-release-clickstack-app:4320
+
+  - it: should render environment variables correctly with custom clickhouse endpoint
+    set:
+      otel:
+        enabled: true
+        image:
+          repository: hyperdx/hyperdx-otel-collector
+          tag: 2-beta
+        clickhouseEndpoint: "tcp://custom-clickhouse:9000"
+      hyperdx:
+        image:
+          repository: hyperdx/hyperdx
+          tag: 2-beta
+        logLevel: debug
+      clickhouse:
+        prometheus:
+          enabled: true
+          port: 9363
+          endpoint: "/metrics"
+        config:
+          users:
+            otelUserPassword: custom-password
+    release:
+      name: custom-release
+    asserts:
+      - documentSelector: *deployment-selector
+        isKind:
+          of: Deployment
+      - documentSelector: *deployment-selector
+        contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CLICKHOUSE_ENDPOINT
+            value: "tcp://custom-clickhouse:9000"
+      - documentSelector: *deployment-selector
+        contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CLICKHOUSE_SERVER_ENDPOINT
+            value: "tcp://custom-clickhouse:9000"
+      - documentSelector: *deployment-selector
+        contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CLICKHOUSE_PROMETHEUS_METRICS_ENDPOINT
+            value: "custom-release-clickstack-clickhouse:9363"
+      - documentSelector: *deployment-selector
+        contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: HYPERDX_LOG_LEVEL
+            value: debug
+
+  - it: should render service ports correctly
+    set:
+      otel:
+        enabled: true
+        port: 13133
+        nativePort: 24225
+        grpcPort: 4317
+        httpPort: 4318
+        healthPort: 8888
+    asserts:
+      - documentSelector: *service-selector
+        isKind:
+          of: Service
+      - documentSelector: *service-selector
+        contains:
+          path: spec.ports
+          content:
+            port: 13133
+            targetPort: 13133
+            name: health
+      - documentSelector: *service-selector
+        contains:
+          path: spec.ports
+          content:
+            port: 24225
+            targetPort: 24225
+            name: fluentd
+      - documentSelector: *service-selector
+        contains:
+          path: spec.ports
+          content:
+            port: 4317
+            targetPort: 4317
+            name: otlp-grpc
+      - documentSelector: *service-selector
+        contains:
+          path: spec.ports
+          content:
+            port: 4318
+            targetPort: 4318
+            name: otlp-http
+      - documentSelector: *service-selector
+        contains:
+          path: spec.ports
+          content:
+            port: 8888
+            targetPort: 8888
+            name: metrics
+
+  - it: should render container ports correctly
+    set:
+      otel:
+        enabled: true
+        port: 13133
+        nativePort: 24225
+        grpcPort: 4317
+        httpPort: 4318
+        healthPort: 8888
+    asserts:
+      - documentSelector: *deployment-selector
+        isKind:
+          of: Deployment
+      - documentSelector: *deployment-selector
+        contains:
+          path: spec.template.spec.containers[0].ports
+          content:
+            containerPort: 13133
+      - documentSelector: *deployment-selector
+        contains:
+          path: spec.template.spec.containers[0].ports
+          content:
+            containerPort: 24225
+      - documentSelector: *deployment-selector
+        contains:
+          path: spec.template.spec.containers[0].ports
+          content:
+            containerPort: 4317
+      - documentSelector: *deployment-selector
+        contains:
+          path: spec.template.spec.containers[0].ports
+          content:
+            containerPort: 4318
+      - documentSelector: *deployment-selector
+        contains:
+          path: spec.template.spec.containers[0].ports
+          content:
+            containerPort: 8888
+
+  - it: should render environment variables with custom prometheus endpoint
+    set:
+      otel:
+        enabled: true
+        image:
+          repository: hyperdx/hyperdx-otel-collector
+          tag: 2-beta
+        clickhousePrometheusEndpoint: "external-clickhouse:8080/custom-metrics"
+      hyperdx:
+        image:
+          repository: hyperdx/hyperdx
+          tag: 2-beta
+        logLevel: info
+      clickhouse:
+        prometheus:
+          enabled: true
+          port: 9363
+          endpoint: "/metrics"
+        config:
+          users:
+            otelUserPassword: test-password
+    release:
+      name: test-release
+    asserts:
+      - documentSelector: *deployment-selector
+        isKind:
+          of: Deployment
+      - documentSelector: *deployment-selector
+        contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CLICKHOUSE_PROMETHEUS_METRICS_ENDPOINT
+            value: "external-clickhouse:8080/custom-metrics"
+
+  - it: should not render prometheus endpoint when disabled
+    set:
+      otel:
+        enabled: true
+        image:
+          repository: hyperdx/hyperdx-otel-collector
+          tag: 2-beta
+      hyperdx:
+        image:
+          repository: hyperdx/hyperdx
+          tag: 2-beta
+        logLevel: info
+      clickhouse:
+        prometheus:
+          enabled: false
+        config:
+          users:
+            otelUserPassword: test-password
+    release:
+      name: test-release
+    asserts:
+      - documentSelector: *deployment-selector
+        isKind:
+          of: Deployment
+      - documentSelector: *deployment-selector
+        notContains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CLICKHOUSE_PROMETHEUS_METRICS_ENDPOINT
+
+  - it: should render OPAMP_SERVER_URL with custom value when specified
+    set:
+      otel:
+        enabled: true
+        image:
+          repository: hyperdx/hyperdx-otel-collector
+          tag: 2-beta
+        opampServerUrl: "https://custom-opamp-server:8080"
+      hyperdx:
+        image:
+          repository: hyperdx/hyperdx
+          tag: 2-beta
+        logLevel: info
+      clickhouse:
+        config:
+          users:
+            otelUserPassword: test-password
+    release:
+      name: test-release
+    asserts:
+      - documentSelector: *deployment-selector
+        isKind:
+          of: Deployment
+      - documentSelector: *deployment-selector
+        contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: OPAMP_SERVER_URL
+            value: "https://custom-opamp-server:8080"
+
+  - it: should use default clickhouse database when not specified
+    set:
+      otel:
+        enabled: true
+        image:
+          repository: hyperdx/hyperdx-otel-collector
+          tag: 2-beta
+      hyperdx:
+        image:
+          repository: hyperdx/hyperdx
+          tag: 2-beta
+        logLevel: info
+      clickhouse:
+        config:
+          users:
+            otelUserPassword: test-password
+    release:
+      name: test-release
+    asserts:
+      - documentSelector: *deployment-selector
+        isKind:
+          of: Deployment
+      - documentSelector: *deployment-selector
+        contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: HYPERDX_OTEL_EXPORTER_CLICKHOUSE_DATABASE
+            value: "default"
+
+  - it: should use custom clickhouse database when specified
+    set:
+      otel:
+        enabled: true
+        image:
+          repository: hyperdx/hyperdx-otel-collector
+          tag: 2-beta
+        clickhouseDatabase: "custom_db"
+      hyperdx:
+        image:
+          repository: hyperdx/hyperdx
+          tag: 2-beta
+        logLevel: info
+      clickhouse:
+        config:
+          users:
+            otelUserPassword: test-password
+    release:
+      name: test-release
+    asserts:
+      - documentSelector: *deployment-selector
+        isKind:
+          of: Deployment
+      - documentSelector: *deployment-selector
+        contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: HYPERDX_OTEL_EXPORTER_CLICKHOUSE_DATABASE
+            value: "custom_db"
+
+  - it: should use custom clickhouse credentials when specified
+    set:
+      otel:
+        enabled: true
+        image:
+          repository: hyperdx/hyperdx-otel-collector
+          tag: 2-beta
+        clickhouseUser: "custom-user"
+        clickhousePassword: "custom-password"
+      hyperdx:
+        image:
+          repository: hyperdx/hyperdx
+          tag: 2-beta
+        logLevel: info
+      clickhouse:
+        config:
+          users:
+            otelUserPassword: default-password
+    release:
+      name: test-release
+    asserts:
+      - documentSelector: *deployment-selector
+        isKind:
+          of: Deployment
+      - documentSelector: *deployment-selector
+        contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CLICKHOUSE_USER
+            value: "custom-user"
+      - documentSelector: *deployment-selector
+        contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CLICKHOUSE_PASSWORD
+            value: "custom-password"
+
+  - it: should render custom environment variables when specified
+    set:
+      otel:
+        enabled: true
+        image:
+          repository: hyperdx/hyperdx-otel-collector
+          tag: 2-beta
+        env:
+          - name: CUSTOM_VAR
+            value: "custom-value"
+          - name: DEBUG_MODE
+            value: "true"
+          - name: SECRET_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: my-secret
+                key: token
+      hyperdx:
+        image:
+          repository: hyperdx/hyperdx
+          tag: 2-beta
+        logLevel: info
+      clickhouse:
+        config:
+          users:
+            otelUserPassword: test-password
+    release:
+      name: test-release
+    asserts:
+      - documentSelector: *deployment-selector
+        isKind:
+          of: Deployment
+      - documentSelector: *deployment-selector
+        contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CUSTOM_VAR
+            value: "custom-value"
+      - documentSelector: *deployment-selector
+        contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DEBUG_MODE
+            value: "true"
+      - documentSelector: *deployment-selector
+        contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: SECRET_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: my-secret
+                key: token
+
+  - it: should not render custom environment variables when not specified
+    set:
+      otel:
+        enabled: true
+        image:
+          repository: hyperdx/hyperdx-otel-collector
+          tag: 2-beta
+      hyperdx:
+        image:
+          repository: hyperdx/hyperdx
+          tag: 2-beta
+        logLevel: info
+      clickhouse:
+        config:
+          users:
+            otelUserPassword: test-password
+    release:
+      name: test-release
+    asserts:
+      - documentSelector: *deployment-selector
+        isKind:
+          of: Deployment
+      - documentSelector: *deployment-selector
+        notContains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CUSTOM_VAR
+
+  - it: should use default replica count 1 when not specified
+    set:
+      otel:
+        enabled: true
+        image:
+          repository: hyperdx/hyperdx-otel-collector
+          tag: 2-beta
+    asserts:
+      - documentSelector: *deployment-selector
+        isKind:
+          of: Deployment
+      - documentSelector: *deployment-selector
+        equal:
+          path: spec.replicas
+          value: 1
+
+  - it: should use custom replica count when specified
+    set:
+      otel:
+        enabled: true
+        replicas: 5
+        image:
+          repository: hyperdx/hyperdx-otel-collector
+          tag: 2-beta
+    asserts:
+      - documentSelector: *deployment-selector
+        isKind:
+          of: Deployment
+      - documentSelector: *deployment-selector
+        equal:
+          path: spec.replicas
+          value: 5
+
+  - it: should not render resources when not specified
+    set:
+      otel:
+        enabled: true
+        image:
+          repository: hyperdx/hyperdx-otel-collector
+          tag: 2-beta
+    asserts:
+      - documentSelector: *deployment-selector
+        isKind:
+          of: Deployment
+      - documentSelector: *deployment-selector
+        isNull:
+          path: spec.template.spec.containers[0].resources
+
+  - it: should render resources when specified
+    set:
+      otel:
+        enabled: true
+        image:
+          repository: hyperdx/hyperdx-otel-collector
+          tag: 2-beta
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+    asserts:
+      - documentSelector: *deployment-selector
+        isKind:
+          of: Deployment
+      - documentSelector: *deployment-selector
+        equal:
+          path: spec.template.spec.containers[0].resources
+          value:
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+
+  - it: should render only limits when requests not specified
+    set:
+      otel:
+        enabled: true
+        image:
+          repository: hyperdx/hyperdx-otel-collector
+          tag: 2-beta
+        resources:
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+    asserts:
+      - documentSelector: *deployment-selector
+        isKind:
+          of: Deployment
+      - documentSelector: *deployment-selector
+        equal:
+          path: spec.template.spec.containers[0].resources
+          value:
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+
+  - it: should render only requests when limits not specified
+    set:
+      otel:
+        enabled: true
+        image:
+          repository: hyperdx/hyperdx-otel-collector
+          tag: 2-beta
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+    asserts:
+      - documentSelector: *deployment-selector
+        isKind:
+          of: Deployment
+      - documentSelector: *deployment-selector
+        equal:
+          path: spec.template.spec.containers[0].resources
+          value:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+
+  - it: should render annotations when specified
+    set:
+      otel:
+        enabled: true
+        image:
+          repository: hyperdx/hyperdx-otel-collector
+          tag: 2-beta
+        annotations:
+          prometheus.io/scrape: "true"
+          prometheus.io/port: "8888"
+          prometheus.io/path: "/metrics"
+    asserts:
+      - documentSelector: *deployment-selector
+        isKind:
+          of: Deployment
+      - documentSelector: *deployment-selector
+        equal:
+          path: spec.template.metadata.annotations
+          value:
+            prometheus.io/scrape: "true"
+            prometheus.io/port: "8888"
+            prometheus.io/path: "/metrics"
+
+  - it: should render multiple annotations correctly
+    set:
+      otel:
+        enabled: true
+        image:
+          repository: hyperdx/hyperdx-otel-collector
+          tag: 2-beta
+        annotations:
+          prometheus.io/scrape: "true"
+          prometheus.io/port: "8888"
+          checksum/config: "abcdef1234567890"
+          deployment.kubernetes.io/revision: "1"
+          sidecar.istio.io/inject: "false"
+    asserts:
+      - documentSelector: *deployment-selector
+        isKind:
+          of: Deployment
+      - documentSelector: *deployment-selector
+        isSubset:
+          path: spec.template.metadata.annotations
+          content:
+            prometheus.io/scrape: "true"
+            prometheus.io/port: "8888"
+            checksum/config: "abcdef1234567890"
+            deployment.kubernetes.io/revision: "1"
+            sidecar.istio.io/inject: "false"
+
+  - it: should include livenessProbe with default values when enabled
+    set:
+      otel:
+        enabled: true
+        port: 13133
+    asserts:
+      - documentSelector: *deployment-selector
+        isSubset:
+          path: spec.template.spec.containers[0].livenessProbe
+          content:
+            httpGet:
+              path: /
+              port: 13133
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+  - it: should include readinessProbe with default values when enabled
+    set:
+      otel:
+        enabled: true
+        port: 13133
+    asserts:
+      - documentSelector: *deployment-selector
+        isSubset:
+          path: spec.template.spec.containers[0].readinessProbe
+          content:
+            httpGet:
+              path: /
+              port: 13133
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+  - it: should not include livenessProbe when disabled
+    set:
+      otel:
+        enabled: true
+        livenessProbe:
+          enabled: false
+    asserts:
+      - documentSelector: *deployment-selector
+        isNull:
+          path: spec.template.spec.containers[0].livenessProbe
+
+  - it: should not include readinessProbe when disabled
+    set:
+      otel:
+        enabled: true
+        readinessProbe:
+          enabled: false
+    asserts:
+      - documentSelector: *deployment-selector
+        isNull:
+          path: spec.template.spec.containers[0].readinessProbe
+
+  - it: should use custom livenessProbe values when provided
+    set:
+      otel:
+        enabled: true
+        port: 13133
+        livenessProbe:
+          enabled: true
+          initialDelaySeconds: 20
+          periodSeconds: 60
+          timeoutSeconds: 10
+          failureThreshold: 5
+    asserts:
+      - documentSelector: *deployment-selector
+        isSubset:
+          path: spec.template.spec.containers[0].livenessProbe
+          content:
+            httpGet:
+              path: /
+              port: 13133
+            initialDelaySeconds: 20
+            periodSeconds: 60
+            timeoutSeconds: 10
+            failureThreshold: 5
+
+  - it: should use custom readinessProbe values when provided
+    set:
+      otel:
+        enabled: true
+        port: 13133
+        readinessProbe:
+          enabled: true
+          initialDelaySeconds: 15
+          periodSeconds: 20
+          timeoutSeconds: 3
+          failureThreshold: 2
+    asserts:
+      - documentSelector: *deployment-selector
+        isSubset:
+          path: spec.template.spec.containers[0].readinessProbe
+          content:
+            httpGet:
+              path: /
+              port: 13133
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 2
+
+  - it: should use custom port in probes when provided
+    set:
+      otel:
+        enabled: true
+        port: 13134
+    asserts:
+      - documentSelector: *deployment-selector
+        equal:
+          path: spec.template.spec.containers[0].livenessProbe.httpGet.port
+          value: 13134
+      - documentSelector: *deployment-selector
+        equal:
+          path: spec.template.spec.containers[0].readinessProbe.httpGet.port
+          value: 13134
+
+  - it: should not include imagePullSecrets when not configured
+    set:
+      otel:
+        enabled: true
+    asserts:
+      - documentIndex: 0
+        isNull:
+          path: spec.template.spec.imagePullSecrets
+
+  - it: should include imagePullSecrets when configured
+    set:
+      otel:
+        enabled: true
+      global:
+        imagePullSecrets:
+          - name: regcred
+    asserts:
+      - documentIndex: 0
+        isNotNull:
+          path: spec.template.spec.imagePullSecrets
+      - documentIndex: 0
+        equal:
+          path: spec.template.spec.imagePullSecrets[0].name
+          value: regcred

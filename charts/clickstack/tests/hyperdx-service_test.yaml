@@ -1,0 +1,136 @@
+suite: Test HyperDX Service
+templates:
+  - hyperdx-service.yaml
+tests:
+  - it: should render service correctly with default values
+    asserts:
+      - isKind:
+          of: Service
+      - equal:
+          path: spec.type
+          value: ClusterIP
+      - equal:
+          path: spec.ports[0].port
+          value: 3000
+      - equal:
+          path: spec.ports[0].targetPort
+          value: 3000
+      - equal:
+          path: spec.ports[0].name
+          value: app
+      - isNull:
+          path: metadata.annotations
+
+  - it: should use LoadBalancer type when configured
+    set:
+      hyperdx:
+        service:
+          type: LoadBalancer
+    asserts:
+      - equal:
+          path: spec.type
+          value: LoadBalancer
+
+  - it: should use NodePort type when configured
+    set:
+      hyperdx:
+        service:
+          type: NodePort
+    asserts:
+      - equal:
+          path: spec.type
+          value: NodePort
+
+  - it: should render service annotations when provided
+    set:
+      hyperdx:
+        service:
+          annotations:
+            service.beta.kubernetes.io/aws-load-balancer-internal: "true"
+            service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+    asserts:
+      - equal:
+          path: metadata.annotations["service.beta.kubernetes.io/aws-load-balancer-internal"]
+          value: "true"
+      - equal:
+          path: metadata.annotations["service.beta.kubernetes.io/aws-load-balancer-type"]
+          value: "nlb"
+
+  - it: should not render annotations section when annotations are empty
+    set:
+      hyperdx:
+        service:
+          annotations: {}
+    asserts:
+      - isNull:
+          path: metadata.annotations
+
+  - it: should use custom port when provided
+    set:
+      hyperdx:
+        appPort: 4000
+    asserts:
+      - equal:
+          path: spec.ports[0].port
+          value: 4000
+      - equal:
+          path: spec.ports[0].targetPort
+          value: 4000
+
+  - it: should have correct selector labels
+    asserts:
+      - matchRegex:
+          path: spec.selector.app
+          pattern: ^RELEASE-NAME-clickstack$
+
+  - it: should expose OpAMP port with default values
+    asserts:
+      - equal:
+          path: spec.ports[1].port
+          value: 4320
+      - equal:
+          path: spec.ports[1].targetPort
+          value: 4320
+      - equal:
+          path: spec.ports[1].name
+          value: opamp
+  
+  - it: should use custom OpAMP port when provided
+    set:
+      hyperdx:
+        opampPort: 5320
+    asserts:
+      - equal:
+          path: spec.ports[1].port
+          value: 5320
+      - equal:
+          path: spec.ports[1].targetPort
+          value: 5320
+
+  - it: should combine LoadBalancer type with annotations
+    set:
+      hyperdx:
+        service:
+          type: LoadBalancer
+          annotations:
+            cloud.google.com/load-balancer-type: "Internal"
+            service.beta.kubernetes.io/azure-load-balancer-internal: "true"
+    asserts:
+      - equal:
+          path: spec.type
+          value: LoadBalancer
+      - equal:
+          path: metadata.annotations["cloud.google.com/load-balancer-type"]
+          value: "Internal"
+      - equal:
+          path: metadata.annotations["service.beta.kubernetes.io/azure-load-balancer-internal"]
+          value: "true"
+
+  - it: should fallback to ClusterIP when service type is not specified
+    set:
+      hyperdx:
+        service: {}
+    asserts:
+      - equal:
+          path: spec.type
+          value: ClusterIP

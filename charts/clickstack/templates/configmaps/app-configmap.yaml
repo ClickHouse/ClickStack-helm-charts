@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "clickstack.fullname" . }}-app-config
+  labels:
+    {{- include "clickstack.labels" . | nindent 4 }}
+data:
+  APP_PORT: {{ .Values.hyperdx.appPort | quote }}
+  API_PORT: {{ .Values.hyperdx.apiPort | quote }}
+  FRONTEND_URL: "{{ tpl .Values.hyperdx.frontendUrl . }}"
+  HYPERDX_API_PORT: "{{ .Values.hyperdx.apiPort }}"
+  HYPERDX_APP_PORT: "{{ .Values.hyperdx.appPort }}"
+  HYPERDX_LOG_LEVEL: "{{ .Values.hyperdx.logLevel }}"
+  MINER_API_URL: "http://{{ include "clickstack.fullname" . }}-miner:5123"
+  MONGO_URI: "{{ tpl .Values.hyperdx.mongoUri . }}"
+  OTEL_SERVICE_NAME: "hdx-oss-api"
+  USAGE_STATS_ENABLED: "{{ .Values.hyperdx.usageStatsEnabled | default true }}"
+  RUN_SCHEDULED_TASKS_EXTERNALLY: "{{ .Values.tasks.enabled | default false }}"
+  OPAMP_PORT: "{{ .Values.hyperdx.opampPort }}"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "{{ tpl .Values.hyperdx.otelExporterEndpoint . }}"

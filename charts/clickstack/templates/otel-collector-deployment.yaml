@@ -1,0 +1,144 @@
+{{- if .Values.otel.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "clickstack.fullname" . }}-otel-collector
+  labels:
+    {{- include "clickstack.labels" . | nindent 4 }}
+    app: otel-collector
+spec:
+  replicas: {{ .Values.otel.replicas | default 1 }}
+  selector:
+    matchLabels:
+      {{- include "clickstack.selectorLabels" . | nindent 6 }}
+      app: otel-collector
+  template:
+    metadata:
+      labels:
+        {{- include "clickstack.selectorLabels" . | nindent 8 }}
+        app: otel-collector
+      annotations:
+      {{- if .Values.otel.annotations }}
+        {{- with .Values.otel.annotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end -}}
+      {{- end }}
+    spec:
+      {{- if .Values.otel.nodeSelector }}
+      nodeSelector:
+        {{- toYaml .Values.otel.nodeSelector | nindent 8 }}
+      {{- end }}
+      {{- if .Values.otel.tolerations }}
+      tolerations:
+        {{- toYaml .Values.otel.tolerations | nindent 8 }}
+      {{- end }}
+      {{- if .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml .Values.global.imagePullSecrets | nindent 8 }}
+      {{- end }}
+      {{- if .Values.otel.customConfig }}
+      volumes:
+        - name: custom-config
+          configMap:
+            name: {{ include "clickstack.fullname" . }}-otel-custom-config
+      {{- end }}
+      containers:
+        - name: otel-collector
+          image: "{{ .Values.otel.image.repository }}:{{ .Values.otel.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.otel.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.otel.port }}
+            - containerPort: {{ .Values.otel.nativePort }}
+            - containerPort: {{ .Values.otel.grpcPort }}
+            - containerPort: {{ .Values.otel.httpPort }}
+            - containerPort: {{ .Values.otel.healthPort }}
+          {{- if .Values.otel.resources }}
+          resources:
+            {{- toYaml .Values.otel.resources | nindent 12 }}
+          {{- end }}
+          {{- if .Values.otel.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.otel.port }}
+            initialDelaySeconds: {{ .Values.otel.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.otel.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.otel.livenessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.otel.livenessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.otel.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.otel.port }}
+            initialDelaySeconds: {{ .Values.otel.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.otel.readinessProbe.periodSeconds}}
+            timeoutSeconds: {{ .Values.otel.readinessProbe.timeoutSeconds}}
+            failureThreshold: {{ .Values.otel.readinessProbe.failureThreshold }}
+          {{- end }}
+          env:
+            - name: CLICKHOUSE_ENDPOINT
+              value: "{{ .Values.otel.clickhouseEndpoint | default (printf "tcp://%s-clickhouse:%v?dial_timeout=10s" (include "clickstack.fullname" .) .Values.clickhouse.nativePort) }}"
+            - name: CLICKHOUSE_SERVER_ENDPOINT
+              value: "{{ .Values.otel.clickhouseEndpoint | default (printf "%s-clickhouse:%v" (include "clickstack.fullname" .) .Values.clickhouse.nativePort) }}"
+            {{- if .Values.clickhouse.prometheus.enabled }}
+            - name: CLICKHOUSE_PROMETHEUS_METRICS_ENDPOINT
+              value: "{{ .Values.otel.clickhousePrometheusEndpoint | default (printf "%s-clickhouse:%v" (include "clickstack.fullname" .) .Values.clickhouse.prometheus.port ) }}"
+            {{- end }}
+            - name: OPAMP_SERVER_URL
+              value: {{ .Values.otel.opampServerUrl | default (printf "http://%s-app:%v" (include "clickstack.fullname" .) .Values.hyperdx.opampPort ) }}
+            - name: HYPERDX_LOG_LEVEL
+              value: {{ .Values.hyperdx.logLevel }}
+            - name: HYPERDX_OTEL_EXPORTER_CLICKHOUSE_DATABASE
+              value: {{ .Values.otel.clickhouseDatabase | default "default" }}
+            - name: HYPERDX_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "clickstack.fullname" . }}-app-secrets
+                  key: api-key
+            - name: CLICKHOUSE_USER
+              value: {{ .Values.otel.clickhouseUser | default .Values.clickhouse.config.users.otelUserName }}
+            - name: CLICKHOUSE_PASSWORD
+              value: {{ .Values.otel.clickhousePassword | default .Values.clickhouse.config.users.otelUserPassword }}
+            {{- if .Values.otel.customConfig }}
+            - name: CUSTOM_OTELCOL_CONFIG_FILE
+              value: /etc/otelcol-contrib/custom.config.yaml
+            {{- end }}
+            {{- with .Values.otel.env }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- if .Values.otel.customConfig }}
+          volumeMounts:
+            - name: custom-config
+              mountPath: /etc/otelcol-contrib/custom.config.yaml
+              subPath: custom.config.yaml
+              readOnly: true
+          {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "clickstack.fullname" . }}-otel-collector
+  labels:
+    {{- include "clickstack.labels" . | nindent 4 }}
+spec:
+  ports:
+    - port: {{ .Values.otel.port }}
+      targetPort: {{ .Values.otel.port }}
+      name: health
+    - port: {{ .Values.otel.nativePort }}
+      targetPort: {{ .Values.otel.nativePort }}
+      name: fluentd
+    - port: {{ .Values.otel.grpcPort }}
+      targetPort: {{ .Values.otel.grpcPort }}
+      name: otlp-grpc
+    - port: {{ .Values.otel.httpPort }}
+      targetPort: {{ .Values.otel.httpPort }}
+      name: otlp-http
+    - port: {{ .Values.otel.healthPort }}
+      targetPort: {{ .Values.otel.healthPort }}
+      name: metrics
+  selector:
+    {{- include "clickstack.selectorLabels" . | nindent 4 }}
+    app: otel-collector
+{{- end }}

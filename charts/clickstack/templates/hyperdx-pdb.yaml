@@ -1,0 +1,20 @@
+{{- if .Values.hyperdx.podDisruptionBudget.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "clickstack.fullname" . }}-pdb
+  labels:
+    {{- include "clickstack.labels" . | nindent 4 }}
+    app: {{ include "clickstack.fullname" . }}
+    {{- if .Values.hyperdx.labels }}
+    {{- with .Values.hyperdx.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end -}}
+    {{- end }}
+spec:
+  minAvailable: {{ .Values.hyperdx.podDisruptionBudget.minAvailable | default 1 }}
+  selector:
+    matchLabels:
+      {{- include "clickstack.selectorLabels" . | nindent 6 }}
+      app: {{ include "clickstack.fullname" . }}
+{{- end }}
