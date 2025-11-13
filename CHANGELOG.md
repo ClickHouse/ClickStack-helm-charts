@@ -1,5 +1,11 @@
 # helm-charts
 
+## 0.8.3
+
+### Patch Changes
+
+- 3e18303: Fixes the alert cron job template so newer version image tags will use the updated command to start the task.
+
 ## 0.8.2
 
 ### Patch Changes
