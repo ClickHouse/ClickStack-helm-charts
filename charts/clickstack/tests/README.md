@@ -1,6 +1,6 @@
-# Helm Chart Tests for HyperDX OSS
+# Helm Chart Tests for ClickStack
 
-This directory contains unit tests for the HyperDX OSS Helm chart using the [helm-unittest](https://github.com/quintush/helm-unittest) plugin.
+This directory contains unit tests for the ClickStack Helm chart using the [helm-unittest](https://github.com/quintush/helm-unittest) plugin.
 
 ## Prerequisites
 
@@ -48,4 +48,4 @@ Tests are written in YAML format and include:
   - `set`: Values to set for the test
   - `asserts`: List of assertions to check
 
-For more information, see the [helm-unittest documentation](https://github.com/quintush/helm-unittest/blob/master/DOCUMENT.md). 
+For more information, see the [helm-unittest documentation](https://github.com/quintush/helm-unittest/blob/master/DOCUMENT.md).
