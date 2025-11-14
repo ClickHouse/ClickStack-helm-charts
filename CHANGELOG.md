@@ -1,5 +1,11 @@
 # helm-charts
 
+## 0.8.4
+
+### Patch Changes
+
+- 444109c: Further fixes to the cronjob to use the correct path and version.
+
 ## 0.8.3
 
 ### Patch Changes
