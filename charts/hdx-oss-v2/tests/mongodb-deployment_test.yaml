@@ -1,0 +1,304 @@
+suite: Test MongoDB Deployment
+templates:
+  - mongodb-deployment.yaml
+
+# Common documentSelector patterns using YAML anchors
+_selectors:
+  deployment: &deployment-selector
+    path: kind
+    value: Deployment
+  service: &service-selector
+    path: kind
+    value: Service
+  pvc: &pvc-selector
+    path: kind
+    value: PersistentVolumeClaim
+tests:
+  - it: should render both deployment and service when enabled
+    set:
+      mongodb:
+        image: mongo:5.0.14-focal
+        port: 27017
+        enabled: true
+        persistence:
+          enabled: false
+    asserts:
+      - hasDocuments:
+          count: 2
+      - documentSelector: *deployment-selector
+        isKind:
+          of: Deployment
+      - documentSelector: *service-selector
+        isKind:
+          of: Service 
+  
+  - it: should not render any documents when disabled
+    set:
+      mongodb:
+        enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should create PVC, deployment and service when persistence is enabled
+    set:
+      mongodb:
+        enabled: true
+        persistence:
+          enabled: true
+          dataSize: 10Gi
+    asserts:
+      - hasDocuments:
+          count: 3
+      - documentSelector: *pvc-selector
+        isKind:
+          of: PersistentVolumeClaim
+      - documentSelector: *pvc-selector
+        matchRegex:
+          path: metadata.name
+          pattern: .*-mongodb$
+      - documentSelector: *pvc-selector
+        equal:
+          path: spec.resources.requests.storage
+          value: 10Gi
+      - documentSelector: *deployment-selector
+        isKind:
+          of: Deployment
+      - documentSelector: *deployment-selector
+        equal:
+          path: spec.template.spec.volumes[0].name
+          value: mongodb-data
+      - documentSelector: *deployment-selector
+        isNotNull:
+          path: spec.template.spec.volumes[0].persistentVolumeClaim
+      - documentSelector: *deployment-selector
+        matchRegex:
+          path: spec.template.spec.volumes[0].persistentVolumeClaim.claimName
+          pattern: .*-mongodb$
+      - documentSelector: *deployment-selector
+        isNull:
+          path: spec.template.spec.volumes[0].emptyDir
+      - documentSelector: *service-selector
+        isKind:
+          of: Service
+
+  - it: should use emptyDir when persistence is disabled and not create PVC
+    set:
+      mongodb:
+        enabled: true
+        persistence:
+          enabled: false
+    asserts:
+      - hasDocuments:
+          count: 2  # Only Deployment and Service, no PVC
+      - documentSelector: *deployment-selector
+        isKind:
+          of: Deployment
+      - documentSelector: *deployment-selector
+        equal:
+          path: spec.template.spec.volumes[0].name
+          value: mongodb-data
+      - documentSelector: *deployment-selector
+        isNotNull:
+          path: spec.template.spec.volumes[0].emptyDir
+      - documentSelector: *deployment-selector
+        isNull:
+          path: spec.template.spec.volumes[0].persistentVolumeClaim
+      - documentSelector: *service-selector
+        isKind:
+          of: Service
+
+  - it: should include livenessProbe with tcpSocket when enabled
+    set:
+      mongodb:
+        enabled: true
+        persistence:
+          enabled: false  # To ensure predictable document ordering
+    asserts:
+      - documentSelector: *deployment-selector
+        isSubset:
+          path: spec.template.spec.containers[0].livenessProbe
+          content:
+            tcpSocket:
+              port: 27017
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+  - it: should include readinessProbe with tcpSocket when enabled
+    set:
+      mongodb:
+        enabled: true
+        persistence:
+          enabled: false  # To ensure predictable document ordering
+    asserts:
+      - documentSelector: *deployment-selector
+        isSubset:
+          path: spec.template.spec.containers[0].readinessProbe
+          content:
+            tcpSocket:
+              port: 27017
+            initialDelaySeconds: 1
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+  - it: should not include livenessProbe when disabled
+    set:
+      mongodb:
+        enabled: true
+        persistence:
+          enabled: false  # To ensure predictable document ordering
+        livenessProbe:
+          enabled: false
+    asserts:
+      - documentSelector: *deployment-selector
+        isNull:
+          path: spec.template.spec.containers[0].livenessProbe
+
+  - it: should not include readinessProbe when disabled
+    set:
+      mongodb:
+        enabled: true
+        persistence:
+          enabled: false  # To ensure predictable document ordering
+        readinessProbe:
+          enabled: false
+    asserts:
+      - documentSelector: *deployment-selector
+        isNull:
+          path: spec.template.spec.containers[0].readinessProbe
+
+  - it: should use custom livenessProbe values when provided
+    set:
+      mongodb:
+        enabled: true
+        persistence:
+          enabled: false  # To ensure predictable document ordering
+        livenessProbe:
+          enabled: true
+          initialDelaySeconds: 20
+          periodSeconds: 60
+          timeoutSeconds: 10
+          failureThreshold: 5
+    asserts:
+      - documentSelector: *deployment-selector
+        isSubset:
+          path: spec.template.spec.containers[0].livenessProbe
+          content:
+            tcpSocket:
+              port: 27017
+            initialDelaySeconds: 20
+            periodSeconds: 60
+            timeoutSeconds: 10
+            failureThreshold: 5
+
+  - it: should use custom readinessProbe values when provided
+    set:
+      mongodb:
+        enabled: true
+        persistence:
+          enabled: false  # To ensure predictable document ordering
+        readinessProbe:
+          enabled: true
+          initialDelaySeconds: 5
+          periodSeconds: 20
+          timeoutSeconds: 3
+          failureThreshold: 2
+    asserts:
+      - documentSelector: *deployment-selector
+        isSubset:
+          path: spec.template.spec.containers[0].readinessProbe
+          content:
+            tcpSocket:
+              port: 27017
+            initialDelaySeconds: 5
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 2
+
+  - it: should not create PVC when mongodb is disabled
+    set:
+      mongodb:
+        enabled: false
+        persistence:
+          enabled: true  # Even with persistence enabled, no PVC should be created
+    asserts:
+      - hasDocuments:
+          count: 0  # No resources should be created
+
+  - it: should include keep annotation on PVC when global.keepPVC is true
+    set:
+      mongodb:
+        enabled: true
+        persistence:
+          enabled: true
+      global:
+        keepPVC: true
+    asserts:
+      - documentSelector: *pvc-selector
+        isKind:
+          of: PersistentVolumeClaim
+      - documentSelector: *pvc-selector
+        equal:
+          path: metadata.annotations["helm.sh/resource-policy"]
+          value: keep
+
+  - it: should not include keep annotation on PVC when global.keepPVC is false
+    set:
+      mongodb:
+        enabled: true
+        persistence:
+          enabled: true
+      global:
+        keepPVC: false
+    asserts:
+      - documentSelector: *pvc-selector
+        isKind:
+          of: PersistentVolumeClaim
+      - documentSelector: *deployment-selector
+        isNull:
+          path: metadata.annotations["helm.sh/resource-policy"]
+
+  - it: should use global storageClassName when specified
+    set:
+      mongodb:
+        enabled: true
+        persistence:
+          enabled: true
+      global:
+        storageClassName: fast-ssd
+    asserts:
+      - documentSelector: *pvc-selector
+        isKind:
+          of: PersistentVolumeClaim
+      - documentSelector: *pvc-selector
+        equal:
+          path: spec.storageClassName
+          value: fast-ssd
+
+  - it: should not include imagePullSecrets when not configured
+    set:
+      mongodb:
+        enabled: true
+    asserts:
+      - documentIndex: 0
+        isNull:
+          path: spec.template.spec.imagePullSecrets
+
+  - it: should include imagePullSecrets when configured
+    set:
+      mongodb:
+        enabled: true
+      global:
+        imagePullSecrets:
+          - name: regcred
+    asserts:
+      - documentIndex: 1
+        isNotNull:
+          path: spec.template.spec.imagePullSecrets
+      - documentIndex: 1
+        equal:
+          path: spec.template.spec.imagePullSecrets[0].name
+          value: regcred

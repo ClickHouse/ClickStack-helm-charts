@@ -1,0 +1,76 @@
+suite: Test Persistence Settings
+templates:
+  - mongodb-deployment.yaml
+
+# Common documentSelector patterns using YAML anchors
+_selectors:
+  pvc: &pvc-selector
+    path: kind
+    value: PersistentVolumeClaim
+  deployment: &deployment-selector
+    path: kind
+    value: Deployment
+  service: &service-selector
+    path: kind
+    value: Service
+tests:
+  - it: should use correct mongodb PVC name and size
+    set:
+      global:
+        storageClassName: "custom-storage-class"
+      mongodb:
+        enabled: true
+        persistence:
+          enabled: true
+          dataSize: 15Gi
+    asserts:
+      - hasDocuments:
+          count: 3  # PVC, Deployment, Service
+      - documentSelector: *pvc-selector
+        isKind:
+          of: PersistentVolumeClaim
+      - documentSelector: *pvc-selector
+        matchRegex:
+          path: metadata.name
+          pattern: .*-mongodb$
+      - documentSelector: *pvc-selector
+        equal:
+          path: spec.storageClassName
+          value: custom-storage-class
+      - documentSelector: *pvc-selector
+        equal:
+          path: spec.resources.requests.storage
+          value: 15Gi
+
+  - it: should not create PVCs when persistence is disabled
+    set:
+      mongodb:
+        enabled: true
+        persistence:
+          enabled: false
+    asserts:
+      - hasDocuments:
+          count: 2  # Only Deployment and Service, no PVC
+      - documentSelector: *deployment-selector
+        isKind:
+          of: Deployment
+      - documentSelector: *service-selector
+        isKind:
+          of: Service
+
+  - it: should omit storageClassName when global.storageClass is empty string
+    set:
+      global:
+        storageClassName: ""
+      mongodb:
+        enabled: true
+        persistence:
+          enabled: true
+          dataSize: 10Gi
+    asserts:
+      - documentSelector: *pvc-selector
+        isKind:
+          of: PersistentVolumeClaim
+      - documentSelector: *pvc-selector
+        isNull:
+          path: spec.storageClassName

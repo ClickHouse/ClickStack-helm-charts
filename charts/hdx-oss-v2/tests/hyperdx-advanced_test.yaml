@@ -1,0 +1,43 @@
+suite: Test HyperDX Advanced Settings
+templates:
+  - hyperdx-deployment.yaml
+tests:
+  - it: should handle complex environment variables
+    set:
+      hyperdx:
+        env:
+          - name: COMPLEX_VAR1
+            value: "test-value"
+          - name: SECRET_VAR
+            valueFrom:
+              secretKeyRef:
+                name: external-secret
+                key: secret-key
+          - name: CONFIG_VAR
+            valueFrom:
+              configMapKeyRef:
+                name: external-config
+                key: config-key
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: COMPLEX_VAR1
+            value: "test-value"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: SECRET_VAR
+            valueFrom:
+              secretKeyRef:
+                name: external-secret
+                key: secret-key
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CONFIG_VAR
+            valueFrom:
+              configMapKeyRef:
+                name: external-config
+                key: config-key
+                

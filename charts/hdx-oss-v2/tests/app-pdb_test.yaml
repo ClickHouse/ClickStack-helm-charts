@@ -1,0 +1,29 @@
+suite: Test HyperDX App PodDisruptionBudget
+templates:
+  - hyperdx-pdb.yaml
+tests:
+  - it: should render the app pdb when enabled
+    set:
+      hyperdx:
+        podDisruptionBudget:
+          enabled: true
+    asserts:
+      - isKind:
+          of: PodDisruptionBudget
+      - equal:
+          path: spec.minAvailable
+          value: 1
+      - matchRegex:
+          path: metadata.name
+          pattern: -pdb$
+
+  - it: should override minimum available replicas when specified
+    set:
+      hyperdx:
+        podDisruptionBudget:
+          enabled: true
+          minAvailable: 5
+    asserts:
+      - equal:
+          path: spec.minAvailable
+          value: 5
