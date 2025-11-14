@@ -27,10 +27,10 @@ spec:
               image: "{{ .Values.hyperdx.image.repository }}:{{ .Values.hyperdx.image.tag | default .Chart.AppVersion }}"
               imagePullPolicy: {{ .Values.hyperdx.image.pullPolicy }}
               {{- $tag := .Values.hyperdx.image.tag | default .Chart.AppVersion -}}
-              {{- if and (regexMatch "^[0-9]+\\.[0-9]+\\.[0-9]+" $tag) (semverCompare "< 2.7.1" $tag) }} # before esbuild revert
+              {{- if and (regexMatch "^[0-9]+\\.[0-9]+\\.[0-9]+" $tag) (semverCompare "< 2.7.0" $tag) }} # before esbuild revert
               command: ["node", "/app/packages/api/tasks/index", "check-alerts"]
               {{- else }}
-              command: ["node", "/app/api/build/tasks/index.js", "check-alerts"] # after esbuild revert
+              command: ["node", "/app/packages/api/build/tasks/index.js", "check-alerts"] # after esbuild revert
               {{- end }}
               envFrom:
                 - configMapRef:
