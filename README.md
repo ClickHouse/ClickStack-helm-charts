@@ -1,5 +1,11 @@
 # ClickStack Helm Charts
 
+> **⚠️ IMPORTANT NOTICE: Chart Migration**
+>
+> If you are currently using the `hdx-oss-v2` chart, please migrate to the `clickstack` chart. The `hdx-oss-v2` chart is now in maintenance mode and will no longer receive new features or updates going forward. All new development and improvements will be focused on the `clickstack` chart.
+>
+> The `clickstack` chart provides the same functionality with improved naming and better organization. For migration instructions, please see our [migration guide](docs/MIGRATION.md).
+
 Welcome to the official ClickStack Helm charts repository. ClickStack brings together the best of observability: **ClickHouse + OpenTelemetry + HyperDX**. This guide provides instructions on how to install, configure, and manage your ClickStack deployment using Helm.
 
 ## Table of Contents
