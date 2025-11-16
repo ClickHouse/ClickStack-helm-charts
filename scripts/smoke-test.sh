@@ -4,10 +4,12 @@ set -e
 # Test script for HyperDX deployment
 NAMESPACE=${NAMESPACE:-default}
 RELEASE_NAME=${RELEASE_NAME:-hyperdx-test}
+CHART_NAME=${CHART_NAME:-clickstack}
 TIMEOUT=${TIMEOUT:-300}
 
 echo "Starting HyperDX tests..."
 echo "Release: $RELEASE_NAME"
+echo "Chart: $CHART_NAME"
 echo "Namespace: $NAMESPACE"
 
 wait_for_service() {
@@ -60,7 +62,7 @@ kubectl get pods -l app.kubernetes.io/instance=$RELEASE_NAME -n $NAMESPACE
 
 # Test UI
 echo "Testing HyperDX UI..."
-kubectl port-forward service/$RELEASE_NAME-clickstack-app 3000:3000 -n $NAMESPACE &
+kubectl port-forward service/$RELEASE_NAME-$CHART_NAME-app 3000:3000 -n $NAMESPACE &
 pf_pid=$!
 sleep 10
 
@@ -72,7 +74,7 @@ sleep 2
 
 # Test OTEL collector metrics endpoint
 echo "Testing OTEL collector metrics endpoint..."
-kubectl port-forward service/$RELEASE_NAME-clickstack-otel-collector 8888:8888 -n $NAMESPACE &
+kubectl port-forward service/$RELEASE_NAME-$CHART_NAME-otel-collector 8888:8888 -n $NAMESPACE &
 metrics_pf_pid=$!
 sleep 10
 
@@ -84,7 +86,7 @@ sleep 2
 
 # Test data ingestion
 echo "Testing data ingestion..."
-kubectl port-forward service/$RELEASE_NAME-clickstack-otel-collector 4318:4318 -n $NAMESPACE &
+kubectl port-forward service/$RELEASE_NAME-$CHART_NAME-otel-collector 4318:4318 -n $NAMESPACE &
 pf_pid=$!
 sleep 10
 
@@ -161,7 +163,7 @@ kill $pf_pid 2>/dev/null || true
 
 # Test databases
 echo "Testing ClickHouse..."
-if kubectl exec -n $NAMESPACE deployment/$RELEASE_NAME-clickstack-clickhouse -- clickhouse-client --query "SELECT 1" >/dev/null 2>&1; then
+if kubectl exec -n $NAMESPACE deployment/$RELEASE_NAME-$CHART_NAME-clickhouse -- clickhouse-client --query "SELECT 1" >/dev/null 2>&1; then
     echo "ClickHouse: OK"
 else
     echo "ERROR: ClickHouse test failed"
@@ -169,7 +171,7 @@ else
 fi
 
 echo "Testing MongoDB..."
-if kubectl exec -n $NAMESPACE deployment/$RELEASE_NAME-clickstack-mongodb -- mongosh --eval "db.adminCommand('ismaster')" --quiet >/dev/null 2>&1; then
+if kubectl exec -n $NAMESPACE deployment/$RELEASE_NAME-$CHART_NAME-mongodb -- mongosh --eval "db.adminCommand('ismaster')" --quiet >/dev/null 2>&1; then
     echo "MongoDB: OK"
 else
     echo "ERROR: MongoDB test failed"
@@ -181,8 +183,8 @@ echo "Waiting for data ingestion..."
 sleep 30
 
 echo "Checking ingested data..."
-log_count=$(kubectl exec -n $NAMESPACE deployment/$RELEASE_NAME-clickstack-clickhouse -- clickhouse-client --query "SELECT count() FROM default.otel_logs WHERE ServiceName = 'test-service'" 2>/dev/null || echo "0")
-trace_count=$(kubectl exec -n $NAMESPACE deployment/$RELEASE_NAME-clickstack-clickhouse -- clickhouse-client --query "SELECT count() FROM default.otel_traces WHERE ServiceName = 'test-service'" 2>/dev/null || echo "0")
+log_count=$(kubectl exec -n $NAMESPACE deployment/$RELEASE_NAME-$CHART_NAME-clickhouse -- clickhouse-client --query "SELECT count() FROM default.otel_logs WHERE ServiceName = 'test-service'" 2>/dev/null || echo "0")
+trace_count=$(kubectl exec -n $NAMESPACE deployment/$RELEASE_NAME-$CHART_NAME-clickhouse -- clickhouse-client --query "SELECT count() FROM default.otel_traces WHERE ServiceName = 'test-service'" 2>/dev/null || echo "0")
 
 echo "Found $log_count test log records"
 echo "Found $trace_count test trace records"

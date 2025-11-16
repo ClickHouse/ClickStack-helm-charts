@@ -153,7 +153,7 @@ jobs:
       run: |
         chmod +x ./scripts/smoke-test.sh
 
-        RELEASE_NAME=hyperdx-test NAMESPACE=default ./scripts/smoke-test.sh
+        RELEASE_NAME=hyperdx-test CHART_NAME=hdx-oss-v2 NAMESPACE=default ./scripts/smoke-test.sh
 
     - name: Collect logs on failure
       if: failure()
