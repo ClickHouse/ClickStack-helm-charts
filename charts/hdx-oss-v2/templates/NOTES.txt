@@ -4,10 +4,6 @@ WARNING: THIS CHART IS DEPRECATED
 
 The 'hdx-oss-v2' chart has been deprecated and renamed to 'clickstack'.
 
-Please migrate to the new chart:
-  helm repo update
-  helm upgrade {{ .Release.Name }} hyperdx/clickstack --reuse-values
-
 For more information, see: https://github.com/hyperdxio/helm-charts
 
 ================================================================================
