@@ -3,13 +3,13 @@ name: Helm Chart Integration Test
 on:
   # Run on merge to main
   push:
-    branches: [ main ]
+    branches: [main]
   # Run on pull requests
   pull_request:
-    branches: [ main ]
+    branches: [main]
   # Run nightly at 2 AM UTC
   schedule:
-    - cron: '0 2 * * *'
+    - cron: "0 2 * * *"
   # Allow manual trigger
   workflow_dispatch:
 
@@ -18,166 +18,166 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Set up Helm
-      uses: azure/setup-helm@v3
-      with:
-        version: '3.12.0'
+      - name: Set up Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: "3.12.0"
 
-    - name: Update appVersion for nightly builds
-      if: github.event_name == 'schedule'
-      run: |
-        echo "Updating appVersion to 2-nightly for scheduled builds"
-        sed -i 's/^appVersion:.*/appVersion: 2-nightly/' charts/clickstack/Chart.yaml
-        echo "Updated Chart.yaml:"
-        cat charts/clickstack/Chart.yaml
+      - name: Update appVersion for nightly builds
+        if: github.event_name == 'schedule'
+        run: |
+          echo "Updating appVersion to 2-nightly for scheduled builds"
+          sed -i 's/^appVersion:.*/appVersion: 2-nightly/' charts/clickstack/Chart.yaml
+          echo "Updated Chart.yaml:"
+          cat charts/clickstack/Chart.yaml
 
-    - name: Create kind cluster config
-      run: |
-        cat > kind-config.yaml << EOF
-        kind: Cluster
-        apiVersion: kind.x-k8s.io/v1alpha4
-        nodes:
-        - role: control-plane
-          extraPortMappings:
-          - containerPort: 30000
-            hostPort: 3000
-            protocol: TCP
-          - containerPort: 30001
-            hostPort: 4318
-            protocol: TCP
-        EOF
+      - name: Create kind cluster config
+        run: |
+          cat > kind-config.yaml << EOF
+          kind: Cluster
+          apiVersion: kind.x-k8s.io/v1alpha4
+          nodes:
+          - role: control-plane
+            extraPortMappings:
+            - containerPort: 30000
+              hostPort: 3000
+              protocol: TCP
+            - containerPort: 30001
+              hostPort: 4318
+              protocol: TCP
+          EOF
 
-    - name: Create kind cluster
-      uses: helm/kind-action@v1
-      with:
-        cluster_name: hyperdx-test
-        config: kind-config.yaml
+      - name: Create kind cluster
+        uses: helm/kind-action@v1
+        with:
+          cluster_name: hyperdx-test
+          config: kind-config.yaml
 
-    - name: Install local-path-provisioner
-      run: |
-        kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/v0.0.24/deploy/local-path-storage.yaml
-        kubectl patch storageclass local-path -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
+      - name: Install local-path-provisioner
+        run: |
+          kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/v0.0.24/deploy/local-path-storage.yaml
+          kubectl patch storageclass local-path -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
 
-    - name: Run Helm unit tests
-      run: |
-        helm plugin install https://github.com/helm-unittest/helm-unittest.git || true
-        helm unittest charts/clickstack
+      - name: Run Helm unit tests
+        run: |
+          helm plugin install https://github.com/helm-unittest/helm-unittest.git || true
+          helm unittest charts/clickstack
 
-    - name: Deploy ClickStack chart
-      run: |
-        # Create test values for faster deployment
-        cat > test-values.yaml << EOF
-        hyperdx:
-          apiKey: "test-api-key-for-ci"
-          frontendUrl: "http://localhost:3000"
-          replicas: 1
-          service:
-            type: NodePort
-            nodePort: 30000
+      - name: Deploy ClickStack chart
+        run: |
+          # Create test values for faster deployment
+          cat > test-values.yaml << EOF
+          hyperdx:
+            apiKey: "test-api-key-for-ci"
+            frontendUrl: "http://localhost:3000"
+            replicas: 1
+            service:
+              type: NodePort
+              nodePort: 30000
 
-        clickhouse:
-          persistence:
-            enabled: true
-            dataSize: 2Gi
-            logSize: 1Gi
+          clickhouse:
+            persistence:
+              enabled: true
+              dataSize: 2Gi
+              logSize: 1Gi
 
-        mongodb:
-          persistence:
-            enabled: true
-            dataSize: 2Gi
+          mongodb:
+            persistence:
+              enabled: true
+              dataSize: 2Gi
 
-        otel:
-          resources:
-            requests:
-              memory: "128Mi"
-              cpu: "100m"
-            limits:
-              memory: "256Mi"
-              cpu: "200m"
-        EOF
+          otel:
+            resources:
+              requests:
+                memory: "128Mi"
+                cpu: "100m"
+              limits:
+                memory: "256Mi"
+                cpu: "200m"
+          EOF
 
-        # Install the chart
-        helm install hyperdx-test ./charts/clickstack -f test-values.yaml --timeout=5m
+          # Install the chart
+          helm install hyperdx-test ./charts/clickstack -f test-values.yaml --timeout=5m
 
-        # Give services time to initialize after pods are running
-        echo "Waiting for services to initialize..."
-        sleep 20
+          # Give services time to initialize after pods are running
+          echo "Waiting for services to initialize..."
+          sleep 20
 
-    - name: Bootstrap team in MongoDB
-      run: |
-        # Wait for MongoDB to be ready
-        kubectl wait --for=condition=Ready pods -l app=mongodb --timeout=300s
-        
-        echo "Creating test team in MongoDB..."
-        kubectl exec -n default deployment/hyperdx-test-clickstack-mongodb -- mongosh hyperdx --eval "
-          db.teams.insertOne({
-            name: 'CI Test Team',
-            apiKey: 'test-api-key-for-ci',
-            collectorAuthenticationEnforced: false,
-            createdAt: new Date(),
-            updatedAt: new Date()
-          })
-        "
-        
-        echo "Verifying team creation..."
-        kubectl exec -n default deployment/hyperdx-test-clickstack-mongodb -- mongosh hyperdx --eval "
-          const team = db.teams.findOne({ apiKey: 'test-api-key-for-ci' });
-          if (team) {
-            print('Team created successfully:', team.name);
-          } else {
-            print('Team creation failed');
-            exit(1);
-          }
-        "
-        
-        echo "Waiting for OpAMP server to reconfigure collectors..."
-        sleep 30
+      - name: Bootstrap team in MongoDB
+        run: |
+          # Wait for MongoDB to be ready
+          kubectl wait --for=condition=Ready pods -l app=mongodb --timeout=300s
 
-    - name: Verify deployment
-      run: |
-        echo "Initial pod status:"
-        kubectl get pods -o wide
-        
-        echo "Waiting for all pods to be ready..."
-        kubectl wait --for=condition=Ready pods --all --timeout=600s
+          echo "Creating test team in MongoDB..."
+          kubectl exec -n default deployment/hyperdx-test-clickstack-mongodb -- mongosh hyperdx --eval "
+            db.teams.insertOne({
+              name: 'CI Test Team',
+              apiKey: 'test-api-key-for-ci',
+              collectorAuthenticationEnforced: false,
+              createdAt: new Date(),
+              updatedAt: new Date()
+            })
+          "
 
-        echo "Final pod status:"
-        kubectl get pods -o wide
+          echo "Verifying team creation..."
+          kubectl exec -n default deployment/hyperdx-test-clickstack-mongodb -- mongosh hyperdx --eval "
+            const team = db.teams.findOne({ apiKey: 'test-api-key-for-ci' });
+            if (team) {
+              print('Team created successfully:', team.name);
+            } else {
+              print('Team creation failed');
+              exit(1);
+            }
+          "
 
-        kubectl get services
+          echo "Waiting for OpAMP server to reconfigure collectors..."
+          sleep 30
 
-    - name: Run comprehensive smoke tests
-      run: |
-        chmod +x ./scripts/smoke-test.sh
+      - name: Verify deployment
+        run: |
+          echo "Initial pod status:"
+          kubectl get pods -o wide
 
-        RELEASE_NAME=hyperdx-test NAMESPACE=default ./scripts/smoke-test.sh
+          echo "Waiting for all pods to be ready..."
+          kubectl wait --for=condition=Ready pods --all --timeout=600s
 
-    - name: Collect logs on failure
-      if: failure()
-      run: |
-        echo "=== Pod Status ==="
-        kubectl get pods -o wide
+          echo "Final pod status:"
+          kubectl get pods -o wide
 
-        echo "=== Events ==="
-        kubectl get events --sort-by=.metadata.creationTimestamp
+          kubectl get services
 
-        echo "=== ClickStack App Logs ==="
-        kubectl logs -l app=app --tail=100 || true
+      - name: Run comprehensive smoke tests
+        run: |
+          chmod +x ./scripts/smoke-test.sh
 
-        echo "=== ClickHouse Logs ==="
-        kubectl logs -l app=clickhouse --tail=100 || true
+          RELEASE_NAME=hyperdx-test NAMESPACE=default ./scripts/smoke-test.sh
 
-        echo "=== MongoDB Logs ==="
-        kubectl logs -l app=mongodb --tail=100 || true
+      - name: Collect logs on failure
+        if: failure()
+        run: |
+          echo "=== Pod Status ==="
+          kubectl get pods -o wide
 
-        echo "=== OTEL Collector Logs ==="
-        kubectl logs -l app=otel-collector --tail=100 || true
+          echo "=== Events ==="
+          kubectl get events --sort-by=.metadata.creationTimestamp
 
-    - name: Cleanup
-      if: always()
-      run: |
-        helm uninstall hyperdx-test || true
-        kind delete cluster --name hyperdx-test || true
+          echo "=== ClickStack App Logs ==="
+          kubectl logs -l app=app --tail=100 || true
+
+          echo "=== ClickHouse Logs ==="
+          kubectl logs -l app=clickhouse --tail=100 || true
+
+          echo "=== MongoDB Logs ==="
+          kubectl logs -l app=mongodb --tail=100 || true
+
+          echo "=== OTEL Collector Logs ==="
+          kubectl logs -l app=otel-collector --tail=100 || true
+
+      - name: Cleanup
+        if: always()
+        run: |
+          helm uninstall hyperdx-test || true
+          kind delete cluster --name hyperdx-test || true

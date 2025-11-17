@@ -4,3 +4,4 @@ description: A Helm chart for HyperDX OSS V2
 type: application
 version: 0.8.4
 appVersion: 2.7.1
+deprecated: true

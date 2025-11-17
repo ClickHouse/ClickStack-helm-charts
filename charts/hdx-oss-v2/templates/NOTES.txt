@@ -1,6 +1,20 @@
+================================================================================
+WARNING: THIS CHART IS DEPRECATED
+================================================================================
+
+The 'hdx-oss-v2' chart has been deprecated and renamed to 'clickstack'.
+
+Please migrate to the new chart:
+  helm repo update
+  helm upgrade {{ .Release.Name }} hyperdx/clickstack --reuse-values
+
+For more information, see: https://github.com/hyperdxio/helm-charts
+
+================================================================================
+
 HyperDX has been installed.
 
-Note: By default, this chart also installs clickhouse and the otel-collector. However, for production, 
+Note: By default, this chart also installs clickhouse and the otel-collector. However, for production,
 it is recommended that you use the clickhouse and otel-collector operators instead.
 
 To disable clickhouse and otel-collector, set the following values:
