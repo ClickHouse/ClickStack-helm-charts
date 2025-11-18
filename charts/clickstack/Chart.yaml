@@ -1,17 +1,19 @@
 apiVersion: v2
 name: clickstack
-description: A Helm chart for ClickStack - Full-stack observability with ClickHouse, OpenTelemetry, and HyperDX
+description: >-
+  A Helm chart for ClickStack - Full-stack observability with ClickHouse,
+  OpenTelemetry, and HyperDX
 home: https://clickhouse.com/docs/use-cases/observability/clickstack
 sources:
   - https://github.com/hyperdxio/hyperdx
   - https://github.com/hyperdxio/helm-charts
 annotations:
-  "artifacthub.io/license": MIT
-  "artifacthub.io/links": |
+  artifacthub.io/license: MIT
+  artifacthub.io/links: |
     - name: Chart Source
       url: https://github.com/hyperdxio/helm-charts
     - name: Upstream Project
       url: https://github.com/hyperdxio/hyperdx
 type: application
-version: 0.8.4
+version: 1.0.0
 appVersion: 2.7.1

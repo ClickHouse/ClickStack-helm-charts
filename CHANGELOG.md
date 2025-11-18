@@ -1,5 +1,11 @@
 # helm-charts
 
+## 1.0.0
+
+### Major Changes
+
+- edd8cc9: MIGRATION: Rename + Release chart `clickstack` (v1.0.0)
+
 ## 0.8.4
 
 ### Patch Changes
