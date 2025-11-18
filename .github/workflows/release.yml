@@ -46,5 +46,7 @@ jobs:
       - name: Run chart-releaser job
         if: steps.changesets.outputs.hasChangesets == 'false'
         uses: helm/chart-releaser-action@v1.7.0
+        with:
+          skip_existing: true
         env:
           CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
