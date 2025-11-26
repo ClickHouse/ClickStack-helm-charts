@@ -367,7 +367,7 @@ clickhouse:
 
 otel:
   image:
-    repository: docker.hyperdx.io/hyperdx/hyperdx-otel-collector
+    repository: docker.clickhouse.com/clickhouse/clickstack-otel-collector
     tag:
     pullPolicy: IfNotPresent
   replicas: 1
