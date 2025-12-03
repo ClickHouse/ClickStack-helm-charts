@@ -1,5 +1,12 @@
 # helm-charts
 
+## 1.0.1
+
+### Patch Changes
+
+- 427edc5: chore: pull otel collector from the clickstack repo
+- 0336c7a: chore: update appVersion to 2.8.0
+
 ## 1.0.0
 
 ### Major Changes
