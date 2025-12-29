@@ -99,7 +99,10 @@ spec:
             - name: CLICKHOUSE_USER
               value: {{ .Values.otel.clickhouseUser | default .Values.clickhouse.config.users.otelUserName }}
             - name: CLICKHOUSE_PASSWORD
-              value: {{ .Values.otel.clickhousePassword | default .Values.clickhouse.config.users.otelUserPassword }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "clickstack.fullname" . }}-clickhouse-secrets
+                  key: otelUserPassword
             {{- if .Values.otel.customConfig }}
             - name: CUSTOM_OTELCOL_CONFIG_FILE
               value: /etc/otelcol-contrib/custom.config.yaml
