@@ -116,7 +116,7 @@ spec:
             - name: DEFAULT_CONNECTIONS
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "clickstack.fullname" . }}-clickhouse-secrets
+                  name: {{ include "clickstack.fullname" . }}-app-secrets
                   key: defaultConnections
             {{- end }}
             {{- if .Values.hyperdx.defaultSources }}
