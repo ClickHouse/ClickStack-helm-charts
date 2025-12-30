@@ -63,7 +63,7 @@ jobs:
 
     - name: Run Helm unit tests
       run: |
-        helm plugin install https://github.com/helm-unittest/helm-unittest.git || true
+        helm plugin install https://github.com/helm-unittest/helm-unittest.git --version v1.0.3 ${{ runner.debug && '--debug' || ''}} || true
         helm unittest charts/hdx-oss-v2
 
     - name: Deploy hdx-oss-v2 chart
