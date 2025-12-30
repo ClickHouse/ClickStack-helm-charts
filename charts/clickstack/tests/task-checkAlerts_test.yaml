@@ -154,3 +154,63 @@ tests:
       - equal:
           path: spec.jobTemplate.spec.template.spec.containers[0].command
           value: ["node", "/app/packages/api/build/tasks/index.js", "check-alerts"]
+
+  - it: should not include additionalArgs when empty
+    set:
+      tasks:
+        enabled: true
+        checkAlerts:
+          additionalArgs: {}
+      hyperdx:
+        image:
+          tag: "2.8.0"
+    asserts:
+      - equal:
+          path: spec.jobTemplate.spec.template.spec.containers[0].command
+          value: ["node", "/app/packages/api/build/tasks/index.js", "check-alerts"]
+
+  - it: should include additionalArgs with -- prefix in command
+    set:
+      tasks:
+        enabled: true
+        checkAlerts:
+          additionalArgs:
+            concurrency: 6
+            sourceTimeoutMs: 90000
+      hyperdx:
+        image:
+          tag: "2.8.0"
+    asserts:
+      - contains:
+          path: spec.jobTemplate.spec.template.spec.containers[0].command
+          content: "--concurrency"
+      - contains:
+          path: spec.jobTemplate.spec.template.spec.containers[0].command
+          content: "6"
+      - contains:
+          path: spec.jobTemplate.spec.template.spec.containers[0].command
+          content: "--sourceTimeoutMs"
+      - contains:
+          path: spec.jobTemplate.spec.template.spec.containers[0].command
+          content: "90000"
+
+  - it: should include additionalArgs in pre-esbuild command path
+    set:
+      tasks:
+        enabled: true
+        checkAlerts:
+          additionalArgs:
+            concurrency: 4
+      hyperdx:
+        image:
+          tag: "2.6.0"
+    asserts:
+      - contains:
+          path: spec.jobTemplate.spec.template.spec.containers[0].command
+          content: "/app/packages/api/tasks/index"
+      - contains:
+          path: spec.jobTemplate.spec.template.spec.containers[0].command
+          content: "--concurrency"
+      - contains:
+          path: spec.jobTemplate.spec.template.spec.containers[0].command
+          content: "4"
