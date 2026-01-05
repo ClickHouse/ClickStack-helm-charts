@@ -114,7 +114,10 @@ spec:
             {{- else }}
             {{- if .Values.hyperdx.defaultConnections }}
             - name: DEFAULT_CONNECTIONS
-              value: {{ tpl .Values.hyperdx.defaultConnections . | quote }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "clickstack.fullname" . }}-app-secrets
+                  key: defaultConnections
             {{- end }}
             {{- if .Values.hyperdx.defaultSources }}
             - name: DEFAULT_SOURCES
