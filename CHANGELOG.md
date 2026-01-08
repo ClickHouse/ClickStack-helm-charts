@@ -1,5 +1,11 @@
 # helm-charts
 
+## 1.1.1
+
+### Patch Changes
+
+- e22ecdd: chore: bump MongoDB version to 5.0.32
+
 ## 1.1.0
 
 ### Minor Changes
