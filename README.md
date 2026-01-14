@@ -4,7 +4,7 @@
 
 ## Quick Start
 ```bash
-helm repo add clickstack https://hyperdxio.github.io/helm-charts
+helm repo add clickstack https://clickhouse.github.io/ClickStack-helm-charts
 helm repo update
 helm install my-clickstack clickstack/clickstack
 ```
@@ -19,4 +19,4 @@ For configuration, cloud deployment, ingress setup, and troubleshooting, see the
 ## Support
 
 - **[Documentation](https://clickhouse.com/docs/use-cases/observability/clickstack)** - Installation, configuration, guides
-- **[Issues](https://github.com/hyperdxio/helm-charts/issues)** - Report bugs or request features
+- **[Issues](https://github.com/ClickHouse/ClickStack-helm-charts/issues)** - Report bugs or request features

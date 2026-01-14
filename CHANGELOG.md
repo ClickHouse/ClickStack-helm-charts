@@ -1,5 +1,11 @@
 # helm-charts
 
+## 1.1.0
+
+### Minor Changes
+
+- 8fcee9a: Supports passing additional arguments to the check-alerts task. This allows setting the concurrency and sourceTimeoutMs through helm.
+
 ## 1.0.1
 
 ### Patch Changes
