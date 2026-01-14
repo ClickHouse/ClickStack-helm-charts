@@ -254,7 +254,7 @@ hyperdx:
       # cloud.google.com/load-balancer-type: "Internal"
 
 mongodb:
-  image: "mongo:5.0.14-focal"
+  image: "mongo:5.0.32-focal"
   port: 27017
   enabled: true
   # Add nodeSelector and tolerations for mongodb service
