@@ -15,5 +15,5 @@ annotations:
     - name: Upstream Project
       url: https://github.com/hyperdxio/hyperdx
 type: application
-version: 1.0.1
+version: 1.1.0
 appVersion: 2.8.0

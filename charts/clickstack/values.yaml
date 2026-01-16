@@ -254,7 +254,7 @@ hyperdx:
       # cloud.google.com/load-balancer-type: "Internal"
 
 mongodb:
-  image: "mongo:5.0.14-focal"
+  image: "mongo:5.0.32-focal"
   port: 27017
   enabled: true
   # Add nodeSelector and tolerations for mongodb service
@@ -467,6 +467,17 @@ tasks:
   enabled: false
   checkAlerts:
     schedule: "*/1 * * * *" # Runs every 1 minute
+
+    additionalArgs:
+      {}
+      # Additional command line arguments can be supplied to the check-alerts
+      # task by defining the param as a key/value pair. These are passed to the
+      # task without validation in the helm chart.
+      #
+      # Examples:
+      # concurrency: 6
+      # sourceTimeoutMs: 90000
+
     resources:
       limits:
         cpu: 200m
