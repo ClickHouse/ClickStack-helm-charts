@@ -1,5 +1,12 @@
 # helm-charts
 
+## 1.1.1
+
+### Patch Changes
+
+- 11713d6: fix default values for USAGE_STATS_ENABLED and RUN_SCHEDULED_TASKS_EXTERNALLY
+- e22ecdd: chore: bump MongoDB version to 5.0.32
+
 ## 1.1.0
 
 ### Minor Changes
