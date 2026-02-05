@@ -30,8 +30,8 @@ tests:
           of: Deployment
       - documentSelector: *service-selector
         isKind:
-          of: Service 
-  
+          of: Service
+
   - it: should not render any documents when disabled
     set:
       mongodb:
@@ -302,3 +302,18 @@ tests:
         equal:
           path: spec.template.spec.imagePullSecrets[0].name
           value: regcred
+
+  - it: should include strategy when configured
+    set:
+      mongodb:
+        enabled: true
+        strategy:
+          type: Recreate
+    asserts:
+      - documentIndex: 1
+        isNotNull:
+          path: spec.strategy
+      - documentIndex: 1
+        equal:
+          path: spec.strategy.type
+          value: Recreate

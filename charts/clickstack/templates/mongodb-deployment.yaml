@@ -34,6 +34,10 @@ spec:
     matchLabels:
       {{- include "clickstack.selectorLabels" . | nindent 6 }}
       app: mongodb
+  {{- if .Values.mongodb.strategy }}
+  strategy:
+    {{- toYaml .Values.mongodb.strategy | nindent 4 }}
+  {{- end }}
   template:
     metadata:
       labels:
