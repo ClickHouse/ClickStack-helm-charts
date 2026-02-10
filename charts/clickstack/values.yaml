@@ -257,6 +257,12 @@ mongodb:
   image: "mongo:5.0.32-focal"
   port: 27017
   enabled: true
+  # Optionally override rollout strategy with type=Recreate
+  # to avoid mongodb image update issues
+  # when newer instance cannot start
+  # because older one holds /data/db/mongod.lock
+  # at a cost of short mongodb downtime.
+  strategy: null
   # Add nodeSelector and tolerations for mongodb service
   nodeSelector:
     {}
