@@ -295,7 +295,7 @@ tests:
         documentSelector: *otel-collector-ingress-selector
       - matchRegex:
           path: metadata.labels["app.kubernetes.io/version"]
-          pattern: ^\d+\.\d+\.\d+$
+          pattern: ^(\d+\.\d+\.\d+|\d+-nightly)$
         documentSelector: *otel-collector-ingress-selector
 
   - it: should render additional ingress templates with TLS enabled
@@ -398,7 +398,7 @@ tests:
         documentSelector: *otel-collector-ingress-selector
       - matchRegex:
           path: metadata.labels["app.kubernetes.io/version"]
-          pattern: ^\d+\.\d+\.\d+$
+          pattern: ^(\d+\.\d+\.\d+|\d+-nightly)$
         documentSelector: *otel-collector-ingress-selector
 
   - it: should fail when annotations of the additional ingresses is not a map of strings
