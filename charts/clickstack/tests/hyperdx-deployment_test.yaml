@@ -11,7 +11,7 @@ tests:
           value: 1
       - matchRegex:
           path: spec.template.spec.containers[0].image
-          pattern: ^docker\.hyperdx\.io/hyperdx/hyperdx:\d+\.\d+\.\d+$
+          pattern: ^docker\.hyperdx\.io/hyperdx/hyperdx:(\d+\.\d+\.\d+|\d+-nightly)$
       - equal:
           path: spec.template.spec.containers[0].ports[0].containerPort
           value: 3000
