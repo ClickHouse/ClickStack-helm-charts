@@ -103,7 +103,10 @@ tests:
           path: spec.template.spec.containers[0].env
           content:
             name: CLICKHOUSE_PASSWORD
-            value: test-password
+            valueFrom:
+              secretKeyRef:
+                name: test-release-clickstack-clickhouse-secrets
+                key: otelUserPassword
       - documentSelector: *deployment-selector
         contains:
           path: spec.template.spec.containers[0].env
@@ -439,7 +442,10 @@ tests:
           path: spec.template.spec.containers[0].env
           content:
             name: CLICKHOUSE_PASSWORD
-            value: "custom-password"
+            valueFrom:
+              secretKeyRef:
+                name: test-release-clickstack-clickhouse-secrets
+                key: otelUserPassword
 
   - it: should render custom environment variables when specified
     set:
