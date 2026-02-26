@@ -1,5 +1,12 @@
 # helm-charts
 
+## 1.1.2
+
+### Patch Changes
+
+- 4346be3: chore: update appVersion to 2.19.0
+- 4346be3: feat: add `createLegacySchema` config to otel service
+
 ## 1.1.1
 
 ### Patch Changes
