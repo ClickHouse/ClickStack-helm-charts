@@ -100,6 +100,8 @@ spec:
               value: {{ .Values.otel.clickhouseUser | default .Values.clickhouse.config.users.otelUserName }}
             - name: CLICKHOUSE_PASSWORD
               value: {{ .Values.otel.clickhousePassword | default .Values.clickhouse.config.users.otelUserPassword }}
+            - name: HYPERDX_OTEL_EXPORTER_CREATE_LEGACY_SCHEMA
+              value: {{ .Values.otel.createLegacySchema | default "true" | quote }}
             {{- if .Values.otel.customConfig }}
             - name: CUSTOM_OTELCOL_CONFIG_FILE
               value: /etc/otelcol-contrib/custom.config.yaml
