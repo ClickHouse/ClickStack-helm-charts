@@ -456,7 +456,9 @@ otel:
   clickhousePrometheusEndpoint:
   # Clickhouse database to send logs/traces/metrics to. Defaults to "default"
   clickhouseDatabase: "default"
-  # Whether to create legacy schema in Clickhouse. Defaults to "true"
+  # When enabled, the collector falls back to letting the clickhouse-exporter
+  # create the schema instead of using the optimized schema used by ClickStack.
+  # Defaults to "true".
   createLegacySchema: "true"
   livenessProbe:
     enabled: true
