@@ -6,6 +6,8 @@ metadata:
   name: {{ include "clickstack.fullname" . }}-mongodb
   labels:
     {{- include "clickstack.labels" . | nindent 4 }}
+    app.kubernetes.io/component: mongodb
+    app: mongodb
   {{- if .Values.global.keepPVC }}
   annotations:
     "helm.sh/resource-policy": keep
@@ -27,6 +29,7 @@ metadata:
   name: {{ include "clickstack.fullname" . }}-mongodb
   labels:
     {{- include "clickstack.labels" . | nindent 4 }}
+    app.kubernetes.io/component: mongodb
     app: mongodb
 spec:
   replicas: 1
@@ -42,6 +45,7 @@ spec:
     metadata:
       labels:
         {{- include "clickstack.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: mongodb
         app: mongodb
     spec:
       {{- if .Values.mongodb.nodeSelector }}
@@ -97,6 +101,8 @@ metadata:
   name: {{ include "clickstack.fullname" . }}-mongodb
   labels:
     {{- include "clickstack.labels" . | nindent 4 }}
+    app.kubernetes.io/component: mongodb
+    app: mongodb
 spec:
   ports:
     - port: {{ .Values.mongodb.port }}

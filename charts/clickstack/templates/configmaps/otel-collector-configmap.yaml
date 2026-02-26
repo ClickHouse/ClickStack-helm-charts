@@ -5,6 +5,7 @@ metadata:
   name: {{ include "clickstack.fullname" . }}-otel-custom-config
   labels:
     {{- include "clickstack.labels" . | nindent 4 }}
+    app.kubernetes.io/component: opentelemetry
     app: otel-collector
 data:
   custom.config.yaml: |

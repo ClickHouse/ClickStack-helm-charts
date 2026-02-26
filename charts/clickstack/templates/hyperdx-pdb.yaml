@@ -5,6 +5,7 @@ metadata:
   name: {{ include "clickstack.fullname" . }}-pdb
   labels:
     {{- include "clickstack.labels" . | nindent 4 }}
+    app.kubernetes.io/component: hyperdx
     app: {{ include "clickstack.fullname" . }}
     {{- if .Values.hyperdx.labels }}
     {{- with .Values.hyperdx.labels }}
