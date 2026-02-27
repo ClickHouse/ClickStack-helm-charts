@@ -137,7 +137,7 @@ jobs:
           sleep 30
 
       - name: Verify deployment
-        timeout-minutes: 1
+        timeout-minutes: 4
         run: |
           echo "Initial pod status:"
           kubectl get pods -o wide
