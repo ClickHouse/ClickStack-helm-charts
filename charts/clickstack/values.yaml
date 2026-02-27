@@ -33,13 +33,11 @@ hyperdx:
     timeoutSeconds: 5
     failureThreshold: 3
   # Add nodeSelector and tolerations for hyperdx service
-  nodeSelector:
-    {}
+  nodeSelector: {}
     # Example:
     # kubernetes.io/os: linux
     # node-role.kubernetes.io/worker: "true"
-  tolerations:
-    []
+  tolerations: []
     # Example:
     # - key: "key1"
     #   operator: "Equal"
@@ -61,16 +59,13 @@ hyperdx:
   mongoUri: mongodb://{{ include "clickstack.fullname" . }}-mongodb:{{ .Values.mongodb.port }}/hyperdx
 
   # Pod-level annotations (applied to the deployment pods)
-  annotations:
-    {}
+  annotations: {}
     # myAnnotation: "myValue"
 
   # Pod-level labels (applied to the deployment pods)
-  labels:
-    {}
+  labels: {}
     # myLabel: "myValue"
-  env:
-    []
+  env: []
     # Additional environment variables can be configured here
     # This is preserved for backward compatibility and advanced use cases
 
@@ -247,8 +242,7 @@ hyperdx:
   service:
     type: ClusterIP # Use ClusterIP for security. For external access, use ingress with proper TLS and authentication
     # Service-level annotations (applied to the Kubernetes service resource)
-    annotations:
-      {}
+    annotations: {}
       # Example service annotations:
       # service.beta.kubernetes.io/aws-load-balancer-internal: "true"
       # cloud.google.com/load-balancer-type: "Internal"
@@ -264,13 +258,11 @@ mongodb:
   # at a cost of short mongodb downtime.
   strategy: null
   # Add nodeSelector and tolerations for mongodb service
-  nodeSelector:
-    {}
+  nodeSelector: {}
     # Example:
     # kubernetes.io/os: linux
     # node-role.kubernetes.io/worker: "true"
-  tolerations:
-    []
+  tolerations: []
     # Example:
     # - key: "key1"
     #   operator: "Equal"
@@ -297,8 +289,7 @@ clickhouse:
   port: 8123
   nativePort: 9000
   terminationGracePeriodSeconds: 90
-  resources:
-    {}
+  resources: {}
     # Example:
     # requests:
     #   memory: "512Mi"
@@ -326,13 +317,11 @@ clickhouse:
     failureThreshold: 30
   enabled: true
   # Add nodeSelector and tolerations for clickhouse service
-  nodeSelector:
-    {}
+  nodeSelector: {}
     # Example:
     # kubernetes.io/os: linux
     # node-role.kubernetes.io/worker: "true"
-  tolerations:
-    []
+  tolerations: []
     # Example:
     # - key: "key1"
     #   operator: "Equal"
@@ -343,8 +332,7 @@ clickhouse:
   service:
     type: ClusterIP # Use ClusterIP for security. For external access, use ingress with proper TLS and authentication
     # Service-level annotations (applied to the Kubernetes service resource)
-    annotations:
-      {}
+    annotations: {}
       # Example service annotations:
       # service.beta.kubernetes.io/aws-load-balancer-internal: "true"
       # cloud.google.com/load-balancer-type: "Internal"
@@ -373,12 +361,11 @@ clickhouse:
 
 otel:
   image:
-    repository: docker.clickhouse.com/clickhouse/clickstack-otel-collector
+    repository: docker.clickhouse.xyz/clickhouse/clickstack-otel-collector
     tag:
     pullPolicy: IfNotPresent
   replicas: 1
-  resources:
-    {}
+  resources: {}
     # Example:
     # requests:
     #   memory: "127Mi"
@@ -387,17 +374,14 @@ otel:
     #   memory: "256Mi"
     #   cpu: "200m"
   # Pod-level annotations (applied to the deployment pods)
-  annotations:
-    {}
+  annotations: {}
     # myAnnotation: "myValue"
   # Add nodeSelector and tolerations for otel-collector service
-  nodeSelector:
-    {}
+  nodeSelector: {}
     # Example:
     # kubernetes.io/os: linux
     # node-role.kubernetes.io/worker: "true"
-  tolerations:
-    []
+  tolerations: []
     # Example:
     # - key: "key1"
     #   operator: "Equal"
@@ -409,8 +393,7 @@ otel:
   httpPort: 4318
   healthPort: 8888
   enabled: true
-  env:
-    []
+  env: []
     # Additional environment variables can be configured here
     # Example:
     # - name: CUSTOM_VAR
@@ -478,8 +461,7 @@ tasks:
   checkAlerts:
     schedule: "*/1 * * * *" # Runs every 1 minute
 
-    additionalArgs:
-      {}
+    additionalArgs: {}
       # Additional command line arguments can be supplied to the check-alerts
       # task by defining the param as a key/value pair. These are passed to the
       # task without validation in the helm chart.
