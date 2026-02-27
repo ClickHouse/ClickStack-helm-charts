@@ -137,6 +137,7 @@ jobs:
           sleep 30
 
       - name: Verify deployment
+        timeout-minutes: 4
         run: |
           echo "Initial pod status:"
           kubectl get pods -o wide
@@ -181,3 +182,17 @@ jobs:
         run: |
           helm uninstall hyperdx-test || true
           kind delete cluster --name hyperdx-test || true
+
+  otel-cicd-action:
+    if: always()
+    name: OpenTelemetry Export Trace
+    runs-on: ubuntu-latest
+    needs: [test-helm-chart]
+    steps:
+      - name: Export workflow
+        uses: corentinmusard/otel-cicd-action@v4
+        with:
+          otlpEndpoint: ${{ secrets.OTLP_ENDPOINT }}/v1/traces
+          otlpHeaders: ${{ secrets.OTLP_HEADERS }}
+          otelServiceName: "clickstack-helm-chart-integration-test"
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
