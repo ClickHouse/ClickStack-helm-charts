@@ -192,7 +192,7 @@ jobs:
       - name: Export workflow
         uses: corentinmusard/otel-cicd-action@v4
         with:
-          otlpEndpoint: ${{ secrets.OTLP_ENDPOINT }}
+          otlpEndpoint: ${{ secrets.OTLP_ENDPOINT }}/v1/traces
           otlpHeaders: ${{ secrets.OTLP_HEADERS }}
           otelServiceName: "clickstack-helm-chart-integration-test"
           githubToken: ${{ secrets.GITHUB_TOKEN }}
