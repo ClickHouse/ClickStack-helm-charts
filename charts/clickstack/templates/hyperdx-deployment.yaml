@@ -52,7 +52,7 @@ spec:
         - name: wait-for-mongodb
           image: {{ .Values.hyperdx.waitForMongodb.image }}
           imagePullPolicy: {{ .Values.hyperdx.waitForMongodb.pullPolicy }}
-          command: ['sh', '-c', 'until nc -z {{ include "clickstack.fullname" . }}-mongodb {{ .Values.mongodb.port }}; do echo waiting for mongodb; sleep 2; done;']
+          command: ['sh', '-c', 'until nc -z {{ include "clickstack.mongodb.svc" . }} 27017; do echo waiting for mongodb; sleep 2; done;']
       {{- end }}
       containers:
         - name: app

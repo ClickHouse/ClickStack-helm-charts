@@ -11,7 +11,7 @@ tests:
         logLevel: info
         usageStatsEnabled: true
       mongodb:
-        port: 27017
+        password: "hyperdx"
       tasks:
         enabled: false
     asserts:
@@ -40,7 +40,7 @@ tests:
           value: "false"
       - matchRegex:
           path: data.MONGO_URI
-          pattern: mongodb://.*-mongodb:27017/hyperdx
+          pattern: mongodb://hyperdx:hyperdx@.*-mongodb-svc:27017/hyperdx
 
   - it: should use default frontendUrl template with appUrl and appPort
     set:
@@ -48,9 +48,8 @@ tests:
         apiPort: 8000
         appPort: 3000
         appUrl: "http://localhost"
-        # frontendUrl should default to {{ .Values.hyperdx.appUrl }}:{{ .Values.hyperdx.appPort }}
       mongodb:
-        port: 27017
+        password: "hyperdx"
     asserts:
       - equal:
           path: data.FRONTEND_URL
@@ -64,7 +63,7 @@ tests:
         appUrl: "http://localhost"
         frontendUrl: "https://my-custom-domain.com"
       mongodb:
-        port: 27017
+        password: "hyperdx"
     asserts:
       - equal:
           path: data.FRONTEND_URL
@@ -78,7 +77,7 @@ tests:
         appUrl: "https://production-host"
         frontendUrl: "{{ .Values.hyperdx.appUrl }}:{{ .Values.hyperdx.appPort }}/app"
       mongodb:
-        port: 27017
+        password: "hyperdx"
     asserts:
       - equal:
           path: data.FRONTEND_URL
@@ -90,9 +89,8 @@ tests:
         apiPort: 8000
         appPort: 4000
         appUrl: "https://staging.example.com"
-        # Using default frontendUrl template
       mongodb:
-        port: 27017
+        password: "hyperdx"
     asserts:
       - equal:
           path: data.FRONTEND_URL
@@ -106,7 +104,7 @@ tests:
         appUrl: "http://localhost"
         frontendUrl: "https://hyperdx.example.com"
       mongodb:
-        port: 27017
+        password: "hyperdx"
     asserts:
       - equal:
           path: data.FRONTEND_URL
@@ -121,7 +119,7 @@ tests:
         frontendUrl: '{{ if eq .Values.env "production" }}https://prod.example.com{{ else }}{{ .Values.hyperdx.appUrl }}:{{ .Values.hyperdx.appPort }}{{ end }}'
       env: "development"
       mongodb:
-        port: 27017
+        password: "hyperdx"
     asserts:
       - equal:
           path: data.FRONTEND_URL

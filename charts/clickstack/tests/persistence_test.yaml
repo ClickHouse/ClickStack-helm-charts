@@ -1,76 +1,47 @@
 suite: Test Persistence Settings
 templates:
-  - mongodb-deployment.yaml
+  - mongodb-community.yaml
 
-# Common documentSelector patterns using YAML anchors
-_selectors:
-  pvc: &pvc-selector
-    path: kind
-    value: PersistentVolumeClaim
-  deployment: &deployment-selector
-    path: kind
-    value: Deployment
-  service: &service-selector
-    path: kind
-    value: Service
 tests:
-  - it: should use correct mongodb PVC name and size
+  - it: should pass statefulSet volumeClaimTemplates through from spec
     set:
-      global:
-        storageClassName: "custom-storage-class"
       mongodb:
-        enabled: true
-        persistence:
-          enabled: true
-          dataSize: 15Gi
+        spec:
+          members: 1
+          type: ReplicaSet
+          version: "5.0.32"
+          security:
+            authentication:
+              modes: ["SCRAM"]
+          users:
+            - name: hyperdx
+              db: hyperdx
+              passwordSecretRef:
+                name: test-password
+              roles:
+                - name: dbOwner
+                  db: hyperdx
+              scramCredentialsSecretName: test-scram
+          statefulSet:
+            spec:
+              volumeClaimTemplates:
+                - metadata:
+                    name: data-volume
+                  spec:
+                    accessModes: ["ReadWriteOnce"]
+                    storageClassName: "fast-ssd"
+                    resources:
+                      requests:
+                        storage: 20Gi
     asserts:
-      - hasDocuments:
-          count: 3  # PVC, Deployment, Service
-      - documentSelector: *pvc-selector
-        isKind:
-          of: PersistentVolumeClaim
-      - documentSelector: *pvc-selector
-        matchRegex:
-          path: metadata.name
-          pattern: .*-mongodb$
-      - documentSelector: *pvc-selector
-        equal:
-          path: spec.storageClassName
-          value: custom-storage-class
-      - documentSelector: *pvc-selector
-        equal:
-          path: spec.resources.requests.storage
-          value: 15Gi
+      - equal:
+          path: spec.statefulSet.spec.volumeClaimTemplates[0].spec.storageClassName
+          value: "fast-ssd"
+      - equal:
+          path: spec.statefulSet.spec.volumeClaimTemplates[0].spec.resources.requests.storage
+          value: 20Gi
 
-  - it: should not create PVCs when persistence is disabled
-    set:
-      mongodb:
-        enabled: true
-        persistence:
-          enabled: false
+  - it: should not include statefulSet when not specified in spec
     asserts:
-      - hasDocuments:
-          count: 2  # Only Deployment and Service, no PVC
-      - documentSelector: *deployment-selector
-        isKind:
-          of: Deployment
-      - documentSelector: *service-selector
-        isKind:
-          of: Service
-
-  - it: should omit storageClassName when global.storageClass is empty string
-    set:
-      global:
-        storageClassName: ""
-      mongodb:
-        enabled: true
-        persistence:
-          enabled: true
-          dataSize: 10Gi
-    asserts:
-      - documentSelector: *pvc-selector
-        isKind:
-          of: PersistentVolumeClaim
-      - documentSelector: *pvc-selector
-        isNull:
-          path: spec.storageClassName
+      - isNull:
+          path: spec.statefulSet

@@ -15,6 +15,12 @@ For configuration, cloud deployment, ingress setup, and troubleshooting, see the
 
 - **`clickstack/clickstack`** (v1.0.0+) - Recommended for all deployments
 
+## Subchart Dependencies
+
+The ClickStack chart uses the following third-party operator charts as subchart dependencies:
+
+- **[MongoDB Kubernetes Operator (MCK)](https://github.com/mongodb/mongodb-kubernetes)** - Manages MongoDB Community replica sets via a `MongoDBCommunity` custom resource. See the [MCK community docs](https://github.com/mongodb/mongodb-kubernetes/tree/master/docs/mongodbcommunity) for advanced configuration.
+
 ## Support
 
 - **[Documentation](https://clickhouse.com/docs/use-cases/observability/clickstack)** - Installation, configuration, guides

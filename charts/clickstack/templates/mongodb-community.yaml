@@ -1,0 +1,10 @@
+{{- if .Values.mongodb.enabled }}
+apiVersion: mongodbcommunity.mongodb.com/v1
+kind: MongoDBCommunity
+metadata:
+  name: {{ include "clickstack.mongodb.fullname" . }}
+  labels:
+    {{- include "clickstack.labels" . | nindent 4 }}
+spec:
+  {{- tpl (toYaml .Values.mongodb.spec) . | nindent 2 }}
+{{- end }}

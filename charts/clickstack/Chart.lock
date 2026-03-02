@@ -1,0 +1,6 @@
+dependencies:
+- name: mongodb-kubernetes
+  repository: https://mongodb.github.io/helm-charts
+  version: 1.7.0
+digest: sha256:11f94e76ca01eaf69cba34fec7b3855c97068666d81377d35f927983872f43e6
+generated: "2026-03-02T14:14:50.655323-06:00"

@@ -46,4 +46,18 @@ Selector labels
 {{- define "clickstack.selectorLabels" -}}
 app.kubernetes.io/name: {{ include "clickstack.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
-{{- end }} 
+{{- end }}
+
+{{/*
+MongoDB CR name
+*/}}
+{{- define "clickstack.mongodb.fullname" -}}
+{{- printf "%s-mongodb" (include "clickstack.fullname" .) -}}
+{{- end }}
+
+{{/*
+MongoDB headless service name (created by the MCK operator as {cr-name}-svc)
+*/}}
+{{- define "clickstack.mongodb.svc" -}}
+{{- printf "%s-svc" (include "clickstack.mongodb.fullname" .) -}}
+{{- end }}

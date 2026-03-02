@@ -58,7 +58,7 @@ hyperdx:
   usageStatsEnabled: true
   # Endpoint to send hyperdx logs/traces/metrics to.Defaults to the chart's otel collector endpoint.
   otelExporterEndpoint: http://{{ include "clickstack.fullname" . }}-otel-collector:{{ .Values.otel.httpPort }}
-  mongoUri: mongodb://{{ include "clickstack.fullname" . }}-mongodb:{{ .Values.mongodb.port }}/hyperdx
+  mongoUri: mongodb://hyperdx:{{ .Values.mongodb.password }}@{{ include "clickstack.mongodb.svc" . }}:27017/hyperdx?authSource=hyperdx
 
   # Pod-level annotations (applied to the deployment pods)
   annotations:
@@ -254,43 +254,39 @@ hyperdx:
       # cloud.google.com/load-balancer-type: "Internal"
 
 mongodb:
-  image: "mongo:5.0.32-focal"
-  port: 27017
   enabled: true
-  # Optionally override rollout strategy with type=Recreate
-  # to avoid mongodb image update issues
-  # when newer instance cannot start
-  # because older one holds /data/db/mongod.lock
-  # at a cost of short mongodb downtime.
-  strategy: null
-  # Add nodeSelector and tolerations for mongodb service
-  nodeSelector:
-    {}
-    # Example:
-    # kubernetes.io/os: linux
-    # node-role.kubernetes.io/worker: "true"
-  tolerations:
-    []
-    # Example:
-    # - key: "key1"
-    #   operator: "Equal"
-    #   value: "value1"
-    #   effect: "NoSchedule"
-  persistence:
-    enabled: true
-    dataSize: 10Gi
-  livenessProbe:
-    enabled: true
-    initialDelaySeconds: 10
-    periodSeconds: 30
-    timeoutSeconds: 5
-    failureThreshold: 3
-  readinessProbe:
-    enabled: true
-    initialDelaySeconds: 1
-    periodSeconds: 10
-    timeoutSeconds: 5
-    failureThreshold: 3
+  # Password for the MongoDB user. Referenced by the password Secret and mongoUri.
+  password: "hyperdx"
+  # Full MongoDBCommunity CRD spec -- rendered verbatim into the CR.
+  # See https://github.com/mongodb/mongodb-kubernetes/tree/master/docs/mongodbcommunity
+  # for all available fields. Add persistence, nodeSelector, tolerations, etc. here.
+  spec:
+    members: 1
+    type: ReplicaSet
+    version: "5.0.32"
+    security:
+      authentication:
+        modes: ["SCRAM"]
+    users:
+      - name: hyperdx
+        db: hyperdx
+        passwordSecretRef:
+          name: '{{ include "clickstack.mongodb.fullname" . }}-password'
+        roles:
+          - name: dbOwner
+            db: hyperdx
+          - name: clusterMonitor
+            db: admin
+        scramCredentialsSecretName: '{{ include "clickstack.mongodb.fullname" . }}-scram'
+    additionalMongodConfig:
+      storage.wiredTiger.engineConfig.journalCompressor: zlib
+
+# MongoDB Kubernetes Operator (MCK) subchart configuration
+# See https://github.com/mongodb/mongodb-kubernetes for all options
+mongodb-kubernetes:
+  operator:
+    watchedResources:
+      - mongodbcommunity
 
 clickhouse:
   image: "clickhouse/clickhouse-server:25.7-alpine"
