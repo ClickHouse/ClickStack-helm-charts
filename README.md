@@ -14,7 +14,6 @@ For configuration, cloud deployment, ingress setup, and troubleshooting, see the
 ## Charts
 
 - **`clickstack/clickstack`** (v1.0.0+) - Recommended for all deployments
-- **`clickstack/hdx-oss-v2`** (v0.8.4) - Legacy (migrate to `clickstack`)
 
 ## Support
 
