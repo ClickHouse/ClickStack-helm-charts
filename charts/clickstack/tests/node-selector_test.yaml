@@ -2,7 +2,6 @@ suite: Test nodeSelector and tolerations
 templates:
   - hyperdx-deployment.yaml
   - clickhouse-deployment.yaml
-  - otel-collector-deployment.yaml
 
 # Common documentSelector patterns using YAML anchors
 _selectors:
@@ -100,34 +99,6 @@ tests:
             - key: io-intensive
               operator: Exists
               effect: NoSchedule
-
-  # Test OTEL Collector component nodeSelector and tolerations
-  - it: should apply nodeSelector and tolerations to OTEL Collector deployment
-    set:
-      otel:
-        nodeSelector:
-          node-role: monitoring
-        tolerations:
-          - key: monitoring-key
-            operator: Equal
-            value: otel
-            effect: PreferNoSchedule
-    templates:
-      - otel-collector-deployment.yaml
-    asserts:
-      - documentSelector: *deployment-selector
-        equal:
-          path: spec.template.spec.nodeSelector
-          value:
-            node-role: monitoring
-      - documentSelector: *deployment-selector
-        equal:
-          path: spec.template.spec.tolerations
-          value:
-            - key: monitoring-key
-              operator: Equal
-              value: otel
-              effect: PreferNoSchedule
 
   # Test multiple components with different configurations
   - it: should apply correct nodeSelector and tolerations to HyperDX deployment

@@ -61,3 +61,10 @@ MongoDB headless service name (created by the MCK operator as {cr-name}-svc)
 {{- define "clickstack.mongodb.svc" -}}
 {{- printf "%s-svc" (include "clickstack.mongodb.fullname" .) -}}
 {{- end }}
+
+{{/*
+OTEL Collector fullname (matches subchart with alias otel-collector)
+*/}}
+{{- define "clickstack.otel.fullname" -}}
+{{- printf "%s-otel-collector" .Release.Name | trunc 63 | trimSuffix "-" -}}
+{{- end }}

@@ -57,7 +57,7 @@ hyperdx:
   logLevel: "info"
   usageStatsEnabled: true
   # Endpoint to send hyperdx logs/traces/metrics to.Defaults to the chart's otel collector endpoint.
-  otelExporterEndpoint: http://{{ include "clickstack.fullname" . }}-otel-collector:{{ .Values.otel.httpPort }}
+  otelExporterEndpoint: http://{{ include "clickstack.otel.fullname" . }}:4318
   mongoUri: mongodb://hyperdx:{{ .Values.mongodb.password }}@{{ include "clickstack.mongodb.svc" . }}:27017/hyperdx?authSource=hyperdx
 
   # Pod-level annotations (applied to the deployment pods)
@@ -368,106 +368,65 @@ clickhouse:
       - "192.168.0.0/16" # OrbStack, Minikube, and local development
 
 otel:
+  enabled: true
+
+# OpenTelemetry Collector subchart configuration (alias: otel-collector)
+# See https://github.com/open-telemetry/opentelemetry-helm-charts for all options
+otel-collector:
+  mode: deployment
   image:
     repository: docker.clickhouse.com/clickhouse/clickstack-otel-collector
-    tag:
-    pullPolicy: IfNotPresent
-  replicas: 1
-  resources:
-    {}
-    # Example:
-    # requests:
-    #   memory: "127Mi"
-    #   cpu: "100m"
-    # limits:
-    #   memory: "256Mi"
-    #   cpu: "200m"
-  # Pod-level annotations (applied to the deployment pods)
-  annotations:
-    {}
-    # myAnnotation: "myValue"
-  # Add nodeSelector and tolerations for otel-collector service
-  nodeSelector:
-    {}
-    # Example:
-    # kubernetes.io/os: linux
-    # node-role.kubernetes.io/worker: "true"
-  tolerations:
-    []
-    # Example:
-    # - key: "key1"
-    #   operator: "Equal"
-    #   value: "value1"
-    #   effect: "NoSchedule"
-  port: 13133
-  nativePort: 24225
-  grpcPort: 4317
-  httpPort: 4318
-  healthPort: 8888
-  enabled: true
-  env:
-    []
-    # Additional environment variables can be configured here
-    # Example:
-    # - name: CUSTOM_VAR
-    #   value: "my-value"
-    # - name: SECRET_VAR
-    #   valueFrom:
-    #     secretKeyRef:
-    #       name: my-secret
-    #       key: secret-key
-  # Custom OTEL Collector config - allows you to provide your own OTEL Collector configuration
-  # Provide your OTEL Collector configuration as a multi-line string
-  # This will be mounted as /etc/otelcol-contrib/custom.config.yaml and
-  # the CUSTOM_OTELCOL_CONFIG_FILE environment variable will point to it
-  # Example:
-  # customConfig: |
-  #   receivers:
-  #     hostmetrics:
-  #       collection_interval: 5s
-  #       scrapers:
-  #         cpu:
-  #         load:
-  #         memory:
-  #   service:
-  #     pipelines:
-  #       metrics/hostmetrics:
-  #         receivers: [hostmetrics]
-  #         processors: [memory_limiter, batch]
-  #         exporters: [clickhouse]
-  customConfig:
-  # Opamp server URL - defaults to the app service. Customize if you want to use a different Opamp server.
-  # Leave empty if you want to use the app service.
-  # Example: opampServerUrl: "http://custom-opamp-server:4320"
-  opampServerUrl:
-  # Clickhouse endpoint - defaults to chart's Clickhouse service. Customize if you want to use a different Clickhouse service.
-  # Leave empty if you want to use the chart's Clickhouse service.
-  # Example: clickhouseEndpoint: "tcp://custom-clickhouse-service:9000"
-  clickhouseEndpoint:
-  clickhouseUser:
-  clickhousePassword:
-  # Clickhouse Prometheus endpoint - defaults to chart's Clickhouse prometheus service. Customize if you want to use a different Clickhouse prometheus service.
-  # Leave empty if prometheus is disabled.
-  # Example: clickhousePrometheusEndpoint: "http://custom-clickhouse-service:9363"
-  clickhousePrometheusEndpoint:
-  # Clickhouse database to send logs/traces/metrics to. Defaults to "default"
-  clickhouseDatabase: "default"
-  # When enabled, the collector falls back to letting the clickhouse-exporter
-  # create the schema instead of using the optimized schema used by ClickStack.
-  # Defaults to "true".
-  createLegacySchema: "true"
-  livenessProbe:
-    enabled: true
-    initialDelaySeconds: 10
-    periodSeconds: 30
-    timeoutSeconds: 5
-    failureThreshold: 3
-  readinessProbe:
-    enabled: true
-    initialDelaySeconds: 5
-    periodSeconds: 10
-    timeoutSeconds: 5
-    failureThreshold: 3
+    tag: ""
+  configMap:
+    create: false
+  command:
+    name: "bin/sh"
+    extraArgs:
+      - "-c"
+      - ". /etc/otel-env/env.sh && exec /otelcol-clickstack"
+  extraVolumes:
+    - name: otel-env
+      configMap:
+        name: '{{ include "clickstack.otel.fullname" . }}-env'
+  extraVolumeMounts:
+    - name: otel-env
+      mountPath: /etc/otel-env
+      readOnly: true
+  ports:
+    otlp:
+      enabled: true
+      containerPort: 4317
+      servicePort: 4317
+      protocol: TCP
+      appProtocol: grpc
+    otlp-http:
+      enabled: true
+      containerPort: 4318
+      servicePort: 4318
+      protocol: TCP
+    health-check:
+      enabled: true
+      containerPort: 13133
+      servicePort: 13133
+      protocol: TCP
+    fluentd:
+      enabled: true
+      containerPort: 24225
+      servicePort: 24225
+      protocol: TCP
+    metrics:
+      enabled: true
+      containerPort: 8888
+      servicePort: 8888
+      protocol: TCP
+    jaeger-compact:
+      enabled: false
+    jaeger-thrift:
+      enabled: false
+    jaeger-grpc:
+      enabled: false
+    zipkin:
+      enabled: false
 
 tasks:
   enabled: false

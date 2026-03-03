@@ -1,44 +1,27 @@
 suite: test OTEL collector with custom clickhouse endpoint
 templates:
-  - otel-collector-deployment.yaml
+  - otel-collector-env.yaml
 
-# Common documentSelector patterns using YAML anchors
-_selectors:
-  deployment: &deployment-selector
-    path: kind
-    value: Deployment
 tests:
-  - it: should use default Clickhouse endpoint when not specified
+  - it: should use default ClickHouse endpoint when not specified
     set:
       otel:
         enabled: true
     asserts:
-      - documentSelector: *deployment-selector
-        isKind:
-          of: Deployment
-      - documentSelector: *deployment-selector
-        equal:
-          path: spec.template.spec.containers[0].env[0].name
-          value: CLICKHOUSE_ENDPOINT
-      - documentSelector: *deployment-selector
-        matchRegex:
-          path: spec.template.spec.containers[0].env[0].value
-          pattern: "tcp://.*-clickhouse:[0-9]+\\?dial_timeout=10s"
+      - isKind:
+          of: ConfigMap
+      - matchRegex:
+          path: data["env.sh"]
+          pattern: "CLICKHOUSE_ENDPOINT.*tcp://.*-clickhouse:[0-9]+\\?dial_timeout=10s"
 
-  - it: should use custom Clickhouse endpoint when specified
+  - it: should use custom ClickHouse endpoint when specified
     set:
       otel:
         enabled: true
         clickhouseEndpoint: "my-custom-clickhouse:9000"
     asserts:
-      - documentSelector: *deployment-selector
-        isKind:
-          of: Deployment
-      - documentSelector: *deployment-selector
-        equal:
-          path: spec.template.spec.containers[0].env[0].name
-          value: CLICKHOUSE_ENDPOINT
-      - documentSelector: *deployment-selector
-        equal:
-          path: spec.template.spec.containers[0].env[0].value
-          value: "my-custom-clickhouse:9000"
+      - isKind:
+          of: ConfigMap
+      - matchRegex:
+          path: data["env.sh"]
+          pattern: 'CLICKHOUSE_ENDPOINT="my-custom-clickhouse:9000"'

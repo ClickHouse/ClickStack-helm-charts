@@ -20,6 +20,7 @@ For configuration, cloud deployment, ingress setup, and troubleshooting, see the
 The ClickStack chart uses the following third-party operator charts as subchart dependencies:
 
 - **[MongoDB Kubernetes Operator (MCK)](https://github.com/mongodb/mongodb-kubernetes)** - Manages MongoDB Community replica sets via a `MongoDBCommunity` custom resource. See the [MCK community docs](https://github.com/mongodb/mongodb-kubernetes/tree/master/docs/mongodbcommunity) for advanced configuration.
+- **[OpenTelemetry Collector](https://github.com/open-telemetry/opentelemetry-helm-charts)** - Deploys the ClickStack OTEL collector image via the official OpenTelemetry Collector Helm chart. Dynamic environment variables (ClickHouse/HyperDX service discovery) are injected via a chart-managed ConfigMap.
 
 ## Support
 

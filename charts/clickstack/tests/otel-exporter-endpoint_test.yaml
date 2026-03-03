@@ -2,20 +2,11 @@ suite: Test OTEL Exporter Endpoint Configuration
 templates:
   - configmaps/app-configmap.yaml
 tests:
-  - it: should use httpPort (4318) for otelExporterEndpoint by default
+  - it: should use otel-collector subchart service name for otelExporterEndpoint by default
     asserts:
       - equal:
           path: data.OTEL_EXPORTER_OTLP_ENDPOINT
-          value: "http://RELEASE-NAME-clickstack-otel-collector:4318"
-
-  - it: should use custom httpPort when otel.httpPort is overridden
-    set:
-      otel:
-        httpPort: 9999
-    asserts:
-      - equal:
-          path: data.OTEL_EXPORTER_OTLP_ENDPOINT
-          value: "http://RELEASE-NAME-clickstack-otel-collector:9999"
+          value: "http://RELEASE-NAME-otel-collector:4318"
 
   - it: should use custom otelExporterEndpoint when explicitly set
     set:
