@@ -23,6 +23,10 @@ The ClickStack chart uses the following third-party operator charts as subchart 
 - **[OpenTelemetry Collector](https://github.com/open-telemetry/opentelemetry-helm-charts)** - Deploys the ClickStack OTEL collector image via the official OpenTelemetry Collector Helm chart. Dynamic environment variables (ClickHouse/HyperDX service discovery) are injected via a chart-managed ConfigMap.
 - **[ClickHouse Operator](https://clickhouse.com/docs/clickhouse-operator/overview)** - Manages ClickHouse and Keeper clusters via `ClickHouseCluster` and `KeeperCluster` custom resources. See the [operator configuration guide](https://clickhouse.com/docs/clickhouse-operator/guides/configuration) for advanced settings.
 
+## Upgrading
+
+If you are upgrading from the inline-template chart (v1.x), see the [Upgrade Guide](docs/UPGRADE.md) for migration instructions. This is a breaking change that replaces hand-rolled resources with operator-managed custom resources.
+
 ## Support
 
 - **[Documentation](https://clickhouse.com/docs/use-cases/observability/clickstack)** - Installation, configuration, guides
