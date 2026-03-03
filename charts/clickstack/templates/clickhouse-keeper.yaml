@@ -1,0 +1,10 @@
+{{- if .Values.clickhouse.enabled }}
+apiVersion: clickhouse.com/v1alpha1
+kind: KeeperCluster
+metadata:
+  name: {{ include "clickstack.clickhouse.keeper" . }}
+  labels:
+    {{- include "clickstack.labels" . | nindent 4 }}
+spec:
+  {{- tpl (toYaml .Values.clickhouse.keeper.spec) . | nindent 2 }}
+{{- end }}

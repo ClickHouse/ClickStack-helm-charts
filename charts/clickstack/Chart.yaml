@@ -27,3 +27,8 @@ dependencies:
     repository: https://open-telemetry.github.io/opentelemetry-helm-charts
     alias: otel-collector
     condition: otel.enabled
+  - name: clickhouse-operator-helm
+    version: "~0.0.2"
+    repository: oci://ghcr.io/clickhouse
+    condition: clickhouse.enabled
+    alias: clickhouse-operator

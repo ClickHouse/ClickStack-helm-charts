@@ -16,10 +16,10 @@ data:
   #   otel.clickhouseDatabase     -- override HYPERDX_OTEL_EXPORTER_CLICKHOUSE_DATABASE (default: "default")
   #   otel.opampServerUrl         -- override OPAMP_SERVER_URL
   env.sh: |
-    export CLICKHOUSE_ENDPOINT="{{ .Values.otel.clickhouseEndpoint | default (printf "tcp://%s-clickhouse:%v?dial_timeout=10s" (include "clickstack.fullname" .) .Values.clickhouse.nativePort) }}"
-    export CLICKHOUSE_SERVER_ENDPOINT="{{ .Values.otel.clickhouseEndpoint | default (printf "%s-clickhouse:%v" (include "clickstack.fullname" .) .Values.clickhouse.nativePort) }}"
+    export CLICKHOUSE_ENDPOINT="{{ .Values.otel.clickhouseEndpoint | default (printf "tcp://%s:%v?dial_timeout=10s" (include "clickstack.clickhouse.svc" .) .Values.clickhouse.nativePort) }}"
+    export CLICKHOUSE_SERVER_ENDPOINT="{{ .Values.otel.clickhouseEndpoint | default (printf "%s:%v" (include "clickstack.clickhouse.svc" .) .Values.clickhouse.nativePort) }}"
     {{- if .Values.clickhouse.prometheus.enabled }}
-    export CLICKHOUSE_PROMETHEUS_METRICS_ENDPOINT="{{ .Values.otel.clickhousePrometheusEndpoint | default (printf "%s-clickhouse:%v" (include "clickstack.fullname" .) .Values.clickhouse.prometheus.port) }}"
+    export CLICKHOUSE_PROMETHEUS_METRICS_ENDPOINT="{{ .Values.otel.clickhousePrometheusEndpoint | default (printf "%s:%v" (include "clickstack.clickhouse.svc" .) .Values.clickhouse.prometheus.port) }}"
     {{- end }}
     export OPAMP_SERVER_URL="{{ .Values.otel.opampServerUrl | default (printf "http://%s-app:%v" (include "clickstack.fullname" .) .Values.hyperdx.opampPort) }}"
     export HYPERDX_LOG_LEVEL="{{ .Values.hyperdx.logLevel }}"

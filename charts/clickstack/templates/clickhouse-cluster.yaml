@@ -1,0 +1,10 @@
+{{- if .Values.clickhouse.enabled }}
+apiVersion: clickhouse.com/v1alpha1
+kind: ClickHouseCluster
+metadata:
+  name: {{ include "clickstack.clickhouse.fullname" . }}
+  labels:
+    {{- include "clickstack.labels" . | nindent 4 }}
+spec:
+  {{- tpl (toYaml .Values.clickhouse.cluster.spec) . | nindent 2 }}
+{{- end }}

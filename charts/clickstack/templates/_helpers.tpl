@@ -68,3 +68,24 @@ OTEL Collector fullname (matches subchart with alias otel-collector)
 {{- define "clickstack.otel.fullname" -}}
 {{- printf "%s-otel-collector" .Release.Name | trunc 63 | trimSuffix "-" -}}
 {{- end }}
+
+{{/*
+ClickHouse cluster CR name
+*/}}
+{{- define "clickstack.clickhouse.fullname" -}}
+{{- printf "%s-clickhouse" (include "clickstack.fullname" .) -}}
+{{- end }}
+
+{{/*
+ClickHouse Keeper CR name
+*/}}
+{{- define "clickstack.clickhouse.keeper" -}}
+{{- printf "%s-keeper" (include "clickstack.fullname" .) -}}
+{{- end }}
+
+{{/*
+ClickHouse service name (operator creates services based on CR name)
+*/}}
+{{- define "clickstack.clickhouse.svc" -}}
+{{- include "clickstack.clickhouse.fullname" . -}}
+{{- end }}

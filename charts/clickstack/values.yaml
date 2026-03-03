@@ -93,7 +93,7 @@ hyperdx:
     [
       {
         "name": "Local ClickHouse",
-        "host": "http://{{ include "clickstack.fullname" . }}-clickhouse:8123",
+        "host": "http://{{ include "clickstack.clickhouse.svc" . }}:8123",
         "port": 8123,
         "username": "app",
         "password": "{{ .Values.clickhouse.config.users.appUserPassword }}"
@@ -289,83 +289,73 @@ mongodb-kubernetes:
       - mongodbcommunity
 
 clickhouse:
-  image: "clickhouse/clickhouse-server:25.7-alpine"
+  enabled: true
+  # Ports used for cross-service wiring (OTEL collector, defaultConnections)
   port: 8123
   nativePort: 9000
-  terminationGracePeriodSeconds: 90
-  resources:
-    {}
-    # Example:
-    # requests:
-    #   memory: "512Mi"
-    #   cpu: "500m"
-    # limits:
-    #   memory: "2Gi"
-    #   cpu: "2000m"
-  livenessProbe:
-    enabled: true
-    initialDelaySeconds: 10
-    periodSeconds: 30
-    timeoutSeconds: 5
-    failureThreshold: 3
-  readinessProbe:
-    enabled: true
-    initialDelaySeconds: 1
-    periodSeconds: 10
-    timeoutSeconds: 5
-    failureThreshold: 3
-  startupProbe:
-    enabled: true
-    initialDelaySeconds: 5
-    periodSeconds: 10
-    timeoutSeconds: 5
-    failureThreshold: 30
-  enabled: true
-  # Add nodeSelector and tolerations for clickhouse service
-  nodeSelector:
-    {}
-    # Example:
-    # kubernetes.io/os: linux
-    # node-role.kubernetes.io/worker: "true"
-  tolerations:
-    []
-    # Example:
-    # - key: "key1"
-    #   operator: "Equal"
-    #   value: "value1"
-    #   effect: "NoSchedule"
-
-  # Service configuration
-  service:
-    type: ClusterIP # Use ClusterIP for security. For external access, use ingress with proper TLS and authentication
-    # Service-level annotations (applied to the Kubernetes service resource)
-    annotations:
-      {}
-      # Example service annotations:
-      # service.beta.kubernetes.io/aws-load-balancer-internal: "true"
-      # cloud.google.com/load-balancer-type: "Internal"
-
-  persistence:
-    enabled: true
-    dataSize: 10Gi
-    logSize: 5Gi
-  prometheus:
-    enabled: true
-    port: 9363
-    endpoint: "/metrics"
+  # User credentials referenced by OTEL collector env and defaultConnections
   config:
     users:
       appUserPassword: "hyperdx"
       otelUserPassword: "otelcollectorpass"
       otelUserName: "otelcollector"
-    # Network CIDRs for Kubernetes cluster access control
-    # These CIDRs ensure ClickHouse connections are locked down to intra-cluster only
-    # For PRODUCTION: Remove development CIDRs and keep only your cluster's specific CIDR
-    # For DEVELOPMENT: Multiple common CIDRs are included for convenience
-    clusterCidrs:
-      - "10.0.0.0/8" # Most Kubernetes clusters (including GKE, EKS, AKS)
-      - "172.16.0.0/12" # Some cloud providers and Docker Desktop
-      - "192.168.0.0/16" # OrbStack, Minikube, and local development
+  prometheus:
+    enabled: true
+    port: 9363
+  # Full KeeperCluster CRD spec -- rendered verbatim into the CR.
+  # See https://clickhouse.com/docs/clickhouse-operator/guides/introduction
+  keeper:
+    spec:
+      replicas: 1
+      dataVolumeClaimSpec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 5Gi
+  # Full ClickHouseCluster CRD spec -- rendered verbatim into the CR.
+  # See https://clickhouse.com/docs/clickhouse-operator/guides/configuration
+  cluster:
+    spec:
+      replicas: 1
+      shards: 1
+      keeperClusterRef:
+        name: '{{ include "clickstack.clickhouse.keeper" . }}'
+      dataVolumeClaimSpec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 10Gi
+      settings:
+        extraUsersConfig:
+          users:
+            app:
+              password: '{{ .Values.clickhouse.config.users.appUserPassword }}'
+              profile: readonly
+              grants:
+                - query: "GRANT SHOW ON *.*"
+                - query: "GRANT SELECT ON system.*"
+                - query: "GRANT SELECT ON default.*"
+            otelcollector:
+              password: '{{ .Values.clickhouse.config.users.otelUserPassword }}'
+              profile: default
+              grants:
+                - query: "GRANT SELECT,INSERT,CREATE,SHOW ON default.*"
+        extraConfig:
+          max_connections: 4096
+          keep_alive_timeout: 64
+          max_concurrent_queries: 100
+
+# ClickHouse Operator subchart configuration
+# See https://clickhouse.com/docs/clickhouse-operator/overview for all options
+clickhouse-operator:
+  webhook:
+    enable: false
+  certManager:
+    enable: false
+  crd:
+    enable: true
 
 otel:
   enabled: true

@@ -1,15 +1,12 @@
 suite: Test nodeSelector and tolerations
 templates:
   - hyperdx-deployment.yaml
-  - clickhouse-deployment.yaml
 
-# Common documentSelector patterns using YAML anchors
 _selectors:
   deployment: &deployment-selector
     path: kind
     value: Deployment
 tests:
-  # Test default behavior - no nodeSelector or tolerations
   - it: should not include nodeSelector and tolerations when not configured
     templates:
       - hyperdx-deployment.yaml
@@ -19,7 +16,6 @@ tests:
       - isNull:
           path: spec.template.spec.tolerations
 
-  # Test HyperDX component nodeSelector
   - it: should apply nodeSelector to HyperDX deployment when configured
     set:
       hyperdx:
@@ -36,7 +32,6 @@ tests:
             disktype: ssd
             node-role: hyperdx-app
 
-  # Test HyperDX component tolerations
   - it: should apply tolerations to HyperDX deployment when configured
     set:
       hyperdx:
@@ -64,43 +59,6 @@ tests:
               value: hyperdx
               effect: NoExecute
 
-  # Test ClickHouse component nodeSelector and tolerations
-  - it: should apply nodeSelector and tolerations to ClickHouse deployment
-    set:
-      clickhouse:
-        nodeSelector:
-          node-role: database
-          storage: fast-ssd
-        tolerations:
-          - key: database-key
-            operator: Equal
-            value: clickhouse
-            effect: NoSchedule
-          - key: io-intensive
-            operator: Exists
-            effect: NoSchedule
-    templates:
-      - clickhouse-deployment.yaml
-    asserts:
-      - documentSelector: *deployment-selector
-        equal:
-          path: spec.template.spec.nodeSelector
-          value:
-            node-role: database
-            storage: fast-ssd
-      - documentSelector: *deployment-selector
-        equal:
-          path: spec.template.spec.tolerations
-          value:
-            - key: database-key
-              operator: Equal
-              value: clickhouse
-              effect: NoSchedule
-            - key: io-intensive
-              operator: Exists
-              effect: NoSchedule
-
-  # Test multiple components with different configurations
   - it: should apply correct nodeSelector and tolerations to HyperDX deployment
     set:
       hyperdx:
@@ -111,15 +69,6 @@ tests:
             operator: Equal
             value: api
             effect: NoSchedule
-      clickhouse:
-        nodeSelector:
-          component: database
-          storage: ssd
-        tolerations:
-          - key: database
-            operator: Equal
-            value: clickhouse
-            effect: NoExecute
     templates:
       - hyperdx-deployment.yaml
     asserts:
@@ -137,44 +86,6 @@ tests:
               value: api
               effect: NoSchedule
 
-  - it: should apply correct nodeSelector and tolerations to ClickHouse deployment
-    set:
-      hyperdx:
-        nodeSelector:
-          component: api
-        tolerations:
-          - key: hyperdx
-            operator: Equal
-            value: api
-            effect: NoSchedule
-      clickhouse:
-        nodeSelector:
-          component: database
-          storage: ssd
-        tolerations:
-          - key: database
-            operator: Equal
-            value: clickhouse
-            effect: NoExecute
-    templates:
-      - clickhouse-deployment.yaml
-    asserts:
-      - documentSelector: *deployment-selector
-        equal:
-          path: spec.template.spec.nodeSelector
-          value:
-            component: database
-            storage: ssd
-      - documentSelector: *deployment-selector
-        equal:
-          path: spec.template.spec.tolerations
-          value:
-            - key: database
-              operator: Equal
-              value: clickhouse
-              effect: NoExecute
-
-  # Test that disabled components are not affected
   - it: should not render nodeSelector and tolerations for disabled components
     set:
       clickhouse:
@@ -189,7 +100,6 @@ tests:
     templates:
       - hyperdx-deployment.yaml
     asserts:
-      # Should only have HyperDX deployment
       - hasDocuments:
           count: 1
       - isKind:
