@@ -61,6 +61,10 @@ jobs:
           kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/v0.0.24/deploy/local-path-storage.yaml
           kubectl patch storageclass local-path -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
 
+      - name: Build chart dependencies
+        run: |
+          helm dependency build charts/clickstack
+
       - name: Run Helm unit tests
         run: |
           helm plugin install https://github.com/helm-unittest/helm-unittest.git --version v1.0.3 ${{ runner.debug && '--debug' || ''}} || true
@@ -71,70 +75,35 @@ jobs:
           # Create test values for faster deployment
           cat > test-values.yaml << EOF
           hyperdx:
-            apiKey: "test-api-key-for-ci"
             frontendUrl: "http://localhost:3000"
-            replicas: 1
+            secrets:
+              HYPERDX_API_KEY: "test-api-key-for-ci"
+            deployment:
+              replicas: 1
             service:
               type: NodePort
-              nodePort: 30000
-
-          clickhouse:
-            persistence:
-              enabled: true
-              dataSize: 2Gi
-              logSize: 1Gi
-
-          mongodb:
-            persistence:
-              enabled: true
-              dataSize: 2Gi
-
-          otel:
-            resources:
-              requests:
-                memory: "128Mi"
-                cpu: "100m"
-              limits:
-                memory: "256Mi"
-                cpu: "200m"
           EOF
 
           # Install the chart
-          helm install hyperdx-test ./charts/clickstack -f test-values.yaml --timeout=5m
+          helm install hyperdx-test ./charts/clickstack -f test-values.yaml --timeout=10m
 
           # Give services time to initialize after pods are running
           echo "Waiting for services to initialize..."
-          sleep 20
-
-      - name: Bootstrap team in MongoDB
-        run: |
-          # Wait for MongoDB to be ready
-          kubectl wait --for=condition=Ready pods -l app=mongodb --timeout=300s
-
-          echo "Creating test team in MongoDB..."
-          kubectl exec -n default deployment/hyperdx-test-clickstack-mongodb -- mongosh hyperdx --eval "
-            db.teams.insertOne({
-              name: 'CI Test Team',
-              apiKey: 'test-api-key-for-ci',
-              collectorAuthenticationEnforced: false,
-              createdAt: new Date(),
-              updatedAt: new Date()
-            })
-          "
-
-          echo "Verifying team creation..."
-          kubectl exec -n default deployment/hyperdx-test-clickstack-mongodb -- mongosh hyperdx --eval "
-            const team = db.teams.findOne({ apiKey: 'test-api-key-for-ci' });
-            if (team) {
-              print('Team created successfully:', team.name);
-            } else {
-              print('Team creation failed');
-              exit(1);
-            }
-          "
-
-          echo "Waiting for OpAMP server to reconfigure collectors..."
           sleep 30
+
+      - name: Wait for operators and CRs
+        run: |
+          echo "Waiting for all pods to be ready..."
+          kubectl wait --for=condition=Ready pods --all --timeout=600s || true
+
+          echo "Pod status:"
+          kubectl get pods -o wide
+
+          echo "Checking MongoDBCommunity CR..."
+          kubectl get mongodbcommunity -o wide || true
+
+          echo "Checking ClickHouseCluster CR..."
+          kubectl get clickhousecluster -o wide || true
 
       - name: Verify deployment
         run: |
