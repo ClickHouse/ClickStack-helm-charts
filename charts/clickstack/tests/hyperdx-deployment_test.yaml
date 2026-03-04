@@ -25,15 +25,12 @@ tests:
           path: spec.template.spec.containers[0].envFrom[0]
           content:
             configMapRef:
-              name: RELEASE-NAME-clickstack-app-config
-      - contains:
-          path: spec.template.spec.containers[0].env
+              name: clickstack-config
+      - isSubset:
+          path: spec.template.spec.containers[0].envFrom[1]
           content:
-            name: HYPERDX_API_KEY
-            valueFrom:
-              secretKeyRef:
-                key: api-key
-                name: RELEASE-NAME-clickstack-app-secrets
+            secretRef:
+              name: clickstack-secret
 
   - it: should set custom replicas when provided
     set:

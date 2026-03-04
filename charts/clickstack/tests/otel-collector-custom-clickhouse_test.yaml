@@ -1,27 +1,23 @@
-suite: test OTEL collector with custom clickhouse endpoint
+suite: Test ClickStack ConfigMap - ClickHouse Endpoint
 templates:
-  - otel-collector-env.yaml
+  - configmaps/app-configmap.yaml
 
 tests:
-  - it: should use default ClickHouse endpoint when not specified
-    set:
-      otel:
-        enabled: true
+  - it: should use default ClickHouse endpoint
     asserts:
       - isKind:
           of: ConfigMap
       - matchRegex:
-          path: data["env.sh"]
-          pattern: "CLICKHOUSE_ENDPOINT.*tcp://.*-clickhouse:[0-9]+\\?dial_timeout=10s"
+          path: data.CLICKHOUSE_ENDPOINT
+          pattern: "tcp://.*-clickhouse:[0-9]+\\?dial_timeout=10s"
 
-  - it: should use custom ClickHouse endpoint when specified
+  - it: should render ClickHouse endpoint with correct port
     set:
-      otel:
-        enabled: true
-        clickhouseEndpoint: "my-custom-clickhouse:9000"
+      clickhouse:
+        nativePort: 9001
+    release:
+      name: test-release
     asserts:
-      - isKind:
-          of: ConfigMap
       - matchRegex:
-          path: data["env.sh"]
-          pattern: 'CLICKHOUSE_ENDPOINT="my-custom-clickhouse:9000"'
+          path: data.CLICKHOUSE_ENDPOINT
+          pattern: "tcp://test-release-clickstack-clickhouse:9001"

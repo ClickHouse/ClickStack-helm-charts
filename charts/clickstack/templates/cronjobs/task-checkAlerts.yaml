@@ -48,7 +48,9 @@ spec:
               {{- end }}
               envFrom:
                 - configMapRef:
-                    name: {{ include "clickstack.fullname" . }}-app-config
+                    name: clickstack-config
+                - secretRef:
+                    name: clickstack-secret
               env:
                 - name: NODE_ENV
                   value: "production"

@@ -1,6 +1,6 @@
-suite: Test OTEL Collector Env ConfigMap Labels
+suite: Test ClickStack ConfigMap Labels
 templates:
-  - otel-collector-env.yaml
+  - configmaps/app-configmap.yaml
 
 tests:
   - it: should include proper labels
@@ -11,6 +11,9 @@ tests:
     asserts:
       - isKind:
           of: ConfigMap
+      - equal:
+          path: metadata.name
+          value: clickstack-config
       - matchRegex:
           path: metadata.labels["helm.sh/chart"]
           pattern: "clickstack-"

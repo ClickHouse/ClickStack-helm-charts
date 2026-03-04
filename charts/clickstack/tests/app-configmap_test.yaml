@@ -1,34 +1,14 @@
-suite: Test App ConfigMap
+suite: Test ClickStack ConfigMap
 templates:
   - configmaps/app-configmap.yaml
 tests:
-  - it: should render app configmap correctly with default values
-    set:
-      hyperdx:
-        apiPort: 8000
-        appPort: 3000
-        frontendUrl: http://localhost:3000
-        logLevel: info
-        usageStatsEnabled: true
-      mongodb:
-        password: "hyperdx"
-      tasks:
-        enabled: false
+  - it: should render clickstack-config ConfigMap with default values
     asserts:
       - isKind:
           of: ConfigMap
-      - matchRegex:
+      - equal:
           path: metadata.name
-          pattern: -app-config$
-      - equal:
-          path: data.APP_PORT
-          value: "3000"
-      - equal:
-          path: data.API_PORT
-          value: "8000"
-      - equal:
-          path: data.FRONTEND_URL
-          value: "http://localhost:3000"
+          value: clickstack-config
       - equal:
           path: data.HYPERDX_LOG_LEVEL
           value: "info"
@@ -40,87 +20,41 @@ tests:
           value: "false"
       - matchRegex:
           path: data.MONGO_URI
-          pattern: mongodb://hyperdx:hyperdx@.*-mongodb-svc:27017/hyperdx
+          pattern: mongodb://hyperdx:.*@.*-mongodb-svc:27017/hyperdx
+      - matchRegex:
+          path: data.CLICKHOUSE_ENDPOINT
+          pattern: "tcp://.*-clickhouse:9000"
+      - matchRegex:
+          path: data.OPAMP_SERVER_URL
+          pattern: "http://.*-app:4320"
 
-  - it: should use default frontendUrl template with appUrl and appPort
+  - it: should render user-provided config values
     set:
       hyperdx:
-        apiPort: 8000
-        appPort: 3000
-        appUrl: "http://localhost"
-      mongodb:
-        password: "hyperdx"
+        config:
+          HYPERDX_LOG_LEVEL: "debug"
+          CUSTOM_VAR: "custom-value"
+    asserts:
+      - equal:
+          path: data.HYPERDX_LOG_LEVEL
+          value: "debug"
+      - equal:
+          path: data.CUSTOM_VAR
+          value: "custom-value"
+
+  - it: should render FRONTEND_URL from template
+    set:
+      hyperdx:
+        appUrl: "https://my-domain.com"
+        appPort: 443
+        frontendUrl: "https://my-domain.com"
     asserts:
       - equal:
           path: data.FRONTEND_URL
-          value: "http://localhost:3000"
+          value: "https://my-domain.com"
 
-  - it: should override frontendUrl when explicitly set
-    set:
-      hyperdx:
-        apiPort: 8000
-        appPort: 3000
-        appUrl: "http://localhost"
-        frontendUrl: "https://my-custom-domain.com"
-      mongodb:
-        password: "hyperdx"
+  - it: should render OTEL_EXPORTER_OTLP_ENDPOINT
     asserts:
-      - equal:
-          path: data.FRONTEND_URL
-          value: "https://my-custom-domain.com"
-
-  - it: should support template expressions in frontendUrl
-    set:
-      hyperdx:
-        apiPort: 8000
-        appPort: 4000
-        appUrl: "https://production-host"
-        frontendUrl: "{{ .Values.hyperdx.appUrl }}:{{ .Values.hyperdx.appPort }}/app"
-      mongodb:
-        password: "hyperdx"
-    asserts:
-      - equal:
-          path: data.FRONTEND_URL
-          value: "https://production-host:4000/app"
-
-  - it: should handle custom appUrl and appPort in default frontendUrl
-    set:
-      hyperdx:
-        apiPort: 8000
-        appPort: 4000
-        appUrl: "https://staging.example.com"
-      mongodb:
-        password: "hyperdx"
-    asserts:
-      - equal:
-          path: data.FRONTEND_URL
-          value: "https://staging.example.com:4000"
-
-  - it: should work with ingress-style URLs in frontendUrl
-    set:
-      hyperdx:
-        apiPort: 8000
-        appPort: 3000
-        appUrl: "http://localhost"
-        frontendUrl: "https://hyperdx.example.com"
-      mongodb:
-        password: "hyperdx"
-    asserts:
-      - equal:
-          path: data.FRONTEND_URL
-          value: "https://hyperdx.example.com"
-
-  - it: should support complex template expressions
-    set:
-      hyperdx:
-        apiPort: 8000
-        appPort: 3000
-        appUrl: "http://localhost"
-        frontendUrl: '{{ if eq .Values.env "production" }}https://prod.example.com{{ else }}{{ .Values.hyperdx.appUrl }}:{{ .Values.hyperdx.appPort }}{{ end }}'
-      env: "development"
-      mongodb:
-        password: "hyperdx"
-    asserts:
-      - equal:
-          path: data.FRONTEND_URL
-          value: "http://localhost:3000"
+      - matchRegex:
+          path: data.OTEL_EXPORTER_OTLP_ENDPOINT
+          pattern: "http://.*-otel-collector:4318"

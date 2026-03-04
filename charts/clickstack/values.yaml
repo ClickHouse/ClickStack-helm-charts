@@ -45,18 +45,37 @@ hyperdx:
     #   operator: "Equal"
     #   value: "value1"
     #   effect: "NoSchedule"
-  apiKey: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
   apiPort: 8000
   appPort: 3000
   opampPort: 4320
+
+  # Shared non-sensitive environment variables rendered into the clickstack-config ConfigMap.
+  # Used by both the HyperDX app and the OTEL collector (via envFrom).
+  config:
+    APP_PORT: "3000"
+    API_PORT: "8000"
+    HYPERDX_API_PORT: "8000"
+    HYPERDX_APP_PORT: "3000"
+    HYPERDX_LOG_LEVEL: "info"
+    OTEL_SERVICE_NAME: "hdx-oss-api"
+    USAGE_STATS_ENABLED: "true"
+    OPAMP_PORT: "4320"
+    HYPERDX_OTEL_EXPORTER_CLICKHOUSE_DATABASE: "default"
+    CLICKHOUSE_USER: "otelcollector"
+    RUN_SCHEDULED_TASKS_EXTERNALLY: "false"
+
+  # Shared sensitive environment variables rendered into the clickstack-secret Secret.
+  # Used by both the HyperDX app and the OTEL collector (via envFrom).
+  secrets:
+    HYPERDX_API_KEY: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+    CLICKHOUSE_PASSWORD: "otelcollectorpass"
+
   # deprecated: use frontendUrl instead
   appUrl: "http://localhost"
   # The URL that will be use to access the frontend. Defaults to the http://localhost:3000.
   # If you have an ingress enabled, you should set this to the ingress host with the protocol. E.g. https://hdx-my-domain.com
   frontendUrl: "{{ .Values.hyperdx.appUrl }}:{{ .Values.hyperdx.appPort }}"
-  logLevel: "info"
-  usageStatsEnabled: true
-  # Endpoint to send hyperdx logs/traces/metrics to.Defaults to the chart's otel collector endpoint.
+  # Endpoint to send hyperdx logs/traces/metrics to. Defaults to the chart's otel collector endpoint.
   otelExporterEndpoint: http://{{ include "clickstack.otel.fullname" . }}:4318
   mongoUri: mongodb://hyperdx:{{ .Values.mongodb.password }}@{{ include "clickstack.mongodb.svc" . }}:27017/hyperdx?authSource=hyperdx
 
@@ -357,31 +376,20 @@ clickhouse-operator:
   crd:
     enable: true
 
-otel:
-  enabled: true
-
 # OpenTelemetry Collector subchart configuration (alias: otel-collector)
 # See https://github.com/open-telemetry/opentelemetry-helm-charts for all options
+# Set otel-collector.enabled to false to disable the OTEL collector entirely.
 otel-collector:
+  enabled: true
   mode: deployment
   image:
     repository: docker.clickhouse.com/clickhouse/clickstack-otel-collector
     tag: ""
-  configMap:
-    create: false
-  command:
-    name: "bin/sh"
-    extraArgs:
-      - "-c"
-      - ". /etc/otel-env/env.sh && exec /otelcol-clickstack"
-  extraVolumes:
-    - name: otel-env
-      configMap:
-        name: '{{ include "clickstack.otel.fullname" . }}-env'
-  extraVolumeMounts:
-    - name: otel-env
-      mountPath: /etc/otel-env
-      readOnly: true
+  extraEnvsFrom:
+    - configMapRef:
+        name: clickstack-config
+    - secretRef:
+        name: clickstack-secret
   ports:
     otlp:
       enabled: true

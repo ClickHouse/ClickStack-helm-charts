@@ -1,27 +1,9 @@
-suite: Test OTEL Collector Env ConfigMap
+suite: Test ClickStack ConfigMap - OTEL Collector Values
 templates:
-  - otel-collector-env.yaml
+  - configmaps/app-configmap.yaml
 
 tests:
-  - it: should render env ConfigMap when enabled
-    asserts:
-      - hasDocuments:
-          count: 1
-      - isKind:
-          of: ConfigMap
-      - matchRegex:
-          path: metadata.name
-          pattern: .*-otel-collector-env$
-
-  - it: should not render when disabled
-    set:
-      otel:
-        enabled: false
-    asserts:
-      - hasDocuments:
-          count: 0
-
-  - it: should contain default ClickHouse endpoint
+  - it: should contain CLICKHOUSE_ENDPOINT with default service name
     set:
       clickhouse:
         nativePort: 9000
@@ -29,70 +11,40 @@ tests:
       name: test-release
     asserts:
       - matchRegex:
-          path: data["env.sh"]
-          pattern: "CLICKHOUSE_ENDPOINT.*tcp://test-release-clickstack-clickhouse:9000"
+          path: data.CLICKHOUSE_ENDPOINT
+          pattern: "tcp://test-release-clickstack-clickhouse:9000"
 
-  - it: should use custom ClickHouse endpoint when specified
+  - it: should contain CLICKHOUSE_SERVER_ENDPOINT
     set:
-      otel:
-        clickhouseEndpoint: "tcp://custom-clickhouse:9000"
+      clickhouse:
+        nativePort: 9000
+    release:
+      name: test-release
     asserts:
       - matchRegex:
-          path: data["env.sh"]
-          pattern: "CLICKHOUSE_ENDPOINT.*tcp://custom-clickhouse:9000"
+          path: data.CLICKHOUSE_SERVER_ENDPOINT
+          pattern: "test-release-clickstack-clickhouse:9000"
 
-  - it: should contain default OpAMP server URL
+  - it: should contain OPAMP_SERVER_URL with default service name
     set:
       hyperdx:
         opampPort: 4320
     release:
       name: test-release
     asserts:
-      - matchRegex:
-          path: data["env.sh"]
-          pattern: "OPAMP_SERVER_URL.*http://test-release-clickstack-app:4320"
+      - equal:
+          path: data.OPAMP_SERVER_URL
+          value: "http://test-release-clickstack-app:4320"
 
-  - it: should use custom OpAMP server URL when specified
+  - it: should contain CLICKHOUSE_USER from config
     set:
-      otel:
-        opampServerUrl: "https://custom-opamp:8080"
-    asserts:
-      - matchRegex:
-          path: data["env.sh"]
-          pattern: "OPAMP_SERVER_URL.*https://custom-opamp:8080"
-
-  - it: should contain ClickHouse user credentials
-    set:
-      clickhouse:
+      hyperdx:
         config:
-          users:
-            otelUserName: "myuser"
-            otelUserPassword: "mypass"
+          CLICKHOUSE_USER: "myuser"
     asserts:
-      - matchRegex:
-          path: data["env.sh"]
-          pattern: 'CLICKHOUSE_USER="myuser"'
-      - matchRegex:
-          path: data["env.sh"]
-          pattern: 'CLICKHOUSE_PASSWORD="mypass"'
-
-  - it: should use custom ClickHouse credentials when specified
-    set:
-      otel:
-        clickhouseUser: "override-user"
-        clickhousePassword: "override-pass"
-      clickhouse:
-        config:
-          users:
-            otelUserName: "default-user"
-            otelUserPassword: "default-pass"
-    asserts:
-      - matchRegex:
-          path: data["env.sh"]
-          pattern: 'CLICKHOUSE_USER="override-user"'
-      - matchRegex:
-          path: data["env.sh"]
-          pattern: 'CLICKHOUSE_PASSWORD="override-pass"'
+      - equal:
+          path: data.CLICKHOUSE_USER
+          value: "myuser"
 
   - it: should contain Prometheus endpoint when enabled
     set:
@@ -104,8 +56,8 @@ tests:
       name: test-release
     asserts:
       - matchRegex:
-          path: data["env.sh"]
-          pattern: "CLICKHOUSE_PROMETHEUS_METRICS_ENDPOINT.*test-release-clickstack-clickhouse:9363"
+          path: data.CLICKHOUSE_PROMETHEUS_METRICS_ENDPOINT
+          pattern: "test-release-clickstack-clickhouse:9363"
 
   - it: should not contain Prometheus endpoint when disabled
     set:
@@ -113,21 +65,5 @@ tests:
         prometheus:
           enabled: false
     asserts:
-      - notMatchRegex:
-          path: data["env.sh"]
-          pattern: "CLICKHOUSE_PROMETHEUS_METRICS_ENDPOINT"
-
-  - it: should use default clickhouse database
-    asserts:
-      - matchRegex:
-          path: data["env.sh"]
-          pattern: 'HYPERDX_OTEL_EXPORTER_CLICKHOUSE_DATABASE="default"'
-
-  - it: should use custom clickhouse database
-    set:
-      otel:
-        clickhouseDatabase: "custom_db"
-    asserts:
-      - matchRegex:
-          path: data["env.sh"]
-          pattern: 'HYPERDX_OTEL_EXPORTER_CLICKHOUSE_DATABASE="custom_db"'
+      - isNull:
+          path: data.CLICKHOUSE_PROMETHEUS_METRICS_ENDPOINT

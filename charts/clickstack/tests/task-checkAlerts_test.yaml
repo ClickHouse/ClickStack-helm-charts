@@ -52,7 +52,7 @@ tests:
           path: spec.jobTemplate.spec.template.spec.containers[0].envFrom[0]
           content:
             configMapRef:
-              name: RELEASE-NAME-clickstack-app-config
+              name: clickstack-config
       - contains:
           path: spec.jobTemplate.spec.template.spec.containers[0].env
           content:

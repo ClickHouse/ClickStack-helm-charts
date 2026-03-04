@@ -1,14 +1,19 @@
-suite: Test OTEL Collector Custom Config
+suite: Test ClickStack ConfigMap Rendering
 templates:
-  - otel-collector-env.yaml
+  - configmaps/app-configmap.yaml
 
 tests:
-  - it: should render env ConfigMap with default values
-    set:
-      otel:
-        enabled: true
+  - it: should render ConfigMap with all expected keys
     asserts:
       - hasDocuments:
           count: 1
       - isKind:
           of: ConfigMap
+      - isNotNull:
+          path: data.CLICKHOUSE_ENDPOINT
+      - isNotNull:
+          path: data.OPAMP_SERVER_URL
+      - isNotNull:
+          path: data.MONGO_URI
+      - isNotNull:
+          path: data.FRONTEND_URL

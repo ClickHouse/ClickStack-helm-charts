@@ -91,13 +91,10 @@ spec:
           {{- end }}
           envFrom:
             - configMapRef:
-                name: {{ include "clickstack.fullname" . }}-app-config
+                name: clickstack-config
+            - secretRef:
+                name: clickstack-secret
           env:
-            - name: HYPERDX_API_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "clickstack.fullname" . }}-app-secrets
-                  key: api-key
             {{- if .Values.hyperdx.useExistingConfigSecret }}
             - name: DEFAULT_CONNECTIONS
               valueFrom:
