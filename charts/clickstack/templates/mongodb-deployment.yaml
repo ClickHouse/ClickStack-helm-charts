@@ -70,6 +70,10 @@ spec:
             timeoutSeconds: {{ .Values.mongodb.livenessProbe.timeoutSeconds }}
             failureThreshold: {{ .Values.mongodb.livenessProbe.failureThreshold }}
           {{- end }}
+          {{- if .Values.mongodb.resources }}
+          resources:
+            {{- toYaml .Values.mongodb.resources | nindent 12 }}
+          {{- end }}
           {{- if .Values.mongodb.readinessProbe.enabled }}
           readinessProbe:
             tcpSocket:

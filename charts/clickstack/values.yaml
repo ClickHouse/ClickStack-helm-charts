@@ -19,6 +19,15 @@ hyperdx:
   waitForMongodb:
     # Image used by the init container that waits for MongoDB to be reachable.
     image: "busybox@sha256:1fcf5df59121b92d61e066df1788e8df0cc35623f5d62d9679a41e163b6a0cdb"
+    resources:
+      {}
+      # Example:
+      # requests:
+      #   memory: "100Mi"
+      #   cpu: "100m"
+      # limits:
+      #   memory: "200Mi"
+      #   cpu: "500m"
     pullPolicy: IfNotPresent
   livenessProbe:
     enabled: true
@@ -276,6 +285,15 @@ mongodb:
     #   operator: "Equal"
     #   value: "value1"
     #   effect: "NoSchedule"
+  resources:
+    {}
+    # Example:
+    # requests:
+    #   memory: "512Mi"
+    #   cpu: "500m"
+    # limits:
+    #   memory: "2Gi"
+    #   cpu: "2000m"
   persistence:
     enabled: true
     dataSize: 10Gi
