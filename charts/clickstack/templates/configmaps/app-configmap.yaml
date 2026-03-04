@@ -16,4 +16,4 @@ data:
   {{- if .Values.clickhouse.prometheus.enabled }}
   CLICKHOUSE_PROMETHEUS_METRICS_ENDPOINT: {{ printf "%s:%v" (include "clickstack.clickhouse.svc" .) .Values.clickhouse.prometheus.port | quote }}
   {{- end }}
-  OPAMP_SERVER_URL: {{ printf "http://%s-app:%v" (include "clickstack.fullname" .) .Values.hyperdx.opampPort | quote }}
+  OPAMP_SERVER_URL: {{ printf "http://%s-app:%v" (include "clickstack.fullname" .) .Values.hyperdx.ports.opamp | quote }}

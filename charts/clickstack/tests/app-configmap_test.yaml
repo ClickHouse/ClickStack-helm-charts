@@ -45,8 +45,6 @@ tests:
   - it: should render FRONTEND_URL from template
     set:
       hyperdx:
-        appUrl: "https://my-domain.com"
-        appPort: 443
         frontendUrl: "https://my-domain.com"
     asserts:
       - equal:

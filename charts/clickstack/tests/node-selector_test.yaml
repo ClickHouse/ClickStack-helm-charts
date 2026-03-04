@@ -19,9 +19,10 @@ tests:
   - it: should apply nodeSelector to HyperDX deployment when configured
     set:
       hyperdx:
-        nodeSelector:
-          disktype: ssd
-          node-role: hyperdx-app
+        deployment:
+          nodeSelector:
+            disktype: ssd
+            node-role: hyperdx-app
     templates:
       - hyperdx-deployment.yaml
     asserts:
@@ -35,15 +36,16 @@ tests:
   - it: should apply tolerations to HyperDX deployment when configured
     set:
       hyperdx:
-        tolerations:
-          - key: hyperdx-key
-            operator: Equal
-            value: hyperdx-value
-            effect: NoSchedule
-          - key: dedicated
-            operator: Equal
-            value: hyperdx
-            effect: NoExecute
+        deployment:
+          tolerations:
+            - key: hyperdx-key
+              operator: Equal
+              value: hyperdx-value
+              effect: NoSchedule
+            - key: dedicated
+              operator: Equal
+              value: hyperdx
+              effect: NoExecute
     templates:
       - hyperdx-deployment.yaml
     asserts:
@@ -62,13 +64,14 @@ tests:
   - it: should apply correct nodeSelector and tolerations to HyperDX deployment
     set:
       hyperdx:
-        nodeSelector:
-          component: api
-        tolerations:
-          - key: hyperdx
-            operator: Equal
-            value: api
-            effect: NoSchedule
+        deployment:
+          nodeSelector:
+            component: api
+          tolerations:
+            - key: hyperdx
+              operator: Equal
+              value: api
+              effect: NoSchedule
     templates:
       - hyperdx-deployment.yaml
     asserts:
@@ -92,11 +95,12 @@ tests:
         enabled: false
       otel:
         enabled: false
-      tasks:
-        enabled: false
       hyperdx:
-        nodeSelector:
-          component: api
+        tasks:
+          enabled: false
+        deployment:
+          nodeSelector:
+            component: api
     templates:
       - hyperdx-deployment.yaml
     asserts:

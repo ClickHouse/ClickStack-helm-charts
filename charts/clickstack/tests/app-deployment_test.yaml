@@ -5,13 +5,14 @@ tests:
   - it: should render the app deployment correctly
     set:
       hyperdx:
-        image:
-          repository: hyperdx/hyperdx
-          tag: 2-beta
-        apiKey: test-api-key
-        appPort: 3000
-        apiPort: 8000
-        replicas: 1
+        ports:
+          app: 3000
+          api: 8000
+        deployment:
+          image:
+            repository: hyperdx/hyperdx
+            tag: 2-beta
+          replicas: 1
       mongodb:
         port: 27017
     asserts:
@@ -40,10 +41,11 @@ tests:
   - it: should scale replicas when specified
     set:
       hyperdx:
-        image:
-          repository: hyperdx/hyperdx
-          tag: 2-beta
-        replicas: 3
+        deployment:
+          image:
+            repository: hyperdx/hyperdx
+            tag: 2-beta
+          replicas: 3
     asserts:
       - equal:
           path: spec.replicas
@@ -52,13 +54,14 @@ tests:
   - it: should set topology spread constraints when specified
     set:
       hyperdx:
-        topologySpreadConstraints:
-          - maxSkew: 1
-            topologyKey: topology.kubernetes.io/zone
-            whenUnsatisfiable: DoNotSchedule
-            labelSelector:
-              matchLabels:
-                foo: bar
+        deployment:
+          topologySpreadConstraints:
+            - maxSkew: 1
+              topologyKey: topology.kubernetes.io/zone
+              whenUnsatisfiable: DoNotSchedule
+              labelSelector:
+                matchLabels:
+                  foo: bar
     asserts:
       - contains:
           path: spec.template.spec.topologySpreadConstraints
@@ -73,7 +76,8 @@ tests:
   - it: should set priority class name when specified
     set:
       hyperdx:
-        priorityClassName: system-node-critical
+        deployment:
+          priorityClassName: system-node-critical
     asserts:
       - equal:
           path: spec.template.spec.priorityClassName
@@ -82,12 +86,13 @@ tests:
   - it: should set container resources when specified
     set:
       hyperdx:
-        resources:
-          limits:
-            memory: 1Gi
-          requests:
-            cpu: 100m
-            memory: 256Mi
+        deployment:
+          resources:
+            limits:
+              memory: 1Gi
+            requests:
+              cpu: 100m
+              memory: 256Mi
     asserts:
       - equal:
           path: spec.template.spec.containers[0].resources

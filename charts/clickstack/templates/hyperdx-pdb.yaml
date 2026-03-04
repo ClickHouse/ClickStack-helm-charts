@@ -6,8 +6,8 @@ metadata:
   labels:
     {{- include "clickstack.labels" . | nindent 4 }}
     app: {{ include "clickstack.fullname" . }}
-    {{- if .Values.hyperdx.labels }}
-    {{- with .Values.hyperdx.labels }}
+    {{- if .Values.hyperdx.deployment.labels }}
+    {{- with .Values.hyperdx.deployment.labels }}
     {{- toYaml . | nindent 4 }}
     {{- end -}}
     {{- end }}

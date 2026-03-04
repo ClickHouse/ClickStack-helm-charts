@@ -5,12 +5,13 @@ tests:
   - it: should add DEFAULT_CONNECTIONS env var when configured with secrets
     set:
       hyperdx:
-        env:
-          - name: DEFAULT_CONNECTIONS
-            valueFrom:
-              secretKeyRef:
-                name: hyperdx-connections
-                key: connections-json
+        deployment:
+          env:
+            - name: DEFAULT_CONNECTIONS
+              valueFrom:
+                secretKeyRef:
+                  name: hyperdx-connections
+                  key: connections-json
     asserts:
       - contains:
           path: spec.template.spec.containers[0].env
@@ -24,9 +25,10 @@ tests:
   - it: should add DEFAULT_SOURCES env var when configured with plain value
     set:
       hyperdx:
-        env:
-          - name: DEFAULT_SOURCES
-            value: '[{"name":"HyperDX Logs","kind":"log","connection":"Local ClickHouse"}]'
+        deployment:
+          env:
+            - name: DEFAULT_SOURCES
+              value: '[{"name":"HyperDX Logs","kind":"log","connection":"Local ClickHouse"}]'
     asserts:
       - contains:
           path: spec.template.spec.containers[0].env
@@ -37,12 +39,13 @@ tests:
   - it: should add DEFAULT_SOURCES env var when configured with secrets
     set:
       hyperdx:
-        env:
-          - name: DEFAULT_SOURCES
-            valueFrom:
-              secretKeyRef:
-                name: hyperdx-sources
-                key: sources-json
+        deployment:
+          env:
+            - name: DEFAULT_SOURCES
+              valueFrom:
+                secretKeyRef:
+                  name: hyperdx-sources
+                  key: sources-json
     asserts:
       - contains:
           path: spec.template.spec.containers[0].env
@@ -56,17 +59,18 @@ tests:
   - it: should add both DEFAULT_CONNECTIONS and DEFAULT_SOURCES when configured
     set:
       hyperdx:
-        env:
-          - name: DEFAULT_CONNECTIONS
-            valueFrom:
-              secretKeyRef:
-                name: hyperdx-connections
-                key: connections-json
-          - name: DEFAULT_SOURCES
-            valueFrom:
-              secretKeyRef:
-                name: hyperdx-sources
-                key: sources-json
+        deployment:
+          env:
+            - name: DEFAULT_CONNECTIONS
+              valueFrom:
+                secretKeyRef:
+                  name: hyperdx-connections
+                  key: connections-json
+            - name: DEFAULT_SOURCES
+              valueFrom:
+                secretKeyRef:
+                  name: hyperdx-sources
+                  key: sources-json
     asserts:
       - contains:
           path: spec.template.spec.containers[0].env
@@ -95,7 +99,8 @@ tests:
   - it: should not include DEFAULT_CONNECTIONS when set to empty string
     set:
       hyperdx:
-        defaultConnections: ""
+        deployment:
+          defaultConnections: ""
     asserts:
       - notContains:
           path: spec.template.spec.containers[0].env
@@ -105,7 +110,8 @@ tests:
   - it: should not include DEFAULT_SOURCES when set to empty string
     set:
       hyperdx:
-        defaultSources: ""
+        deployment:
+          defaultSources: ""
     asserts:
       - notContains:
           path: spec.template.spec.containers[0].env
@@ -115,20 +121,21 @@ tests:
   - it: should work with multiline JSON value for DEFAULT_SOURCES
     set:
       hyperdx:
-        env:
-          - name: DEFAULT_SOURCES
-            value: |-
-              [
-                {
-                  "name": "HyperDX Logs",
-                  "kind": "log",
-                  "connection": "Local ClickHouse",
-                  "from": {
-                    "databaseName": "default",
-                    "tableName": "logs"
+        deployment:
+          env:
+            - name: DEFAULT_SOURCES
+              value: |-
+                [
+                  {
+                    "name": "HyperDX Logs",
+                    "kind": "log",
+                    "connection": "Local ClickHouse",
+                    "from": {
+                      "databaseName": "default",
+                      "tableName": "logs"
+                    }
                   }
-                }
-              ]
+                ]
     asserts:
       - contains:
           path: spec.template.spec.containers[0].env

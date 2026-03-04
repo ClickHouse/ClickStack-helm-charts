@@ -35,7 +35,8 @@ tests:
   - it: should set custom replicas when provided
     set:
       hyperdx:
-        replicas: 3
+        deployment:
+          replicas: 3
     asserts:
       - equal:
           path: spec.replicas
@@ -44,9 +45,10 @@ tests:
   - it: should add custom annotations when provided
     set:
       hyperdx:
-        annotations:
-          prometheus.io/scrape: "true"
-          prometheus.io/port: "3000"
+        deployment:
+          annotations:
+            prometheus.io/scrape: "true"
+            prometheus.io/port: "3000"
     asserts:
       - isSubset:
           path: spec.template.metadata.annotations
@@ -57,9 +59,10 @@ tests:
   - it: should add custom labels when provided
     set:
       hyperdx:
-        labels:
-          environment: production
-          team: platform
+        deployment:
+          labels:
+            environment: production
+            team: platform
     asserts:
       - isSubset:
           path: metadata.labels
@@ -70,11 +73,12 @@ tests:
   - it: should add custom environment variables when provided
     set:
       hyperdx:
-        env:
-          - name: CUSTOM_ENV
-            value: "test-value"
-          - name: ANOTHER_ENV
-            value: "another-value"
+        deployment:
+          env:
+            - name: CUSTOM_ENV
+              value: "test-value"
+            - name: ANOTHER_ENV
+              value: "another-value"
     asserts:
       - contains:
           path: spec.template.spec.containers[0].env
@@ -99,7 +103,8 @@ tests:
   - it: should use custom OpAMP port when provided
     set:
       hyperdx:
-        opampPort: 5320
+        ports:
+          opamp: 5320
     asserts:
       - equal:
           path: spec.template.spec.containers[0].ports[2].containerPort
@@ -135,9 +140,10 @@ tests:
       mongodb:
         enabled: true
       hyperdx:
-        waitForMongodb:
-          image: busybox:1.36.1
-          pullPolicy: Always
+        deployment:
+          waitForMongodb:
+            image: busybox:1.36.1
+            pullPolicy: Always
     asserts:
       - equal:
           path: spec.template.spec.initContainers[0].image
@@ -175,8 +181,9 @@ tests:
   - it: should not include livenessProbe when disabled
     set:
       hyperdx:
-        livenessProbe:
-          enabled: false
+        deployment:
+          livenessProbe:
+            enabled: false
     asserts:
       - isNull:
           path: spec.template.spec.containers[0].livenessProbe
@@ -184,8 +191,9 @@ tests:
   - it: should not include readinessProbe when disabled
     set:
       hyperdx:
-        readinessProbe:
-          enabled: false
+        deployment:
+          readinessProbe:
+            enabled: false
     asserts:
       - isNull:
           path: spec.template.spec.containers[0].readinessProbe
@@ -193,12 +201,13 @@ tests:
   - it: should use custom livenessProbe values when provided
     set:
       hyperdx:
-        livenessProbe:
-          enabled: true
-          initialDelaySeconds: 20
-          periodSeconds: 60
-          timeoutSeconds: 10
-          failureThreshold: 5
+        deployment:
+          livenessProbe:
+            enabled: true
+            initialDelaySeconds: 20
+            periodSeconds: 60
+            timeoutSeconds: 10
+            failureThreshold: 5
     asserts:
       - isSubset:
           path: spec.template.spec.containers[0].livenessProbe
@@ -214,12 +223,13 @@ tests:
   - it: should use custom readinessProbe values when provided
     set:
       hyperdx:
-        readinessProbe:
-          enabled: true
-          initialDelaySeconds: 5
-          periodSeconds: 20
-          timeoutSeconds: 3
-          failureThreshold: 2
+        deployment:
+          readinessProbe:
+            enabled: true
+            initialDelaySeconds: 5
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 2
     asserts:
       - isSubset:
           path: spec.template.spec.containers[0].readinessProbe
@@ -235,7 +245,8 @@ tests:
   - it: should use custom apiPort in probes when provided
     set:
       hyperdx:
-        apiPort: 9000
+        ports:
+          api: 9000
     asserts:
       - equal:
           path: spec.template.spec.containers[0].livenessProbe.httpGet.port

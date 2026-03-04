@@ -20,8 +20,8 @@ Application Access:
        --set hyperdx.ingress.tls.enabled=true
   
   2. Port Forward (Development/Testing):
-     kubectl port-forward svc/{{ include "clickstack.fullname" . }}-app {{ .Values.hyperdx.appPort }}:{{ .Values.hyperdx.appPort }}
-     Then access: http://localhost:{{ .Values.hyperdx.appPort }}
+     kubectl port-forward svc/{{ include "clickstack.fullname" . }}-app {{ .Values.hyperdx.ports.app }}:{{ .Values.hyperdx.ports.app }}
+     Then access: http://localhost:{{ .Values.hyperdx.ports.app }}
   
   Note: This application handles sensitive telemetry data and should not be exposed
   directly to the internet without proper authentication and encryption.

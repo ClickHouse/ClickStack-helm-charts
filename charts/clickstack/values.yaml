@@ -12,45 +12,20 @@ global:
   keepPVC: false
 
 hyperdx:
-  image:
-    repository: docker.hyperdx.io/hyperdx/hyperdx
-    tag:
-    pullPolicy: IfNotPresent
-  waitForMongodb:
-    # Image used by the init container that waits for MongoDB to be reachable.
-    image: "busybox@sha256:1fcf5df59121b92d61e066df1788e8df0cc35623f5d62d9679a41e163b6a0cdb"
-    pullPolicy: IfNotPresent
-  livenessProbe:
-    enabled: true
-    initialDelaySeconds: 10
-    periodSeconds: 30
-    timeoutSeconds: 5
-    failureThreshold: 3
-  readinessProbe:
-    enabled: true
-    initialDelaySeconds: 1
-    periodSeconds: 10
-    timeoutSeconds: 5
-    failureThreshold: 3
-  # Add nodeSelector and tolerations for hyperdx service
-  nodeSelector:
-    {}
-    # Example:
-    # kubernetes.io/os: linux
-    # node-role.kubernetes.io/worker: "true"
-  tolerations:
-    []
-    # Example:
-    # - key: "key1"
-    #   operator: "Equal"
-    #   value: "value1"
-    #   effect: "NoSchedule"
-  apiPort: 8000
-  appPort: 3000
-  opampPort: 4320
+  # Ports shared across Deployment, Service, ConfigMap, and Ingress
+  ports:
+    api: 8000
+    app: 3000
+    opamp: 4320
 
-  # Shared non-sensitive environment variables rendered into the clickstack-config ConfigMap.
-  # Used by both the HyperDX app and the OTEL collector (via envFrom).
+  # The URL used to access the frontend. Update this when using ingress.
+  frontendUrl: "http://localhost:3000"
+  # Endpoint to send hyperdx logs/traces/metrics to. Defaults to the chart's otel collector endpoint.
+  otelExporterEndpoint: http://{{ include "clickstack.otel.fullname" . }}:4318
+  mongoUri: mongodb://hyperdx:{{ .Values.hyperdx.secrets.MONGODB_PASSWORD }}@{{ include "clickstack.mongodb.svc" . }}:27017/hyperdx?authSource=hyperdx
+
+  # ── K8s ConfigMap (clickstack-config) ────────────────────
+  # Shared non-sensitive environment variables. Used by HyperDX and OTEL collector via envFrom.
   config:
     APP_PORT: "3000"
     API_PORT: "8000"
@@ -64,173 +39,172 @@ hyperdx:
     CLICKHOUSE_USER: "otelcollector"
     RUN_SCHEDULED_TASKS_EXTERNALLY: "false"
 
-  # Shared sensitive environment variables rendered into the clickstack-secret Secret.
-  # Used by both the HyperDX app and the OTEL collector (via envFrom).
+  # ── K8s Secret (clickstack-secret) ───────────────────────
+  # Shared sensitive environment variables. Used by HyperDX and OTEL collector via envFrom.
   secrets:
     HYPERDX_API_KEY: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
     CLICKHOUSE_PASSWORD: "otelcollectorpass"
     CLICKHOUSE_APP_PASSWORD: "hyperdx"
     MONGODB_PASSWORD: "hyperdx"
 
-  # deprecated: use frontendUrl instead
-  appUrl: "http://localhost"
-  # The URL that will be use to access the frontend. Defaults to the http://localhost:3000.
-  # If you have an ingress enabled, you should set this to the ingress host with the protocol. E.g. https://hdx-my-domain.com
-  frontendUrl: "{{ .Values.hyperdx.appUrl }}:{{ .Values.hyperdx.appPort }}"
-  # Endpoint to send hyperdx logs/traces/metrics to. Defaults to the chart's otel collector endpoint.
-  otelExporterEndpoint: http://{{ include "clickstack.otel.fullname" . }}:4318
-  mongoUri: mongodb://hyperdx:{{ .Values.hyperdx.secrets.MONGODB_PASSWORD }}@{{ include "clickstack.mongodb.svc" . }}:27017/hyperdx?authSource=hyperdx
-
-  # Pod-level annotations (applied to the deployment pods)
-  annotations:
-    {}
-    # myAnnotation: "myValue"
-
-  # Pod-level labels (applied to the deployment pods)
-  labels:
-    {}
-    # myLabel: "myValue"
-  env:
-    []
-    # Additional environment variables can be configured here
-    # This is preserved for backward compatibility and advanced use cases
-
-  # Default connections and sources (ENABLED BY DEFAULT)
-  # Set to empty string to disable: defaultConnections: "" or defaultSources: ""
-  #
-  # To use an existing secret instead of inline configuration, set:
-  # useExistingConfigSecret: true
-  # existingConfigSecret: "my-hyperdx-config"
-  # existingConfigConnectionsKey: "connections.json"  # defaults to "connections.json"
-  # existingConfigSourcesKey: "sources.json"  # defaults to "sources.json"
-  #
-  # The secret should contain separate keys for connections and sources JSON arrays
-  useExistingConfigSecret: false
-  existingConfigSecret: ""
-  existingConfigConnectionsKey: "connections.json"
-  existingConfigSourcesKey: "sources.json"
-
-  defaultConnections: |
-    [
-      {
-        "name": "Local ClickHouse",
-        "host": "http://{{ include "clickstack.clickhouse.svc" . }}:8123",
-        "port": 8123,
-        "username": "app",
-        "password": "{{ .Values.hyperdx.secrets.CLICKHOUSE_APP_PASSWORD }}"
-      }
-    ]
-
-  # Set to empty string to disable: defaultSources: ""
-  defaultSources: |
-    [
-      {
-        "from": {
-          "databaseName": "default",
-          "tableName": "otel_logs"
+  # ── K8s Deployment ───────────────────────────────────────
+  deployment:
+    image:
+      repository: docker.hyperdx.io/hyperdx/hyperdx
+      tag:
+      pullPolicy: IfNotPresent
+    replicas: 1
+    resources: {}
+    livenessProbe:
+      enabled: true
+      initialDelaySeconds: 10
+      periodSeconds: 30
+      timeoutSeconds: 5
+      failureThreshold: 3
+    readinessProbe:
+      enabled: true
+      initialDelaySeconds: 1
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 3
+    nodeSelector: {}
+    tolerations: []
+    topologySpreadConstraints: []
+    priorityClassName: ""
+    annotations: {}
+    labels: {}
+    env: []
+    waitForMongodb:
+      image: "busybox@sha256:1fcf5df59121b92d61e066df1788e8df0cc35623f5d62d9679a41e163b6a0cdb"
+      pullPolicy: IfNotPresent
+    # Default connections and sources (ENABLED BY DEFAULT)
+    # Set to empty string to disable: defaultConnections: "" or defaultSources: ""
+    # To use an existing secret, set useExistingConfigSecret: true
+    useExistingConfigSecret: false
+    existingConfigSecret: ""
+    existingConfigConnectionsKey: "connections.json"
+    existingConfigSourcesKey: "sources.json"
+    defaultConnections: |
+      [
+        {
+          "name": "Local ClickHouse",
+          "host": "http://{{ include "clickstack.clickhouse.svc" . }}:8123",
+          "port": 8123,
+          "username": "app",
+          "password": "{{ .Values.hyperdx.secrets.CLICKHOUSE_APP_PASSWORD }}"
+        }
+      ]
+    defaultSources: |
+      [
+        {
+          "from": {
+            "databaseName": "default",
+            "tableName": "otel_logs"
+          },
+          "kind": "log",
+          "timestampValueExpression": "TimestampTime",
+          "name": "Logs",
+          "displayedTimestampValueExpression": "Timestamp",
+          "implicitColumnExpression": "Body",
+          "serviceNameExpression": "ServiceName",
+          "bodyExpression": "Body",
+          "eventAttributesExpression": "LogAttributes",
+          "resourceAttributesExpression": "ResourceAttributes",
+          "defaultTableSelectExpression": "Timestamp,ServiceName,SeverityText,Body",
+          "severityTextExpression": "SeverityText",
+          "traceIdExpression": "TraceId",
+          "spanIdExpression": "SpanId",
+          "connection": "Local ClickHouse",
+          "traceSourceId": "Traces",
+          "sessionSourceId": "Sessions",
+          "metricSourceId": "Metrics"
         },
-        "kind": "log",
-        "timestampValueExpression": "TimestampTime",
-        "name": "Logs",
-        "displayedTimestampValueExpression": "Timestamp",
-        "implicitColumnExpression": "Body",
-        "serviceNameExpression": "ServiceName",
-        "bodyExpression": "Body",
-        "eventAttributesExpression": "LogAttributes",
-        "resourceAttributesExpression": "ResourceAttributes",
-        "defaultTableSelectExpression": "Timestamp,ServiceName,SeverityText,Body",
-        "severityTextExpression": "SeverityText",
-        "traceIdExpression": "TraceId",
-        "spanIdExpression": "SpanId",
-        "connection": "Local ClickHouse",
-        "traceSourceId": "Traces",
-        "sessionSourceId": "Sessions",
-        "metricSourceId": "Metrics"
-      },
-      {
-        "from": {
-          "databaseName": "default",
-          "tableName": "otel_traces"
+        {
+          "from": {
+            "databaseName": "default",
+            "tableName": "otel_traces"
+          },
+          "kind": "trace",
+          "timestampValueExpression": "Timestamp",
+          "name": "Traces",
+          "displayedTimestampValueExpression": "Timestamp",
+          "implicitColumnExpression": "SpanName",
+          "serviceNameExpression": "ServiceName",
+          "bodyExpression": "SpanName",
+          "eventAttributesExpression": "SpanAttributes",
+          "resourceAttributesExpression": "ResourceAttributes",
+          "defaultTableSelectExpression": "Timestamp,ServiceName,StatusCode,round(Duration/1e6),SpanName",
+          "traceIdExpression": "TraceId",
+          "spanIdExpression": "SpanId",
+          "durationExpression": "Duration",
+          "durationPrecision": 9,
+          "parentSpanIdExpression": "ParentSpanId",
+          "spanNameExpression": "SpanName",
+          "spanKindExpression": "SpanKind",
+          "statusCodeExpression": "StatusCode",
+          "statusMessageExpression": "StatusMessage",
+          "connection": "Local ClickHouse",
+          "logSourceId": "Logs",
+          "sessionSourceId": "Sessions",
+          "metricSourceId": "Metrics"
         },
-        "kind": "trace",
-        "timestampValueExpression": "Timestamp",
-        "name": "Traces",
-        "displayedTimestampValueExpression": "Timestamp",
-        "implicitColumnExpression": "SpanName",
-        "serviceNameExpression": "ServiceName",
-        "bodyExpression": "SpanName",
-        "eventAttributesExpression": "SpanAttributes",
-        "resourceAttributesExpression": "ResourceAttributes",
-        "defaultTableSelectExpression": "Timestamp,ServiceName,StatusCode,round(Duration/1e6),SpanName",
-        "traceIdExpression": "TraceId",
-        "spanIdExpression": "SpanId",
-        "durationExpression": "Duration",
-        "durationPrecision": 9,
-        "parentSpanIdExpression": "ParentSpanId",
-        "spanNameExpression": "SpanName",
-        "spanKindExpression": "SpanKind",
-        "statusCodeExpression": "StatusCode",
-        "statusMessageExpression": "StatusMessage",
-        "connection": "Local ClickHouse",
-        "logSourceId": "Logs",
-        "sessionSourceId": "Sessions",
-        "metricSourceId": "Metrics"
-      },
-      {
-        "from": {
-          "databaseName": "default",
-          "tableName": ""
+        {
+          "from": {
+            "databaseName": "default",
+            "tableName": ""
+          },
+          "kind": "metric",
+          "timestampValueExpression": "TimeUnix",
+          "name": "Metrics",
+          "resourceAttributesExpression": "ResourceAttributes",
+          "metricTables": {
+            "gauge": "otel_metrics_gauge",
+            "histogram": "otel_metrics_histogram",
+            "sum": "otel_metrics_sum",
+            "_id": "682586a8b1f81924e628e808",
+            "id": "682586a8b1f81924e628e808"
+          },
+          "connection": "Local ClickHouse",
+          "logSourceId": "Logs",
+          "traceSourceId": "Traces",
+          "sessionSourceId": "Sessions"
         },
-        "kind": "metric",
-        "timestampValueExpression": "TimeUnix",
-        "name": "Metrics",
-        "resourceAttributesExpression": "ResourceAttributes",
-        "metricTables": {
-          "gauge": "otel_metrics_gauge",
-          "histogram": "otel_metrics_histogram",
-          "sum": "otel_metrics_sum",
-          "_id": "682586a8b1f81924e628e808",
-          "id": "682586a8b1f81924e628e808"
-        },
-        "connection": "Local ClickHouse",
-        "logSourceId": "Logs",
-        "traceSourceId": "Traces",
-        "sessionSourceId": "Sessions"
-      },
-      {
-        "from": {
-          "databaseName": "default",
-          "tableName": "hyperdx_sessions"
-        },
-        "kind": "session",
-        "timestampValueExpression": "TimestampTime",
-        "name": "Sessions",
-        "displayedTimestampValueExpression": "Timestamp",
-        "implicitColumnExpression": "Body",
-        "serviceNameExpression": "ServiceName",
-        "bodyExpression": "Body",
-        "eventAttributesExpression": "LogAttributes",
-        "resourceAttributesExpression": "ResourceAttributes",
-        "defaultTableSelectExpression": "Timestamp,ServiceName,SeverityText,Body",
-        "severityTextExpression": "SeverityText",
-        "traceIdExpression": "TraceId",
-        "spanIdExpression": "SpanId",
-        "connection": "Local ClickHouse",
-        "logSourceId": "Logs",
-        "traceSourceId": "Traces",
-        "metricSourceId": "Metrics"
-      }
-    ]
+        {
+          "from": {
+            "databaseName": "default",
+            "tableName": "hyperdx_sessions"
+          },
+          "kind": "session",
+          "timestampValueExpression": "TimestampTime",
+          "name": "Sessions",
+          "displayedTimestampValueExpression": "Timestamp",
+          "implicitColumnExpression": "Body",
+          "serviceNameExpression": "ServiceName",
+          "bodyExpression": "Body",
+          "eventAttributesExpression": "LogAttributes",
+          "resourceAttributesExpression": "ResourceAttributes",
+          "defaultTableSelectExpression": "Timestamp,ServiceName,SeverityText,Body",
+          "severityTextExpression": "SeverityText",
+          "traceIdExpression": "TraceId",
+          "spanIdExpression": "SpanId",
+          "connection": "Local ClickHouse",
+          "logSourceId": "Logs",
+          "traceSourceId": "Traces",
+          "metricSourceId": "Metrics"
+        }
+      ]
 
-  # See https://github.com/hyperdxio/hyperdx/blob/v2/packages/api/docs/auto_provision/AUTO_PROVISION.md
-  # for detailed configuration options
+  # ── K8s Service ──────────────────────────────────────────
+  service:
+    type: ClusterIP
+    annotations: {}
 
+  # ── K8s Ingress ──────────────────────────────────────────
   ingress:
     enabled: false
     ingressClassName: nginx
     annotations: {}
-    # The host to use for the ingress. Defaults to localhost. Be sure to update hyperdx.frontendUrl with this host value + protocol
-    host: "localhost" # Production domain
+    host: "localhost"
     path: "/(.*)"
     pathType: "ImplementationSpecific"
     proxyBodySize: "100m"
@@ -240,39 +214,25 @@ hyperdx:
     tls:
       enabled: false
       secretName: "hyperdx-tls"
-
-    # Additional ingresses - these will only be rendered if the whole ingress object is enabled
-    # This should be used to expose other deployments/services from the helm chart on the cluster
-    # e.g. expose the OTEL collector.
     additionalIngresses: []
-    # - name: otel-collector
-    #   annotations: {}
-    #   ingressClassName: nginx
-    #   hosts:
-    #     - host: collector.example.com
-    #       paths:
-    #         - path: /
-    #           pathType: Prefix
-    #           port: 4318
-    #   tls:
-    #     - secretName: otel-collector-tls
-    #       hosts:
-    #         - collector.example.com
 
-  replicas: 1
-
+  # ── K8s PodDisruptionBudget ──────────────────────────────
   podDisruptionBudget:
     enabled: false
 
-  # Service configuration
-  service:
-    type: ClusterIP # Use ClusterIP for security. For external access, use ingress with proper TLS and authentication
-    # Service-level annotations (applied to the Kubernetes service resource)
-    annotations:
-      {}
-      # Example service annotations:
-      # service.beta.kubernetes.io/aws-load-balancer-internal: "true"
-      # cloud.google.com/load-balancer-type: "Internal"
+  # ── K8s CronJob ──────────────────────────────────────────
+  tasks:
+    enabled: false
+    checkAlerts:
+      schedule: "*/1 * * * *"
+      additionalArgs: {}
+      resources:
+        limits:
+          cpu: 200m
+          memory: 256Mi
+        requests:
+          cpu: 100m
+          memory: 128Mi
 
 mongodb:
   enabled: true
@@ -420,25 +380,3 @@ otel-collector:
     zipkin:
       enabled: false
 
-tasks:
-  enabled: false
-  checkAlerts:
-    schedule: "*/1 * * * *" # Runs every 1 minute
-
-    additionalArgs:
-      {}
-      # Additional command line arguments can be supplied to the check-alerts
-      # task by defining the param as a key/value pair. These are passed to the
-      # task without validation in the helm chart.
-      #
-      # Examples:
-      # concurrency: 6
-      # sourceTimeoutMs: 90000
-
-    resources:
-      limits:
-        cpu: 200m
-        memory: 256Mi
-      requests:
-        cpu: 100m
-        memory: 128Mi

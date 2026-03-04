@@ -13,11 +13,11 @@ metadata:
 spec:
   type: {{ .Values.hyperdx.service.type | default "ClusterIP" }}
   ports:
-    - port: {{ .Values.hyperdx.appPort }}
-      targetPort: {{ .Values.hyperdx.appPort }}
+    - port: {{ .Values.hyperdx.ports.app }}
+      targetPort: {{ .Values.hyperdx.ports.app }}
       name: app
-    - port: {{ .Values.hyperdx.opampPort }}
-      targetPort: {{ .Values.hyperdx.opampPort }}
+    - port: {{ .Values.hyperdx.ports.opamp }}
+      targetPort: {{ .Values.hyperdx.ports.opamp }}
       name: opamp
   selector:
     {{- include "clickstack.selectorLabels" . | nindent 4 }}

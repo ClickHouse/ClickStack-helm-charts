@@ -39,7 +39,7 @@ spec:
               service:
                 name: {{ include "clickstack.fullname" . }}-app
                 port:
-                  number: {{ .Values.hyperdx.appPort }}
+                  number: {{ .Values.hyperdx.ports.app }}
 {{- range .Values.hyperdx.ingress.additionalIngresses}}
 ---
 apiVersion: networking.k8s.io/v1

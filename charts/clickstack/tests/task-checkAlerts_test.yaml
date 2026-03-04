@@ -4,29 +4,31 @@ templates:
 tests:
   - it: should not render when tasks are disabled
     set:
-      tasks:
-        enabled: false
+      hyperdx:
+        tasks:
+          enabled: false
     asserts:
       - hasDocuments:
           count: 0
 
   - it: should render correctly when tasks are enabled
     set:
-      tasks:
-        enabled: true
-        checkAlerts:
-          schedule: "*/5 * * * *"
-          resources:
-            limits:
-              cpu: 300m
-              memory: 300Mi
-            requests:
-              cpu: 150m
-              memory: 150Mi
       hyperdx:
-        image:
-          repository: hyperdx/hyperdx
-          tag: 2-beta
+        tasks:
+          enabled: true
+          checkAlerts:
+            schedule: "*/5 * * * *"
+            resources:
+              limits:
+                cpu: 300m
+                memory: 300Mi
+              requests:
+                cpu: 150m
+                memory: 150Mi
+        deployment:
+          image:
+            repository: hyperdx/hyperdx
+            tag: 2-beta
     asserts:
       - isKind:
           of: CronJob
@@ -66,8 +68,9 @@ tests:
 
   - it: should use default schedule when not provided
     set:
-      tasks:
-        enabled: true
+      hyperdx:
+        tasks:
+          enabled: true
     asserts:
       - equal:
           path: spec.schedule
@@ -75,16 +78,18 @@ tests:
 
   - it: should not include imagePullSecrets when not configured
     set:
-      tasks:
-        enabled: true
+      hyperdx:
+        tasks:
+          enabled: true
     asserts:
       - isNull:
           path: spec.jobTemplate.spec.template.spec.imagePullSecrets
 
   - it: should include imagePullSecrets when configured
     set:
-      tasks:
-        enabled: true
+      hyperdx:
+        tasks:
+          enabled: true
       global:
         imagePullSecrets:
           - name: regcred
@@ -97,11 +102,12 @@ tests:
 
   - it: should use esbuild command path for versions before 2.7.0
     set:
-      tasks:
-        enabled: true
       hyperdx:
-        image:
-          tag: "2.6.9"
+        tasks:
+          enabled: true
+        deployment:
+          image:
+            tag: "2.6.9"
     asserts:
       - equal:
           path: spec.jobTemplate.spec.template.spec.containers[0].command
@@ -109,11 +115,12 @@ tests:
 
   - it: should use esbuild command path for version 2.6.0
     set:
-      tasks:
-        enabled: true
       hyperdx:
-        image:
-          tag: "2.6.0"
+        tasks:
+          enabled: true
+        deployment:
+          image:
+            tag: "2.6.0"
     asserts:
       - equal:
           path: spec.jobTemplate.spec.template.spec.containers[0].command
@@ -121,11 +128,12 @@ tests:
 
   - it: should use post-esbuild command path for version 2.7.0
     set:
-      tasks:
-        enabled: true
       hyperdx:
-        image:
-          tag: "2.7.0"
+        tasks:
+          enabled: true
+        deployment:
+          image:
+            tag: "2.7.0"
     asserts:
       - equal:
           path: spec.jobTemplate.spec.template.spec.containers[0].command
@@ -133,11 +141,12 @@ tests:
 
   - it: should use post-esbuild command path for versions after 2.7.0
     set:
-      tasks:
-        enabled: true
       hyperdx:
-        image:
-          tag: "2.8.0"
+        tasks:
+          enabled: true
+        deployment:
+          image:
+            tag: "2.8.0"
     asserts:
       - equal:
           path: spec.jobTemplate.spec.template.spec.containers[0].command
@@ -145,11 +154,12 @@ tests:
 
   - it: should use post-esbuild command path for version 3.0.0
     set:
-      tasks:
-        enabled: true
       hyperdx:
-        image:
-          tag: "3.0.0"
+        tasks:
+          enabled: true
+        deployment:
+          image:
+            tag: "3.0.0"
     asserts:
       - equal:
           path: spec.jobTemplate.spec.template.spec.containers[0].command
@@ -157,13 +167,14 @@ tests:
 
   - it: should not include additionalArgs when empty
     set:
-      tasks:
-        enabled: true
-        checkAlerts:
-          additionalArgs: {}
       hyperdx:
-        image:
-          tag: "2.8.0"
+        tasks:
+          enabled: true
+          checkAlerts:
+            additionalArgs: {}
+        deployment:
+          image:
+            tag: "2.8.0"
     asserts:
       - equal:
           path: spec.jobTemplate.spec.template.spec.containers[0].command
@@ -171,15 +182,16 @@ tests:
 
   - it: should include additionalArgs with -- prefix in command
     set:
-      tasks:
-        enabled: true
-        checkAlerts:
-          additionalArgs:
-            concurrency: 6
-            sourceTimeoutMs: 90000
       hyperdx:
-        image:
-          tag: "2.8.0"
+        tasks:
+          enabled: true
+          checkAlerts:
+            additionalArgs:
+              concurrency: 6
+              sourceTimeoutMs: 90000
+        deployment:
+          image:
+            tag: "2.8.0"
     asserts:
       - contains:
           path: spec.jobTemplate.spec.template.spec.containers[0].command
@@ -196,14 +208,15 @@ tests:
 
   - it: should include additionalArgs in pre-esbuild command path
     set:
-      tasks:
-        enabled: true
-        checkAlerts:
-          additionalArgs:
-            concurrency: 4
       hyperdx:
-        image:
-          tag: "2.6.0"
+        tasks:
+          enabled: true
+          checkAlerts:
+            additionalArgs:
+              concurrency: 4
+        deployment:
+          image:
+            tag: "2.6.0"
     asserts:
       - contains:
           path: spec.jobTemplate.spec.template.spec.containers[0].command
