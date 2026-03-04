@@ -1,6 +1,6 @@
 suite: Test ClickHouse Users Configuration
 templates:
-  - clickhouse-cluster.yaml
+  - clickhouse/cluster.yaml
 
 tests:
   - it: should include app user in extraUsersConfig

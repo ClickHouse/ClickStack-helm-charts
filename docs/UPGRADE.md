@@ -5,7 +5,7 @@ This guide covers migrating from the inline-template ClickStack chart (v1.x) to 
 ## Prerequisites
 
 - Back up your data before upgrading (MongoDB, ClickHouse PVCs)
-- Review your current `values.yaml` overrides -- most keys under `mongodb`, `clickhouse`, and `otel` have changed
+- Review your current `values.yaml` overrides -- most keys have moved or been renamed
 
 ## What Changed
 
@@ -13,8 +13,60 @@ This guide covers migrating from the inline-template ClickStack chart (v1.x) to 
 |-----------|---------------|-------|
 | MongoDB | Inline Deployment + Service + PVC | [MongoDB Kubernetes Operator (MCK)](https://github.com/mongodb/mongodb-kubernetes) managing a `MongoDBCommunity` CR |
 | ClickHouse | Inline Deployment + Service + ConfigMaps + PVCs | [ClickHouse Operator](https://clickhouse.com/docs/clickhouse-operator/overview) managing `ClickHouseCluster` + `KeeperCluster` CRs |
-| OTEL Collector | Inline Deployment + Service | [Official OpenTelemetry Collector Helm chart](https://github.com/open-telemetry/opentelemetry-helm-charts) with a chart-managed env ConfigMap |
+| OTEL Collector | Inline Deployment + Service (`otel.*` block) | [Official OpenTelemetry Collector Helm chart](https://github.com/open-telemetry/opentelemetry-helm-charts) (`otel-collector:` subchart). No separate `otel:` block -- env vars live in `hyperdx.config`/`hyperdx.secrets` |
+| HyperDX values | Flat keys under `hyperdx.*` plus top-level `tasks:` and `appUrl` | Reorganised by K8s resource type under `hyperdx.*` (see below) |
 | hdx-oss-v2 | Deprecated legacy chart | Removed entirely |
+
+## HyperDX Values Reorganisation
+
+The `hyperdx:` block is now organised by Kubernetes resource type:
+
+```yaml
+hyperdx:
+  ports:          # Shared port numbers (Deployment, Service, ConfigMap, Ingress)
+    api: 8000
+    app: 3000
+    opamp: 4320
+
+  frontendUrl: "http://localhost:3000"   # Replaces the removed appUrl
+
+  config:         # → clickstack-config ConfigMap (non-sensitive env vars)
+    APP_PORT: "3000"
+    HYPERDX_LOG_LEVEL: "info"
+    # ... full list in values.yaml
+
+  secrets:        # → clickstack-secret Secret (sensitive env vars)
+    HYPERDX_API_KEY: "..."
+    CLICKHOUSE_PASSWORD: "otelcollectorpass"
+    CLICKHOUSE_APP_PASSWORD: "hyperdx"
+    MONGODB_PASSWORD: "hyperdx"
+
+  deployment:     # K8s Deployment spec (image, replicas, probes, etc.)
+  service:        # K8s Service spec (type, annotations)
+  ingress:        # K8s Ingress spec (host, tls, annotations)
+  podDisruptionBudget:  # K8s PDB spec
+  tasks:          # K8s CronJob specs (previously top-level tasks:)
+```
+
+### Key moves
+
+| Before | After |
+|--------|-------|
+| `appUrl` | Removed. Use `hyperdx.frontendUrl` (defaults to `http://localhost:3000`) |
+| `tasks.*` (top-level) | `hyperdx.tasks.*` |
+| `mongodb.password` | `hyperdx.secrets.MONGODB_PASSWORD` |
+| `clickhouse.config.users.appUserPassword` | `hyperdx.secrets.CLICKHOUSE_APP_PASSWORD` |
+| `clickhouse.config.users.otelUserPassword` | `hyperdx.secrets.CLICKHOUSE_PASSWORD` |
+| `otel.*` env overrides | `hyperdx.config.*` (non-sensitive) and `hyperdx.secrets.*` (sensitive) |
+
+### Unified ConfigMap and Secret
+
+All environment variables now flow through two static-named resources that are shared by the HyperDX Deployment **and** the OTEL Collector via `envFrom`:
+
+- **`clickstack-config`** ConfigMap -- populated from `hyperdx.config`
+- **`clickstack-secret`** Secret -- populated from `hyperdx.secrets`
+
+There is no longer a separate OTEL-specific ConfigMap. Both workloads read from the same sources.
 
 ## MongoDB Migration
 
@@ -44,7 +96,6 @@ MongoDB is now managed by the MCK operator via a `MongoDBCommunity` custom resou
 ```yaml
 mongodb:
   enabled: true
-  password: "hyperdx"          # Used by the password Secret and mongoUri
   spec:                         # Full MongoDBCommunity CRD spec
     members: 1
     type: ReplicaSet
@@ -67,14 +118,13 @@ mongodb:
       storage.wiredTiger.engineConfig.journalCompressor: zlib
 ```
 
-MongoDB now uses **SCRAM authentication** (the previous chart ran without auth). The connection string includes credentials automatically.
+The MongoDB password is set in `hyperdx.secrets.MONGODB_PASSWORD` (not `mongodb.password`). It is referenced automatically by the password Secret and the `mongoUri` template.
 
-To add persistence (previously `mongodb.persistence`), add a `statefulSet` block inside `mongodb.spec`:
+To add persistence, add a `statefulSet` block inside `mongodb.spec`:
 
 ```yaml
 mongodb:
   spec:
-    # ... other fields ...
     statefulSet:
       spec:
         volumeClaimTemplates:
@@ -88,7 +138,7 @@ mongodb:
                   storage: 10Gi
 ```
 
-The MCK operator subchart is configured under `mongodb-kubernetes:`. See the [MCK documentation](https://github.com/mongodb/mongodb-kubernetes/tree/master/docs/mongodbcommunity) for all available CRD fields.
+The MCK operator subchart is configured under `mongodb-operator:` (not `mongodb-kubernetes:`). See the [MCK documentation](https://github.com/mongodb/mongodb-kubernetes/tree/master/docs/mongodbcommunity) for all available CRD fields.
 
 ## ClickHouse Migration
 
@@ -116,6 +166,10 @@ clickhouse:
     logSize: 5Gi
   config:
     clusterCidrs: [...]
+    users:
+      appUserPassword: "..."
+      otelUserPassword: "..."
+      otelUserName: "..."
 ```
 
 ### New values
@@ -125,13 +179,8 @@ ClickHouse is now managed by the ClickHouse Operator via `ClickHouseCluster` and
 ```yaml
 clickhouse:
   enabled: true
-  port: 8123                    # Used for cross-service wiring
+  port: 8123
   nativePort: 9000
-  config:
-    users:                      # Still used by OTEL collector and defaultConnections
-      appUserPassword: "hyperdx"
-      otelUserPassword: "otelcollectorpass"
-      otelUserName: "otelcollector"
   prometheus:
     enabled: true
     port: 9363
@@ -158,16 +207,16 @@ clickhouse:
         extraUsersConfig:
           users:
             app:
-              password: '{{ .Values.clickhouse.config.users.appUserPassword }}'
-              # ...
+              password: '{{ .Values.hyperdx.secrets.CLICKHOUSE_APP_PASSWORD }}'
             otelcollector:
-              password: '{{ .Values.clickhouse.config.users.otelUserPassword }}'
-              # ...
+              password: '{{ .Values.hyperdx.secrets.CLICKHOUSE_PASSWORD }}'
         extraConfig:
           max_connections: 4096
           keep_alive_timeout: 64
           max_concurrent_queries: 100
 ```
+
+ClickHouse user credentials are now sourced from `hyperdx.secrets` (not `clickhouse.config.users`). The cluster spec references them with template expressions.
 
 The ClickHouse Operator subchart is configured under `clickhouse-operator:`. Webhooks and cert-manager are disabled by default. See the [operator configuration guide](https://clickhouse.com/docs/clickhouse-operator/guides/configuration) for all available CRD fields.
 
@@ -175,17 +224,20 @@ The ClickHouse Operator subchart is configured under `clickhouse-operator:`. Web
 
 ### Removed values
 
-The following `otel.*` values no longer exist:
+The entire `otel:` block no longer exists:
 
 ```yaml
 # REMOVED -- do not use
 otel:
+  enabled: true
   image: ...
   replicas: 1
   resources: {}
-  annotations: {}
-  nodeSelector: {}
-  tolerations: []
+  clickhouseEndpoint: ...
+  clickhouseUser: ...
+  clickhousePassword: ...
+  clickhouseDatabase: "default"
+  opampServerUrl: ...
   port: 13133
   nativePort: 24225
   grpcPort: 4317
@@ -193,31 +245,36 @@ otel:
   healthPort: 8888
   env: []
   customConfig: ...
-  livenessProbe: ...
-  readinessProbe: ...
 ```
 
 ### New values
 
-The OTEL Collector is now deployed via the official OpenTelemetry Collector Helm chart. Service discovery env vars (ClickHouse endpoint, OpAMP URL, etc.) are managed by the parent chart via a ConfigMap.
+The OTEL Collector is now deployed via the official OpenTelemetry Collector Helm chart as the `otel-collector:` subchart. There is no parent-chart `otel:` wrapper -- configure the subchart directly.
+
+Environment variables (ClickHouse endpoint, OpAMP URL, etc.) are shared via the unified `clickstack-config` ConfigMap and `clickstack-secret` Secret. The subchart's `extraEnvsFrom` is pre-wired:
 
 ```yaml
-otel:
+otel-collector:
   enabled: true
-  # Override to point at external services:
-  clickhouseEndpoint:          # defaults to chart's ClickHouse service
-  clickhouseUser:              # defaults to clickhouse.config.users.otelUserName
-  clickhousePassword:          # defaults to clickhouse.config.users.otelUserPassword
-  clickhousePrometheusEndpoint:
-  clickhouseDatabase: "default"
-  opampServerUrl:              # defaults to chart's HyperDX app service
-
-otel-collector:                # Official subchart values
   mode: deployment
   image:
     repository: docker.clickhouse.com/clickhouse/clickstack-otel-collector
     tag: ""
-  # ... ports, volumes, command configured by default
+  extraEnvsFrom:
+    - configMapRef:
+        name: clickstack-config
+    - secretRef:
+        name: clickstack-secret
+  ports:
+    otlp:
+      enabled: true
+      containerPort: 4317
+      servicePort: 4317
+    otlp-http:
+      enabled: true
+      containerPort: 4318
+      servicePort: 4318
+    # ... see values.yaml for full port list
 ```
 
 To set resources (previously `otel.resources`):
@@ -260,8 +317,6 @@ See the [OpenTelemetry Collector Helm chart](https://github.com/open-telemetry/o
 The following sections are **not affected** by this migration:
 
 - `global.*` (imageRegistry, imagePullSecrets, storageClassName, keepPVC)
-- `hyperdx.*` (image, ports, probes, ingress, replicas, PDB, service, env, defaultConnections, defaultSources)
-- `tasks.*` (checkAlerts schedule and resources)
 
 ## Fresh Install vs. In-Place Upgrade
 

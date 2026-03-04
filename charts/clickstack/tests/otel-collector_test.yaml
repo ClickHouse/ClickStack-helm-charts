@@ -1,6 +1,6 @@
 suite: Test ClickStack ConfigMap - OTEL Collector Values
 templates:
-  - configmaps/app-configmap.yaml
+  - hyperdx/configmap.yaml
 
 tests:
   - it: should contain CLICKHOUSE_ENDPOINT with default service name

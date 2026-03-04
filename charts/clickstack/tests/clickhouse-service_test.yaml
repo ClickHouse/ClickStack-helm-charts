@@ -1,6 +1,6 @@
 suite: Test ClickHouse Cluster Service Configuration
 templates:
-  - clickhouse-cluster.yaml
+  - clickhouse/cluster.yaml
 
 tests:
   - it: should render ClickHouseCluster CR with default settings

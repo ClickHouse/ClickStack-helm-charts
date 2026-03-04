@@ -1,12 +1,12 @@
 suite: Test ClickHouse Cluster Resources
 templates:
-  - clickhouse-cluster.yaml
-  - clickhouse-keeper.yaml
+  - clickhouse/cluster.yaml
+  - clickhouse/keeper.yaml
 
 tests:
   - it: should render ClickHouseCluster CR when enabled
     templates:
-      - clickhouse-cluster.yaml
+      - clickhouse/cluster.yaml
     asserts:
       - hasDocuments:
           count: 1
@@ -21,7 +21,7 @@ tests:
 
   - it: should render KeeperCluster CR when enabled
     templates:
-      - clickhouse-keeper.yaml
+      - clickhouse/keeper.yaml
     asserts:
       - hasDocuments:
           count: 1
@@ -39,7 +39,7 @@ tests:
       clickhouse:
         enabled: false
     templates:
-      - clickhouse-cluster.yaml
+      - clickhouse/cluster.yaml
     asserts:
       - hasDocuments:
           count: 0
@@ -49,14 +49,14 @@ tests:
       clickhouse:
         enabled: false
     templates:
-      - clickhouse-keeper.yaml
+      - clickhouse/keeper.yaml
     asserts:
       - hasDocuments:
           count: 0
 
   - it: should pass cluster spec through from values
     templates:
-      - clickhouse-cluster.yaml
+      - clickhouse/cluster.yaml
     asserts:
       - equal:
           path: spec.replicas
@@ -70,7 +70,7 @@ tests:
 
   - it: should resolve keeperClusterRef template expression
     templates:
-      - clickhouse-cluster.yaml
+      - clickhouse/cluster.yaml
     asserts:
       - matchRegex:
           path: spec.keeperClusterRef.name
@@ -78,7 +78,7 @@ tests:
 
   - it: should pass keeper spec through from values
     templates:
-      - clickhouse-keeper.yaml
+      - clickhouse/keeper.yaml
     asserts:
       - equal:
           path: spec.replicas
@@ -89,7 +89,7 @@ tests:
 
   - it: should allow overriding cluster spec
     templates:
-      - clickhouse-cluster.yaml
+      - clickhouse/cluster.yaml
     set:
       clickhouse:
         cluster:
@@ -120,7 +120,7 @@ tests:
 
   - it: should allow overriding keeper spec
     templates:
-      - clickhouse-keeper.yaml
+      - clickhouse/keeper.yaml
     set:
       clickhouse:
         keeper:
@@ -146,7 +146,7 @@ tests:
 
   - it: should include extraUsersConfig in cluster spec
     templates:
-      - clickhouse-cluster.yaml
+      - clickhouse/cluster.yaml
     asserts:
       - isNotNull:
           path: spec.settings.extraUsersConfig.users.app

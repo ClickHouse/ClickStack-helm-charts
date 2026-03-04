@@ -1,6 +1,6 @@
 suite: Test OTEL Exporter Endpoint Configuration
 templates:
-  - configmaps/app-configmap.yaml
+  - hyperdx/configmap.yaml
 tests:
   - it: should use otel-collector subchart service name for otelExporterEndpoint by default
     asserts:

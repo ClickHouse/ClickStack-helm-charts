@@ -1,6 +1,6 @@
 suite: Test HyperDX Advanced Settings
 templates:
-  - hyperdx-deployment.yaml
+  - hyperdx/deployment.yaml
 tests:
   - it: should handle complex environment variables
     set:

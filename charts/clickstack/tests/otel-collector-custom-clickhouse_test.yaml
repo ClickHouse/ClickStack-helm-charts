@@ -1,6 +1,6 @@
 suite: Test ClickStack ConfigMap - ClickHouse Endpoint
 templates:
-  - configmaps/app-configmap.yaml
+  - hyperdx/configmap.yaml
 
 tests:
   - it: should use default ClickHouse endpoint

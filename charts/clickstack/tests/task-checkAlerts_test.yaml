@@ -1,6 +1,6 @@
 suite: Test Check Alerts CronJob
 templates:
-  - cronjobs/task-checkAlerts.yaml
+  - hyperdx/cronjob-check-alerts.yaml
 tests:
   - it: should not render when tasks are disabled
     set:

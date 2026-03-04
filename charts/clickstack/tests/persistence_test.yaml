@@ -1,6 +1,6 @@
 suite: Test Persistence Settings
 templates:
-  - mongodb-community.yaml
+  - mongodb/community.yaml
 
 tests:
   - it: should pass statefulSet volumeClaimTemplates through from spec

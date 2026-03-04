@@ -1,6 +1,6 @@
 suite: Test Ingress
 templates:
-  - ingress.yaml
+  - hyperdx/ingress.yaml
 
 # Common documentSelector patterns using YAML anchors
 _selectors:

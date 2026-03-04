@@ -1,6 +1,6 @@
 suite: Test ClickStack ConfigMap Rendering
 templates:
-  - configmaps/app-configmap.yaml
+  - hyperdx/configmap.yaml
 
 tests:
   - it: should render ConfigMap with all expected keys

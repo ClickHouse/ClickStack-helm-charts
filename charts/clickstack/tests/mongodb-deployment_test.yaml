@@ -1,12 +1,12 @@
 suite: Test MongoDB Community Resources
 templates:
-  - mongodb-community.yaml
-  - mongodb-password-secret.yaml
+  - mongodb/community.yaml
+  - mongodb/password-secret.yaml
 
 tests:
   - it: should render MongoDBCommunity CR when enabled
     templates:
-      - mongodb-community.yaml
+      - mongodb/community.yaml
     asserts:
       - hasDocuments:
           count: 1
@@ -21,7 +21,7 @@ tests:
 
   - it: should pass spec through from values
     templates:
-      - mongodb-community.yaml
+      - mongodb/community.yaml
     asserts:
       - equal:
           path: spec.members
@@ -44,7 +44,7 @@ tests:
 
   - it: should resolve template expressions in spec
     templates:
-      - mongodb-community.yaml
+      - mongodb/community.yaml
     asserts:
       - matchRegex:
           path: spec.users[0].passwordSecretRef.name
@@ -55,7 +55,7 @@ tests:
 
   - it: should allow overriding spec values
     templates:
-      - mongodb-community.yaml
+      - mongodb/community.yaml
     set:
       mongodb:
         spec:
@@ -87,7 +87,7 @@ tests:
 
   - it: should not render CR when disabled
     templates:
-      - mongodb-community.yaml
+      - mongodb/community.yaml
     set:
       mongodb:
         enabled: false
@@ -97,7 +97,7 @@ tests:
 
   - it: should render password Secret when enabled
     templates:
-      - mongodb-password-secret.yaml
+      - mongodb/password-secret.yaml
     asserts:
       - hasDocuments:
           count: 1
@@ -112,7 +112,7 @@ tests:
 
   - it: should use custom password in Secret
     templates:
-      - mongodb-password-secret.yaml
+      - mongodb/password-secret.yaml
     set:
       hyperdx:
         secrets:
@@ -124,7 +124,7 @@ tests:
 
   - it: should not render Secret when disabled
     templates:
-      - mongodb-password-secret.yaml
+      - mongodb/password-secret.yaml
     set:
       mongodb:
         enabled: false

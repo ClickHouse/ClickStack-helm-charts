@@ -1,6 +1,6 @@
 suite: Test HyperDX Service
 templates:
-  - hyperdx-service.yaml
+  - hyperdx/service.yaml
 tests:
   - it: should render service correctly with default values
     asserts:

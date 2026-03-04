@@ -1,6 +1,6 @@
 suite: Test HyperDX App PodDisruptionBudget
 templates:
-  - hyperdx-pdb.yaml
+  - hyperdx/pdb.yaml
 tests:
   - it: should render the app pdb when enabled
     set:

@@ -1,6 +1,6 @@
 suite: Test nodeSelector and tolerations
 templates:
-  - hyperdx-deployment.yaml
+  - hyperdx/deployment.yaml
 
 _selectors:
   deployment: &deployment-selector
@@ -9,7 +9,7 @@ _selectors:
 tests:
   - it: should not include nodeSelector and tolerations when not configured
     templates:
-      - hyperdx-deployment.yaml
+      - hyperdx/deployment.yaml
     asserts:
       - isNull:
           path: spec.template.spec.nodeSelector
@@ -24,7 +24,7 @@ tests:
             disktype: ssd
             node-role: hyperdx-app
     templates:
-      - hyperdx-deployment.yaml
+      - hyperdx/deployment.yaml
     asserts:
       - documentSelector: *deployment-selector
         equal:
@@ -47,7 +47,7 @@ tests:
               value: hyperdx
               effect: NoExecute
     templates:
-      - hyperdx-deployment.yaml
+      - hyperdx/deployment.yaml
     asserts:
       - equal:
           path: spec.template.spec.tolerations
@@ -73,7 +73,7 @@ tests:
               value: api
               effect: NoSchedule
     templates:
-      - hyperdx-deployment.yaml
+      - hyperdx/deployment.yaml
     asserts:
       - documentSelector: *deployment-selector
         equal:
@@ -102,7 +102,7 @@ tests:
           nodeSelector:
             component: api
     templates:
-      - hyperdx-deployment.yaml
+      - hyperdx/deployment.yaml
     asserts:
       - hasDocuments:
           count: 1

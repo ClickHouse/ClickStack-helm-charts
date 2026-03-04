@@ -1,6 +1,6 @@
 suite: Test ClickStack ConfigMap
 templates:
-  - configmaps/app-configmap.yaml
+  - hyperdx/configmap.yaml
 tests:
   - it: should render clickstack-config ConfigMap with default values
     asserts:
