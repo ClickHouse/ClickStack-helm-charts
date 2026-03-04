@@ -69,6 +69,7 @@ hyperdx:
   secrets:
     HYPERDX_API_KEY: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
     CLICKHOUSE_PASSWORD: "otelcollectorpass"
+    CLICKHOUSE_APP_PASSWORD: "hyperdx"
     MONGODB_PASSWORD: "hyperdx"
 
   # deprecated: use frontendUrl instead
@@ -116,7 +117,7 @@ hyperdx:
         "host": "http://{{ include "clickstack.clickhouse.svc" . }}:8123",
         "port": 8123,
         "username": "app",
-        "password": "{{ .Values.clickhouse.config.users.appUserPassword }}"
+        "password": "{{ .Values.hyperdx.secrets.CLICKHOUSE_APP_PASSWORD }}"
       }
     ]
 
@@ -308,15 +309,9 @@ mongodb-operator:
 
 clickhouse:
   enabled: true
-  # Ports used for cross-service wiring (OTEL collector, defaultConnections)
+  # Ports used for cross-service wiring (defaultConnections)
   port: 8123
   nativePort: 9000
-  # User credentials referenced by OTEL collector env and defaultConnections
-  config:
-    users:
-      appUserPassword: "hyperdx"
-      otelUserPassword: "otelcollectorpass"
-      otelUserName: "otelcollector"
   prometheus:
     enabled: true
     port: 9363
@@ -349,14 +344,14 @@ clickhouse:
         extraUsersConfig:
           users:
             app:
-              password: '{{ .Values.clickhouse.config.users.appUserPassword }}'
+              password: '{{ .Values.hyperdx.secrets.CLICKHOUSE_APP_PASSWORD }}'
               profile: readonly
               grants:
                 - query: "GRANT SHOW ON *.*"
                 - query: "GRANT SELECT ON system.*"
                 - query: "GRANT SELECT ON default.*"
             otelcollector:
-              password: '{{ .Values.clickhouse.config.users.otelUserPassword }}'
+              password: '{{ .Values.hyperdx.secrets.CLICKHOUSE_PASSWORD }}'
               profile: default
               grants:
                 - query: "GRANT SELECT,INSERT,CREATE,SHOW ON default.*"
