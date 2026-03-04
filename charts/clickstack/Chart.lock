@@ -8,5 +8,5 @@ dependencies:
 - name: clickhouse-operator-helm
   repository: oci://ghcr.io/clickhouse
   version: 0.0.2
-digest: sha256:9bdcab295e223f9756e147713ecaae7e88d9084f8ef7118cb3a2cc01aefde5dd
-generated: "2026-03-03T13:35:47.406511-06:00"
+digest: sha256:781590ba6477a7258307d3e841b682cbffb2803adf419613bbc2a5bd4a252fb9
+generated: "2026-03-04T10:57:22.264908-06:00"

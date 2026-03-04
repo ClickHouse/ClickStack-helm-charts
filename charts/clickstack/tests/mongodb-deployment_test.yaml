@@ -114,8 +114,9 @@ tests:
     templates:
       - mongodb-password-secret.yaml
     set:
-      mongodb:
-        password: "s3cret!"
+      hyperdx:
+        secrets:
+          MONGODB_PASSWORD: "s3cret!"
     asserts:
       - equal:
           path: stringData.password

@@ -69,6 +69,7 @@ hyperdx:
   secrets:
     HYPERDX_API_KEY: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
     CLICKHOUSE_PASSWORD: "otelcollectorpass"
+    MONGODB_PASSWORD: "hyperdx"
 
   # deprecated: use frontendUrl instead
   appUrl: "http://localhost"
@@ -77,7 +78,7 @@ hyperdx:
   frontendUrl: "{{ .Values.hyperdx.appUrl }}:{{ .Values.hyperdx.appPort }}"
   # Endpoint to send hyperdx logs/traces/metrics to. Defaults to the chart's otel collector endpoint.
   otelExporterEndpoint: http://{{ include "clickstack.otel.fullname" . }}:4318
-  mongoUri: mongodb://hyperdx:{{ .Values.mongodb.password }}@{{ include "clickstack.mongodb.svc" . }}:27017/hyperdx?authSource=hyperdx
+  mongoUri: mongodb://hyperdx:{{ .Values.hyperdx.secrets.MONGODB_PASSWORD }}@{{ include "clickstack.mongodb.svc" . }}:27017/hyperdx?authSource=hyperdx
 
   # Pod-level annotations (applied to the deployment pods)
   annotations:
@@ -274,8 +275,6 @@ hyperdx:
 
 mongodb:
   enabled: true
-  # Password for the MongoDB user. Referenced by the password Secret and mongoUri.
-  password: "hyperdx"
   # Full MongoDBCommunity CRD spec -- rendered verbatim into the CR.
   # See https://github.com/mongodb/mongodb-kubernetes/tree/master/docs/mongodbcommunity
   # for all available fields. Add persistence, nodeSelector, tolerations, etc. here.
@@ -300,9 +299,9 @@ mongodb:
     additionalMongodConfig:
       storage.wiredTiger.engineConfig.journalCompressor: zlib
 
-# MongoDB Kubernetes Operator (MCK) subchart configuration
+# MongoDB Kubernetes Operator (MCK) subchart configuration (alias: mongodb-operator)
 # See https://github.com/mongodb/mongodb-kubernetes for all options
-mongodb-kubernetes:
+mongodb-operator:
   operator:
     watchedResources:
       - mongodbcommunity
