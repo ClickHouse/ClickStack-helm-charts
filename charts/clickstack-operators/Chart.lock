@@ -1,0 +1,9 @@
+dependencies:
+- name: mongodb-kubernetes
+  repository: https://mongodb.github.io/helm-charts
+  version: 1.7.0
+- name: clickhouse-operator-helm
+  repository: oci://ghcr.io/clickhouse
+  version: 0.0.2
+digest: sha256:1daf572004da83b1836c8867f11198530652fee6905d4786a2d5eef87bc611cd
+generated: "2026-03-04T16:52:51.068188-06:00"

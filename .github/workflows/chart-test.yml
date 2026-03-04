@@ -65,6 +65,7 @@ jobs:
         run: |
           helm repo add mongodb https://mongodb.github.io/helm-charts
           helm repo add open-telemetry https://open-telemetry.github.io/opentelemetry-helm-charts
+          helm dependency build charts/clickstack-operators
           helm dependency build charts/clickstack
 
       - name: Run Helm unit tests
@@ -72,7 +73,17 @@ jobs:
           helm plugin install https://github.com/helm-unittest/helm-unittest.git --version v1.0.3 ${{ runner.debug && '--debug' || ''}} || true
           helm unittest charts/clickstack
 
-      - name: Deploy ClickStack chart
+      - name: Install operators (Phase 1)
+        run: |
+          helm install clickstack-operators ./charts/clickstack-operators --timeout=5m
+
+      - name: Wait for CRDs
+        run: |
+          kubectl wait --for=condition=Established crds --all --timeout=60s
+          echo "CRDs registered:"
+          kubectl get crds | grep -E "clickhouse|mongodb" || true
+
+      - name: Deploy ClickStack chart (Phase 2)
         run: |
           # Create test values for faster deployment
           cat > test-values.yaml << EOF

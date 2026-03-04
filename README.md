@@ -6,6 +6,11 @@
 ```bash
 helm repo add clickstack https://clickhouse.github.io/ClickStack-helm-charts
 helm repo update
+
+# Step 1: Install operators and CRDs
+helm install clickstack-operators clickstack/clickstack-operators
+
+# Step 2: Install ClickStack (after operators are ready)
 helm install my-clickstack clickstack/clickstack
 ```
 
@@ -13,19 +18,31 @@ For configuration, cloud deployment, ingress setup, and troubleshooting, see the
 
 ## Charts
 
-- **`clickstack/clickstack`** (v1.0.0+) - Recommended for all deployments
+- **`clickstack/clickstack-operators`** - Installs the MongoDB and ClickHouse operator controllers and CRDs. Must be installed first.
+- **`clickstack/clickstack`** - Installs HyperDX, OpenTelemetry Collector, and operator custom resources.
 
-## Subchart Dependencies
+## Operator Dependencies
 
-The ClickStack chart uses the following third-party operator charts as subchart dependencies:
+The `clickstack-operators` chart bundles:
 
-- **[MongoDB Kubernetes Operator (MCK)](https://github.com/mongodb/mongodb-kubernetes)** - Manages MongoDB Community replica sets via a `MongoDBCommunity` custom resource. See the [MCK community docs](https://github.com/mongodb/mongodb-kubernetes/tree/master/docs/mongodbcommunity) for advanced configuration.
-- **[OpenTelemetry Collector](https://github.com/open-telemetry/opentelemetry-helm-charts)** - Deploys the ClickStack OTEL collector image via the official OpenTelemetry Collector Helm chart. Environment variables are shared via the unified clickstack-config ConfigMap and clickstack-secret Secret.
-- **[ClickHouse Operator](https://clickhouse.com/docs/clickhouse-operator/overview)** - Manages ClickHouse and Keeper clusters via `ClickHouseCluster` and `KeeperCluster` custom resources. See the [operator configuration guide](https://clickhouse.com/docs/clickhouse-operator/guides/configuration) for advanced settings.
+- **[MongoDB Kubernetes Operator (MCK)](https://github.com/mongodb/mongodb-kubernetes)** - Manages MongoDB Community replica sets via a `MongoDBCommunity` custom resource.
+- **[ClickHouse Operator](https://clickhouse.com/docs/clickhouse-operator/overview)** - Manages ClickHouse and Keeper clusters via `ClickHouseCluster` and `KeeperCluster` custom resources.
+
+The `clickstack` chart includes:
+
+- **[OpenTelemetry Collector](https://github.com/open-telemetry/opentelemetry-helm-charts)** - Deploys the ClickStack OTEL collector image via the official OpenTelemetry Collector Helm chart.
+
+## Uninstalling
+
+Uninstall in reverse order:
+```bash
+helm uninstall my-clickstack            # Remove app + CRs first
+helm uninstall clickstack-operators     # Remove operators + CRDs
+```
 
 ## Upgrading
 
-If you are upgrading from the inline-template chart (v1.x), see the [Upgrade Guide](docs/UPGRADE.md) for migration instructions. This is a breaking change that replaces hand-rolled resources with operator-managed custom resources.
+If you are upgrading from the inline-template chart (v1.x), see the [Upgrade Guide](docs/UPGRADE.md) for migration instructions.
 
 ## Support
 

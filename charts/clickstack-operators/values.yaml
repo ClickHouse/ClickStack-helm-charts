@@ -1,0 +1,16 @@
+# MongoDB Kubernetes Operator (MCK) subchart configuration
+# See https://github.com/mongodb/mongodb-kubernetes for all options
+mongodb-operator:
+  operator:
+    watchedResources:
+      - mongodbcommunity
+
+# ClickHouse Operator subchart configuration
+# See https://clickhouse.com/docs/clickhouse-operator/overview for all options
+clickhouse-operator:
+  webhook:
+    enable: false
+  certManager:
+    enable: false
+  crd:
+    enable: true

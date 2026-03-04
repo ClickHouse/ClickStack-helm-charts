@@ -1,12 +1,6 @@
 dependencies:
-- name: mongodb-kubernetes
-  repository: https://mongodb.github.io/helm-charts
-  version: 1.7.0
 - name: opentelemetry-collector
   repository: https://open-telemetry.github.io/opentelemetry-helm-charts
   version: 0.146.1
-- name: clickhouse-operator-helm
-  repository: oci://ghcr.io/clickhouse
-  version: 0.0.2
-digest: sha256:781590ba6477a7258307d3e841b682cbffb2803adf419613bbc2a5bd4a252fb9
-generated: "2026-03-04T10:57:22.264908-06:00"
+digest: sha256:770e601e7885fb74cf4bf92d71615469b02cba5eb02edd2766e1f629a457ab8e
+generated: "2026-03-04T16:52:49.772291-06:00"

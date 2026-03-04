@@ -18,18 +18,8 @@ type: application
 version: 1.1.2
 appVersion: 2.19.0
 dependencies:
-  - name: mongodb-kubernetes
-    version: "~1.7.0"
-    repository: https://mongodb.github.io/helm-charts
-    condition: mongodb.enabled
-    alias: mongodb-operator
   - name: opentelemetry-collector
     version: "~0.146.0"
     repository: https://open-telemetry.github.io/opentelemetry-helm-charts
     alias: otel-collector
     condition: otel-collector.enabled
-  - name: clickhouse-operator-helm
-    version: "~0.0.2"
-    repository: oci://ghcr.io/clickhouse
-    condition: clickhouse.enabled
-    alias: clickhouse-operator

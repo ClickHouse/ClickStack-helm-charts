@@ -260,13 +260,6 @@ mongodb:
     additionalMongodConfig:
       storage.wiredTiger.engineConfig.journalCompressor: zlib
 
-# MongoDB Kubernetes Operator (MCK) subchart configuration (alias: mongodb-operator)
-# See https://github.com/mongodb/mongodb-kubernetes for all options
-mongodb-operator:
-  operator:
-    watchedResources:
-      - mongodbcommunity
-
 clickhouse:
   enabled: true
   # Ports used for cross-service wiring (defaultConnections)
@@ -319,16 +312,6 @@ clickhouse:
           max_connections: 4096
           keep_alive_timeout: 64
           max_concurrent_queries: 100
-
-# ClickHouse Operator subchart configuration
-# See https://clickhouse.com/docs/clickhouse-operator/overview for all options
-clickhouse-operator:
-  webhook:
-    enable: false
-  certManager:
-    enable: false
-  crd:
-    enable: true
 
 # OpenTelemetry Collector subchart configuration (alias: otel-collector)
 # See https://github.com/open-telemetry/opentelemetry-helm-charts for all options

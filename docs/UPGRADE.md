@@ -7,6 +7,25 @@ This guide covers migrating from the inline-template ClickStack chart (v1.x) to 
 - Back up your data before upgrading (MongoDB, ClickHouse PVCs)
 - Review your current `values.yaml` overrides -- most keys have moved or been renamed
 
+## Two-Phase Installation
+
+The chart now uses a two-phase install. Operators (which register CRDs) must be installed before the main chart (which creates CRs):
+
+```bash
+# Phase 1: Install operators and CRDs
+helm install clickstack-operators clickstack/clickstack-operators
+
+# Phase 2: Install ClickStack
+helm install my-clickstack clickstack/clickstack
+```
+
+Uninstall in reverse order:
+
+```bash
+helm uninstall my-clickstack
+helm uninstall clickstack-operators
+```
+
 ## What Changed
 
 | Component | Before (v1.x) | After |
