@@ -84,8 +84,8 @@ ClickHouse Keeper CR name
 {{- end }}
 
 {{/*
-ClickHouse service name. The operator appends "-clickhouse" to the CR name for the shard service.
+ClickHouse headless service name. The operator creates a headless service named {CR}-clickhouse-headless.
 */}}
 {{- define "clickstack.clickhouse.svc" -}}
-{{- printf "%s-clickhouse" (include "clickstack.clickhouse.fullname" .) -}}
+{{- printf "%s-clickhouse-headless" (include "clickstack.clickhouse.fullname" .) -}}
 {{- end }}

@@ -12,7 +12,7 @@ tests:
     asserts:
       - matchRegex:
           path: data.CLICKHOUSE_ENDPOINT
-          pattern: "tcp://test-release-clickstack-clickhouse-clickhouse:9000"
+          pattern: "tcp://test-release-clickstack-clickhouse-clickhouse-headless:9000"
 
   - it: should contain CLICKHOUSE_SERVER_ENDPOINT
     set:
@@ -23,7 +23,7 @@ tests:
     asserts:
       - matchRegex:
           path: data.CLICKHOUSE_SERVER_ENDPOINT
-          pattern: "test-release-clickstack-clickhouse-clickhouse:9000"
+          pattern: "test-release-clickstack-clickhouse-clickhouse-headless:9000"
 
   - it: should contain OPAMP_SERVER_URL with default service name
     set:
@@ -57,4 +57,4 @@ tests:
     asserts:
       - matchRegex:
           path: data.CLICKHOUSE_PROMETHEUS_METRICS_ENDPOINT
-          pattern: "test-release-clickstack-clickhouse-clickhouse:9363"
+          pattern: "test-release-clickstack-clickhouse-clickhouse-headless:9363"

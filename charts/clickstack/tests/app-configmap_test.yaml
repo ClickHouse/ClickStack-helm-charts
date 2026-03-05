@@ -23,7 +23,7 @@ tests:
           pattern: mongodb://hyperdx:.*@.*-mongodb-svc:27017/hyperdx
       - matchRegex:
           path: data.CLICKHOUSE_ENDPOINT
-          pattern: "tcp://.*-clickhouse-clickhouse:9000"
+          pattern: "tcp://.*-clickhouse-clickhouse-headless:9000"
       - matchRegex:
           path: data.OPAMP_SERVER_URL
           pattern: "http://.*-app:4320"
