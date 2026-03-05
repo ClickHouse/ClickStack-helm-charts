@@ -15,14 +15,10 @@ hyperdx:
     app: 3000
     opamp: 4320
 
-  # The URL used to access the frontend. Update this when using ingress.
-  frontendUrl: "http://localhost:3000"
-  # Endpoint to send hyperdx logs/traces/metrics to. Defaults to the chart's otel collector endpoint.
-  otelExporterEndpoint: http://{{ include "clickstack.otel.fullname" . }}:4318
-  mongoUri: mongodb://hyperdx:{{ .Values.hyperdx.secrets.MONGODB_PASSWORD }}@{{ include "clickstack.mongodb.svc" . }}:27017/hyperdx?authSource=hyperdx
-
   # ── K8s ConfigMap (clickstack-config) ────────────────────
   # Shared non-sensitive environment variables. Used by HyperDX and OTEL collector via envFrom.
+  # All values support Helm template expressions (rendered via tpl).
+  # Override any entry with a plain string to point at an external service.
   config:
     APP_PORT: "3000"
     API_PORT: "8000"
@@ -35,6 +31,14 @@ hyperdx:
     HYPERDX_OTEL_EXPORTER_CLICKHOUSE_DATABASE: "default"
     CLICKHOUSE_USER: "otelcollector"
     RUN_SCHEDULED_TASKS_EXTERNALLY: "false"
+    # Service endpoint defaults -- override to use external instances
+    FRONTEND_URL: "http://localhost:3000"
+    MONGO_URI: 'mongodb://hyperdx:{{ .Values.hyperdx.secrets.MONGODB_PASSWORD }}@{{ include "clickstack.mongodb.svc" . }}:27017/hyperdx?authSource=hyperdx'
+    OTEL_EXPORTER_OTLP_ENDPOINT: 'http://{{ include "clickstack.otel.fullname" . }}:4318'
+    CLICKHOUSE_ENDPOINT: 'tcp://{{ include "clickstack.clickhouse.svc" . }}:{{ .Values.clickhouse.nativePort }}?dial_timeout=10s'
+    CLICKHOUSE_SERVER_ENDPOINT: '{{ include "clickstack.clickhouse.svc" . }}:{{ .Values.clickhouse.nativePort }}'
+    CLICKHOUSE_PROMETHEUS_METRICS_ENDPOINT: '{{ include "clickstack.clickhouse.svc" . }}:{{ .Values.clickhouse.prometheus.port }}'
+    OPAMP_SERVER_URL: 'http://{{ include "clickstack.fullname" . }}-app:{{ .Values.hyperdx.ports.opamp }}'
 
   # ── K8s Secret (clickstack-secret) ───────────────────────
   # Shared sensitive environment variables. Used by HyperDX and OTEL collector via envFrom.

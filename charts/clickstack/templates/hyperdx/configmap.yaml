@@ -8,12 +8,3 @@ data:
   {{- range $k, $v := .Values.hyperdx.config }}
   {{ $k }}: {{ tpl (toString $v) $ | quote }}
   {{- end }}
-  MONGO_URI: {{ tpl .Values.hyperdx.mongoUri . | quote }}
-  OTEL_EXPORTER_OTLP_ENDPOINT: {{ tpl .Values.hyperdx.otelExporterEndpoint . | quote }}
-  FRONTEND_URL: {{ tpl .Values.hyperdx.frontendUrl . | quote }}
-  CLICKHOUSE_ENDPOINT: {{ printf "tcp://%s:%v?dial_timeout=10s" (include "clickstack.clickhouse.svc" .) .Values.clickhouse.nativePort | quote }}
-  CLICKHOUSE_SERVER_ENDPOINT: {{ printf "%s:%v" (include "clickstack.clickhouse.svc" .) .Values.clickhouse.nativePort | quote }}
-  {{- if .Values.clickhouse.prometheus.enabled }}
-  CLICKHOUSE_PROMETHEUS_METRICS_ENDPOINT: {{ printf "%s:%v" (include "clickstack.clickhouse.svc" .) .Values.clickhouse.prometheus.port | quote }}
-  {{- end }}
-  OPAMP_SERVER_URL: {{ printf "http://%s-app:%v" (include "clickstack.fullname" .) .Values.hyperdx.ports.opamp | quote }}

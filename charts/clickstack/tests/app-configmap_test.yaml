@@ -23,7 +23,7 @@ tests:
           pattern: mongodb://hyperdx:.*@.*-mongodb-svc:27017/hyperdx
       - matchRegex:
           path: data.CLICKHOUSE_ENDPOINT
-          pattern: "tcp://.*-clickhouse:9000"
+          pattern: "tcp://.*-clickhouse-clickhouse:9000"
       - matchRegex:
           path: data.OPAMP_SERVER_URL
           pattern: "http://.*-app:4320"
@@ -42,10 +42,11 @@ tests:
           path: data.CUSTOM_VAR
           value: "custom-value"
 
-  - it: should render FRONTEND_URL from template
+  - it: should render FRONTEND_URL from config override
     set:
       hyperdx:
-        frontendUrl: "https://my-domain.com"
+        config:
+          FRONTEND_URL: "https://my-domain.com"
     asserts:
       - equal:
           path: data.FRONTEND_URL

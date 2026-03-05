@@ -9,7 +9,7 @@ tests:
           of: ConfigMap
       - matchRegex:
           path: data.CLICKHOUSE_ENDPOINT
-          pattern: "tcp://.*-clickhouse:[0-9]+\\?dial_timeout=10s"
+          pattern: "tcp://.*-clickhouse-clickhouse:[0-9]+\\?dial_timeout=10s"
 
   - it: should render ClickHouse endpoint with correct port
     set:
@@ -20,4 +20,4 @@ tests:
     asserts:
       - matchRegex:
           path: data.CLICKHOUSE_ENDPOINT
-          pattern: "tcp://test-release-clickstack-clickhouse:9001"
+          pattern: "tcp://test-release-clickstack-clickhouse-clickhouse:9001"

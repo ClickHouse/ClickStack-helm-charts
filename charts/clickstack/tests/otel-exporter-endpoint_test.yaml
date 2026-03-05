@@ -8,19 +8,21 @@ tests:
           path: data.OTEL_EXPORTER_OTLP_ENDPOINT
           value: "http://RELEASE-NAME-otel-collector:4318"
 
-  - it: should use custom otelExporterEndpoint when explicitly set
+  - it: should use custom OTEL_EXPORTER_OTLP_ENDPOINT when explicitly set in config
     set:
       hyperdx:
-        otelExporterEndpoint: "http://custom-otel-collector:4318"
+        config:
+          OTEL_EXPORTER_OTLP_ENDPOINT: "http://custom-otel-collector:4318"
     asserts:
       - equal:
           path: data.OTEL_EXPORTER_OTLP_ENDPOINT
           value: "http://custom-otel-collector:4318"
 
-  - it: should set empty string when otelExporterEndpoint is empty
+  - it: should set empty string when OTEL_EXPORTER_OTLP_ENDPOINT is empty in config
     set:
       hyperdx:
-        otelExporterEndpoint: ""
+        config:
+          OTEL_EXPORTER_OTLP_ENDPOINT: ""
     asserts:
       - equal:
           path: data.OTEL_EXPORTER_OTLP_ENDPOINT
