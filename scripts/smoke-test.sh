@@ -84,21 +84,49 @@ check_endpoint "http://localhost:8888/metrics" "200" "OTEL Metrics endpoint"
 kill $metrics_pf_pid 2>/dev/null || true
 sleep 2
 
+# Port 4318 (OTLP HTTP) isn't bound until the OpAMP supervisor fetches its
+# pipeline config from the HyperDX app.  kubectl port-forward dies when the
+# target port is unreachable inside the pod, so curl --retry alone can't
+# help.  We re-establish the tunnel on every attempt instead.
+send_otlp() {
+    local path=$1
+    local payload=$2
+    local max_attempts=15
+    local delay=10
+
+    for i in $(seq 1 $max_attempts); do
+        kubectl port-forward service/$RELEASE_NAME-otel-collector 4318:4318 -n $NAMESPACE >/dev/null 2>&1 &
+        local pf_pid=$!
+        sleep 3
+
+        local code
+        code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 \
+          -X POST "http://localhost:4318${path}" \
+          -H "Content-Type: application/json" \
+          -d "$payload" 2>/dev/null) || code="000"
+
+        kill $pf_pid 2>/dev/null || true
+        wait $pf_pid 2>/dev/null || true
+
+        if [ "$code" = "200" ] || [ "$code" = "202" ]; then
+            echo "$code"
+            return 0
+        fi
+
+        echo "  Attempt $i/$max_attempts returned $code, retrying in ${delay}s..." >&2
+        sleep $delay
+    done
+
+    echo "000"
+    return 1
+}
+
 # Test data ingestion
 echo "Testing data ingestion..."
-kubectl port-forward service/$RELEASE_NAME-otel-collector 4318:4318 -n $NAMESPACE &
-pf_pid=$!
-sleep 10
 
-# Send test log (retries handle the OpAMP supervisor startup delay --
-# the OTLP HTTP receiver on 4318 isn't listening until the supervisor
-# receives its pipeline config from the HyperDX app)
 echo "Sending test log..."
 timestamp=$(date +%s)
-log_response=$(curl --retry 12 --retry-delay 10 --retry-all-errors \
-  -X POST http://localhost:4318/v1/logs \
-  -H "Content-Type: application/json" \
-  -d '{
+log_response=$(send_otlp "/v1/logs" '{
     "resourceLogs": [{
       "resource": {
         "attributes": [
@@ -115,22 +143,18 @@ log_response=$(curl --retry 12 --retry-delay 10 --retry-all-errors \
         }]
       }]
     }]
-  }' -w "%{http_code}" -s -o /dev/null)
+  }') || true
 
 if [ "$log_response" = "200" ] || [ "$log_response" = "202" ]; then
     echo "Log sent successfully (status: $log_response)"
 else
-    echo "WARNING: Log send failed with status: $log_response"
+    echo "WARNING: Log send failed with status: $log_response (OpAMP config may still be propagating)"
 fi
 
-# Send test trace  
 echo "Sending test trace..."
 trace_id=$(openssl rand -hex 16)
 span_id=$(openssl rand -hex 8)
-trace_response=$(curl --retry 12 --retry-delay 10 --retry-all-errors \
-  -X POST http://localhost:4318/v1/traces \
-  -H "Content-Type: application/json" \
-  -d '{
+trace_response=$(send_otlp "/v1/traces" '{
     "resourceSpans": [{
       "resource": {
         "attributes": [
@@ -141,7 +165,7 @@ trace_response=$(curl --retry 12 --retry-delay 10 --retry-all-errors \
         "scope": {"name": "test-tracer"},
         "spans": [{
           "traceId": "'$trace_id'",
-          "spanId": "'$span_id'", 
+          "spanId": "'$span_id'",
           "name": "test-operation",
           "kind": 1,
           "startTimeUnixNano": "'${timestamp}'000000000",
@@ -149,15 +173,13 @@ trace_response=$(curl --retry 12 --retry-delay 10 --retry-all-errors \
         }]
       }]
     }]
-  }' -w "%{http_code}" -s -o /dev/null)
+  }') || true
 
 if [ "$trace_response" = "200" ] || [ "$trace_response" = "202" ]; then
     echo "Trace sent successfully (status: $trace_response)"
 else
-    echo "WARNING: Trace send failed with status: $trace_response"
+    echo "WARNING: Trace send failed with status: $trace_response (OpAMP config may still be propagating)"
 fi
-
-kill $pf_pid 2>/dev/null || true
 
 # Test databases
 echo "Testing ClickHouse..."
