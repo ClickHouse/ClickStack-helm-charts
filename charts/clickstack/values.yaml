@@ -299,7 +299,7 @@ clickhouse:
           users:
             app:
               password: '{{ .Values.hyperdx.secrets.CLICKHOUSE_APP_PASSWORD }}'
-              profile: readonly
+              profile: default
               grants:
                 - query: "GRANT SHOW ON *.*"
                 - query: "GRANT SELECT ON system.*"
