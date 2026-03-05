@@ -88,7 +88,6 @@ jobs:
           # Create test values for faster deployment
           cat > test-values.yaml << EOF
           hyperdx:
-            frontendUrl: "http://localhost:3000"
             secrets:
               HYPERDX_API_KEY: "test-api-key-for-ci"
             deployment:
@@ -100,7 +99,15 @@ jobs:
           # Install the chart
           helm install hyperdx-test ./charts/clickstack -f test-values.yaml --timeout=10m
 
-          # Give services time to initialize after pods are running
+          # Wait for ClickHouse to be ready so its DNS record is available
+          # before the OTEL collector's seed/migration step tries to connect
+          echo "Waiting for ClickHouseCluster to be ready..."
+          kubectl wait --for=condition=Ready clickhousecluster --all --timeout=300s || true
+
+          echo "Waiting for MongoDBCommunity to reach Running phase..."
+          kubectl wait --for=jsonpath='{.status.phase}'=Running mongodbcommunity --all --timeout=300s || true
+
+          # Give services time to initialize after CRs are ready
           echo "Waiting for services to initialize..."
           sleep 30
 
