@@ -90,16 +90,13 @@ kubectl port-forward service/$RELEASE_NAME-otel-collector 4318:4318 -n $NAMESPAC
 pf_pid=$!
 sleep 10
 
-# Test OTLP endpoint connectivity
-if ! nc -z localhost 4318; then
-    echo "ERROR: OTEL HTTP endpoint not accessible"
-    exit 1
-fi
-
-# Send test log
+# Send test log (retries handle the OpAMP supervisor startup delay --
+# the OTLP HTTP receiver on 4318 isn't listening until the supervisor
+# receives its pipeline config from the HyperDX app)
 echo "Sending test log..."
 timestamp=$(date +%s)
-log_response=$(curl -X POST http://localhost:4318/v1/logs \
+log_response=$(curl --retry 12 --retry-delay 10 --retry-all-errors \
+  -X POST http://localhost:4318/v1/logs \
   -H "Content-Type: application/json" \
   -d '{
     "resourceLogs": [{
@@ -130,7 +127,8 @@ fi
 echo "Sending test trace..."
 trace_id=$(openssl rand -hex 16)
 span_id=$(openssl rand -hex 8)
-trace_response=$(curl -X POST http://localhost:4318/v1/traces \
+trace_response=$(curl --retry 12 --retry-delay 10 --retry-all-errors \
+  -X POST http://localhost:4318/v1/traces \
   -H "Content-Type: application/json" \
   -d '{
     "resourceSpans": [{
