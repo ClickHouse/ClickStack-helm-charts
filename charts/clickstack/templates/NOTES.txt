@@ -1,10 +1,18 @@
 ClickStack has been installed.
 
-Note: By default, this chart installs the complete ClickStack: ClickHouse, OpenTelemetry Collector, MongoDB, and HyperDX.
-For production, it is recommended that you use the ClickHouse and OTEL Collector operators instead.
+By default, this chart deploys the full ClickStack platform: HyperDX, ClickHouse
+(via the ClickHouse Operator), MongoDB (via the MongoDB Community Operator), and
+the OpenTelemetry Collector. Each component can be disabled to use an external
+instance instead.
 
-To disable clickhouse and otel-collector, set the following values:
-helm install myrelease <chart-name-or-path> --set clickhouse.enabled=false --set clickhouse.persistence.enabled=false --set otel.enabled=false
+To disable a built-in component, set its enabled flag to false:
+  helm upgrade {{ .Release.Name }} <chart-name-or-path> \
+    --set clickhouse.enabled=false \
+    --set mongodb.enabled=false \
+    --set otel-collector.enabled=false
+
+When disabling a component, override the corresponding endpoints in hyperdx.config
+to point at your external service (e.g. CLICKHOUSE_ENDPOINT, MONGO_URI).
 
 {{- if .Values.hyperdx.ingress.enabled }}
 Application URL: {{ if .Values.hyperdx.ingress.tls.enabled }}https{{ else }}http{{ end }}://{{ .Values.hyperdx.ingress.host }}
