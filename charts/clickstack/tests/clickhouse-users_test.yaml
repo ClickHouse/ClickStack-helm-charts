@@ -9,7 +9,7 @@ tests:
           path: spec.settings.extraUsersConfig.users.app
       - equal:
           path: spec.settings.extraUsersConfig.users.app.profile
-          value: readonly
+          value: default
 
   - it: should include otelcollector user in extraUsersConfig
     asserts:
