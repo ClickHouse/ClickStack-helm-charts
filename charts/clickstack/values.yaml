@@ -7,9 +7,6 @@ global:
   #   - name: regcred
   #   - name: docker-hub-secret
   imagePullSecrets: []
-  storageClassName: "local-path"
-  # Keep PVCs when uninstalling helm release to preserve data
-  keepPVC: false
 
 hyperdx:
   # Ports shared across Deployment, Service, ConfigMap, and Ingress
@@ -283,6 +280,10 @@ clickhouse:
   # See https://clickhouse.com/docs/clickhouse-operator/guides/configuration
   cluster:
     spec:
+      containerTemplate:
+        image:
+          repository: clickhouse/clickhouse-server
+          tag: "25.7-alpine"
       replicas: 1
       shards: 1
       keeperClusterRef:
@@ -321,7 +322,7 @@ otel-collector:
   mode: deployment
   image:
     repository: docker.clickhouse.com/clickhouse/clickstack-otel-collector
-    tag: ""
+    tag: "2.19.0"
   extraEnvsFrom:
     - configMapRef:
         name: clickstack-config

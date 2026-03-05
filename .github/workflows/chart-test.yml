@@ -146,17 +146,14 @@ jobs:
           echo "=== Events ==="
           kubectl get events --sort-by=.metadata.creationTimestamp
 
-          echo "=== ClickStack App Logs ==="
-          kubectl logs -l app=app --tail=100 || true
+          echo "=== All Pod Logs ==="
+          for pod in $(kubectl get pods -o jsonpath='{.items[*].metadata.name}'); do
+            echo "--- Logs for $pod ---"
+            kubectl logs "$pod" --all-containers --tail=200 || true
+          done
 
-          echo "=== ClickHouse Logs ==="
-          kubectl logs -l app=clickhouse --tail=100 || true
-
-          echo "=== MongoDB Logs ==="
-          kubectl logs -l app=mongodb --tail=100 || true
-
-          echo "=== OTEL Collector Logs ==="
-          kubectl logs -l app=otel-collector --tail=100 || true
+          echo "=== Pod Descriptions ==="
+          kubectl describe pods || true
 
       - name: Cleanup
         if: always()

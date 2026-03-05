@@ -26,6 +26,37 @@ helm uninstall my-clickstack
 helm uninstall clickstack-operators
 ```
 
+### Data Persistence
+
+PersistentVolumeClaims created by the MongoDB and ClickHouse operators are **not** removed by `helm uninstall`. This is by design to prevent accidental data loss. To clean up PVCs after uninstalling, refer to:
+
+- [MongoDB Kubernetes Operator docs](https://github.com/mongodb/mongodb-kubernetes/tree/master/docs/mongodbcommunity)
+- [ClickHouse Operator cleanup docs](https://clickhouse.com/docs/clickhouse-operator/managing-clusters/cleanup)
+
+### Storage Class
+
+`global.storageClassName` and `global.keepPVC` have been removed. Storage class is now configured directly in each operator's CR spec:
+
+```yaml
+mongodb:
+  spec:
+    statefulSet:
+      spec:
+        volumeClaimTemplates:
+          - spec:
+              storageClassName: "fast-ssd"
+
+clickhouse:
+  keeper:
+    spec:
+      dataVolumeClaimSpec:
+        storageClassName: "fast-ssd"
+  cluster:
+    spec:
+      dataVolumeClaimSpec:
+        storageClassName: "fast-ssd"
+```
+
 ## What Changed
 
 | Component | Before (v1.x) | After |
@@ -335,7 +366,7 @@ See the [OpenTelemetry Collector Helm chart](https://github.com/open-telemetry/o
 
 The following sections are **not affected** by this migration:
 
-- `global.*` (imageRegistry, imagePullSecrets, storageClassName, keepPVC)
+- `global.*` (imageRegistry, imagePullSecrets)
 
 ## Fresh Install vs. In-Place Upgrade
 
