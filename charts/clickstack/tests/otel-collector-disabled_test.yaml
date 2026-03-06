@@ -1,0 +1,84 @@
+suite: Test OTEL Collector Disabled
+
+tests:
+  - it: should still render ConfigMap when otel-collector is disabled
+    templates:
+      - hyperdx/configmap.yaml
+    set:
+      otel-collector:
+        enabled: false
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: ConfigMap
+
+  - it: should still contain OTEL_EXPORTER_OTLP_ENDPOINT when otel-collector is disabled
+    templates:
+      - hyperdx/configmap.yaml
+    set:
+      otel-collector:
+        enabled: false
+    asserts:
+      - isNotNull:
+          path: data.OTEL_EXPORTER_OTLP_ENDPOINT
+
+  - it: should still render app Deployment when otel-collector is disabled
+    templates:
+      - hyperdx/deployment.yaml
+    set:
+      otel-collector:
+        enabled: false
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: Deployment
+
+  - it: should still render app Service when otel-collector is disabled
+    templates:
+      - hyperdx/service.yaml
+    set:
+      otel-collector:
+        enabled: false
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: Service
+
+  - it: should still render ClickHouse cluster when otel-collector is disabled
+    templates:
+      - clickhouse/cluster.yaml
+    set:
+      otel-collector:
+        enabled: false
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: ClickHouseCluster
+
+  - it: should still render ClickHouse keeper when otel-collector is disabled
+    templates:
+      - clickhouse/keeper.yaml
+    set:
+      otel-collector:
+        enabled: false
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: KeeperCluster
+
+  - it: should still render MongoDB CR when otel-collector is disabled
+    templates:
+      - mongodb/community.yaml
+    set:
+      otel-collector:
+        enabled: false
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: MongoDBCommunity
