@@ -102,10 +102,10 @@ jobs:
           # Wait for ClickHouse to be ready so its DNS record is available
           # before the OTEL collector's seed/migration step tries to connect
           echo "Waiting for ClickHouseCluster to be ready..."
-          kubectl wait --for=condition=Ready clickhousecluster --all --timeout=300s || true
+          kubectl wait --for=condition=Ready clickhousecluster --all --timeout=300s
 
           echo "Waiting for MongoDBCommunity to reach Running phase..."
-          kubectl wait --for=jsonpath='{.status.phase}'=Running mongodbcommunity --all --timeout=300s || true
+          kubectl wait --for=jsonpath='{.status.phase}'=Running mongodbcommunity --all --timeout=300s
 
           # Give services time to initialize after CRs are ready
           echo "Waiting for services to initialize..."

@@ -84,24 +84,32 @@ check_endpoint "http://localhost:8888/metrics" "200" "OTEL Metrics endpoint"
 kill $metrics_pf_pid 2>/dev/null || true
 sleep 2
 
-# Test databases
-echo "Testing ClickHouse..."
-if kubectl get clickhousecluster -n $NAMESPACE $RELEASE_NAME-$CHART_NAME-clickhouse -o jsonpath='{.status}' >/dev/null 2>&1; then
-    echo "ClickHouse: OK (ClickHouseCluster CR exists)"
-else
-    echo "WARNING: ClickHouseCluster CR not found (operator may still be reconciling)"
-fi
+# Verify OTEL Collector Deployment is Available
+echo "Verifying OTEL Collector Deployment..."
+kubectl wait --for=condition=Available deployment/$RELEASE_NAME-otel-collector -n $NAMESPACE --timeout=${TIMEOUT}s
+echo "OTEL Collector Deployment: OK (Available)"
 
-echo "Testing MongoDB..."
-if kubectl get mongodbcommunity -n $NAMESPACE $RELEASE_NAME-$CHART_NAME-mongodb -o jsonpath='{.status}' >/dev/null 2>&1; then
-    echo "MongoDB: OK (MongoDBCommunity CR exists)"
+# Verify ClickHouseCluster CR reconciled successfully
+echo "Verifying ClickHouseCluster reconciliation..."
+kubectl wait --for=condition=Ready clickhousecluster/$RELEASE_NAME-$CHART_NAME-clickhouse -n $NAMESPACE --timeout=${TIMEOUT}s
+echo "ClickHouseCluster: OK (condition Ready=True)"
+
+# Verify MongoDBCommunity CR reconciled successfully
+echo "Verifying MongoDBCommunity reconciliation..."
+mdb_phase=$(kubectl get mongodbcommunity -n $NAMESPACE $RELEASE_NAME-$CHART_NAME-mongodb -o jsonpath='{.status.phase}')
+if [ "$mdb_phase" = "Running" ]; then
+    echo "MongoDBCommunity: OK (phase=$mdb_phase)"
 else
-    echo "WARNING: MongoDBCommunity CR not found (operator may still be reconciling)"
+    echo "ERROR: MongoDBCommunity phase is '$mdb_phase', expected 'Running'"
+    kubectl get mongodbcommunity -n $NAMESPACE $RELEASE_NAME-$CHART_NAME-mongodb -o yaml
+    exit 1
 fi
 
 echo ""
-echo "Tests completed successfully"
+echo "All smoke tests passed"
 echo "- All pods running"
 echo "- HyperDX UI responding"
-echo "- OTEL collector metrics accessible"
-echo "- Database CRs healthy"
+echo "- OTEL Collector metrics accessible"
+echo "- OTEL Collector Deployment available"
+echo "- ClickHouseCluster reconciled (Ready)"
+echo "- MongoDBCommunity reconciled (Running)"
