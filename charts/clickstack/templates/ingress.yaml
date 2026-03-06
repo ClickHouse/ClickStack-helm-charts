@@ -5,6 +5,7 @@ metadata:
   name: {{ include "clickstack.fullname" . }}-app-ingress
   labels:
     {{- include "clickstack.labels" . | nindent 4 }}
+    app.kubernetes.io/component: hyperdx
   annotations:
     {{ $reqAnnotations := dict }}
     {{- if eq .Values.hyperdx.ingress.ingressClassName "nginx" }}
@@ -48,6 +49,7 @@ metadata:
   name: {{ printf "%s-%s" (include "clickstack.fullname" $) .name }}
   labels:
     {{- include "clickstack.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: hyperdx
   {{- if .annotations }}
   {{- if not (kindIs "map" .annotations) }}
   {{- fail "annotations must be a map of string key-value pairs" }}

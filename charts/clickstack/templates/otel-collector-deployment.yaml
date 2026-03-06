@@ -5,6 +5,7 @@ metadata:
   name: {{ include "clickstack.fullname" . }}-otel-collector
   labels:
     {{- include "clickstack.labels" . | nindent 4 }}
+    app.kubernetes.io/component: opentelemetry
     app: otel-collector
 spec:
   replicas: {{ .Values.otel.replicas | default 1 }}
@@ -16,6 +17,7 @@ spec:
     metadata:
       labels:
         {{- include "clickstack.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: opentelemetry
         app: otel-collector
       annotations:
       {{- if .Values.otel.annotations }}
@@ -123,6 +125,8 @@ metadata:
   name: {{ include "clickstack.fullname" . }}-otel-collector
   labels:
     {{- include "clickstack.labels" . | nindent 4 }}
+    app.kubernetes.io/component: opentelemetry
+    app: otel-collector
 spec:
   ports:
     - port: {{ .Values.otel.port }}

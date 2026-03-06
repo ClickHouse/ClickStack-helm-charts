@@ -6,6 +6,7 @@ metadata:
   name: {{ include "clickstack.fullname" . }}-check-alerts
   labels:
     {{- include "clickstack.labels" . | nindent 4 }}
+    app.kubernetes.io/component: workflow
 spec:
   schedule: {{ .Values.tasks.checkAlerts.schedule | quote }}
   concurrencyPolicy: Forbid
