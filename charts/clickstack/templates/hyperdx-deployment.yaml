@@ -53,6 +53,9 @@ spec:
           image: {{ .Values.hyperdx.waitForMongodb.image }}
           imagePullPolicy: {{ .Values.hyperdx.waitForMongodb.pullPolicy }}
           command: ['sh', '-c', 'until nc -z {{ include "clickstack.fullname" . }}-mongodb {{ .Values.mongodb.port }}; do echo waiting for mongodb; sleep 2; done;']
+          {{- if .Values.hyperdx.waitForMongodb.resources }}
+          resources: {{- toYaml .Values.hyperdx.waitForMongodb.resources | nindent 12 }}
+          {{- end }}
       {{- end }}
       containers:
         - name: app
