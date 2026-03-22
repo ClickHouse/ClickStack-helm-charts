@@ -1,0 +1,199 @@
+suite: Test Dashboard Provisioner
+templates:
+  - hyperdx/deployment.yaml
+  - hyperdx/dashboard-configmap.yaml
+  - hyperdx/dashboard-provisioner-rbac.yaml
+tests:
+  - it: should not render RBAC or ConfigMap when dashboards are disabled
+    set:
+      hyperdx:
+        dashboards:
+          enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0
+        template: hyperdx/dashboard-configmap.yaml
+      - hasDocuments:
+          count: 0
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+
+  - it: should not add sidecar when dashboards are disabled
+    set:
+      hyperdx:
+        dashboards:
+          enabled: false
+    asserts:
+      - lengthEqual:
+          path: spec.template.spec.containers
+          count: 1
+        template: hyperdx/deployment.yaml
+
+  - it: should add dashboard-watcher sidecar when enabled
+    set:
+      hyperdx:
+        dashboards:
+          enabled: true
+    asserts:
+      - lengthEqual:
+          path: spec.template.spec.containers
+          count: 2
+        template: hyperdx/deployment.yaml
+      - equal:
+          path: spec.template.spec.containers[1].name
+          value: dashboard-watcher
+        template: hyperdx/deployment.yaml
+
+  - it: should set DASHBOARD_PROVISIONER_DIR on the app container
+    set:
+      hyperdx:
+        dashboards:
+          enabled: true
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DASHBOARD_PROVISIONER_DIR
+            value: "/dashboards"
+        template: hyperdx/deployment.yaml
+
+  - it: should use the k8s-sidecar image for watcher
+    set:
+      hyperdx:
+        dashboards:
+          enabled: true
+          sidecarImage: "kiwigrid/k8s-sidecar:2.5.0"
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[1].image
+          value: "kiwigrid/k8s-sidecar:2.5.0"
+        template: hyperdx/deployment.yaml
+
+  - it: should configure watcher to discover labeled ConfigMaps across all namespaces
+    set:
+      hyperdx:
+        dashboards:
+          enabled: true
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[1].env
+          content:
+            name: LABEL
+            value: "hyperdx.io/dashboard"
+        template: hyperdx/deployment.yaml
+      - contains:
+          path: spec.template.spec.containers[1].env
+          content:
+            name: NAMESPACE
+            value: "ALL"
+        template: hyperdx/deployment.yaml
+
+  - it: should share dashboards volume between app and watcher
+    set:
+      hyperdx:
+        dashboards:
+          enabled: true
+    asserts:
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: dashboards
+            emptyDir: {}
+        template: hyperdx/deployment.yaml
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: dashboards
+            mountPath: /dashboards
+            readOnly: true
+        template: hyperdx/deployment.yaml
+      - contains:
+          path: spec.template.spec.containers[1].volumeMounts
+          content:
+            name: dashboards
+            mountPath: /dashboards
+        template: hyperdx/deployment.yaml
+
+  - it: should use the dashboard-provisioner service account
+    set:
+      hyperdx:
+        dashboards:
+          enabled: true
+    asserts:
+      - equal:
+          path: spec.template.spec.serviceAccountName
+          value: RELEASE-NAME-clickstack-dashboard-provisioner
+        template: hyperdx/deployment.yaml
+
+  - it: should create ServiceAccount, ClusterRole, and ClusterRoleBinding
+    set:
+      hyperdx:
+        dashboards:
+          enabled: true
+    asserts:
+      - isKind:
+          of: ServiceAccount
+        documentIndex: 0
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      - isKind:
+          of: ClusterRole
+        documentIndex: 1
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      - isKind:
+          of: ClusterRoleBinding
+        documentIndex: 2
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+
+  - it: should grant cluster-wide configmap list, get, and watch permissions
+    set:
+      hyperdx:
+        dashboards:
+          enabled: true
+    asserts:
+      - equal:
+          path: rules[0].verbs
+          value: ["list", "get", "watch"]
+        documentIndex: 1
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+
+  - it: should not render inline ConfigMap when configMaps is empty
+    set:
+      hyperdx:
+        dashboards:
+          enabled: true
+          configMaps: {}
+    asserts:
+      - hasDocuments:
+          count: 0
+        template: hyperdx/dashboard-configmap.yaml
+
+  - it: should render inline ConfigMap with discovery label
+    set:
+      hyperdx:
+        dashboards:
+          enabled: true
+          configMaps:
+            test.json: |
+              { "name": "Test", "tiles": [] }
+    asserts:
+      - equal:
+          path: metadata.labels["hyperdx.io/dashboard"]
+          value: "true"
+        template: hyperdx/dashboard-configmap.yaml
+
+  - it: should include multiple dashboard files in inline ConfigMap
+    set:
+      hyperdx:
+        dashboards:
+          enabled: true
+          configMaps:
+            k8s-overview.json: |
+              { "name": "Kubernetes Overview", "tiles": [] }
+            app-metrics.json: |
+              { "name": "App Metrics", "tiles": [] }
+    asserts:
+      - isNotNull:
+          path: data["k8s-overview.json"]
+        template: hyperdx/dashboard-configmap.yaml
+      - isNotNull:
+          path: data["app-metrics.json"]
+        template: hyperdx/dashboard-configmap.yaml

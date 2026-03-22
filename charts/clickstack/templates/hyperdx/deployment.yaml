@@ -47,6 +47,9 @@ spec:
       imagePullSecrets:
         {{- toYaml .Values.global.imagePullSecrets | nindent 8 }}
       {{- end }}
+      {{- if .Values.hyperdx.dashboards.enabled }}
+      serviceAccountName: {{ include "clickstack.fullname" . }}-dashboard-provisioner
+      {{- end }}
       {{- if .Values.mongodb.enabled }}
       initContainers:
         - name: wait-for-mongodb
@@ -118,6 +121,50 @@ spec:
               value: {{ tpl .Values.hyperdx.deployment.defaultSources . | quote }}
             {{- end }}
             {{- end }}
+            {{- if .Values.hyperdx.dashboards.enabled }}
+            - name: DASHBOARD_PROVISIONER_DIR
+              value: "/dashboards"
+            - name: DASHBOARD_PROVISIONER_ALL_TEAMS
+              value: "true"
+            {{- end }}
             {{- with .Values.hyperdx.deployment.env }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
+          {{- if .Values.hyperdx.dashboards.enabled }}
+          volumeMounts:
+            - name: dashboards
+              mountPath: /dashboards
+              readOnly: true
+          {{- end }}
+        {{- if .Values.hyperdx.dashboards.enabled }}
+        - name: dashboard-watcher
+          image: {{ .Values.hyperdx.dashboards.sidecarImage }}
+          resources:
+            limits:
+              cpu: 50m
+              memory: 64Mi
+            requests:
+              cpu: 10m
+              memory: 32Mi
+          env:
+            - name: LABEL
+              value: "hyperdx.io/dashboard"
+            - name: LABEL_VALUE
+              value: "true"
+            - name: FOLDER
+              value: "/dashboards"
+            - name: RESOURCE
+              value: "configmap"
+            - name: NAMESPACE
+              value: "ALL"
+            - name: UNIQUE_FILENAMES
+              value: "true"
+          volumeMounts:
+            - name: dashboards
+              mountPath: /dashboards
+        {{- end }}
+      {{- if .Values.hyperdx.dashboards.enabled }}
+      volumes:
+        - name: dashboards
+          emptyDir: {}
+      {{- end }}
