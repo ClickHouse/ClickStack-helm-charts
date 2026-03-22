@@ -1,0 +1,920 @@
+suite: Test Dashboard Provisioner
+templates:
+  - hyperdx/deployment.yaml
+  - hyperdx/dashboard-configmap.yaml
+  - hyperdx/dashboard-provisioner-rbac.yaml
+  - hyperdx/serviceaccount.yaml
+tests:
+  - it: should not render RBAC or ConfigMap when dashboards are disabled
+    set:
+      hyperdx:
+        dashboards:
+          enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0
+        template: hyperdx/dashboard-configmap.yaml
+      - hasDocuments:
+          count: 0
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+
+  - it: should not add sidecar when dashboards are disabled
+    set:
+      hyperdx:
+        dashboards:
+          enabled: false
+    asserts:
+      - lengthEqual:
+          path: spec.template.spec.containers
+          count: 1
+        template: hyperdx/deployment.yaml
+
+  - it: should not render dashboard volumes, mounts, or env when disabled
+    set:
+      hyperdx:
+        dashboards:
+          enabled: false
+    asserts:
+      - isNull:
+          path: spec.template.spec.volumes
+        template: hyperdx/deployment.yaml
+      - isNull:
+          path: spec.template.spec.containers[0].volumeMounts
+        template: hyperdx/deployment.yaml
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DASHBOARD_PROVISIONER_DIR
+            value: "/dashboards"
+        template: hyperdx/deployment.yaml
+
+  - it: should keep user volumes and mounts without a dashboards entry when disabled
+    set:
+      hyperdx:
+        dashboards:
+          enabled: false
+        deployment:
+          volumes:
+            - name: extra
+              emptyDir: {}
+          volumeMounts:
+            - name: extra
+              mountPath: /extra
+    asserts:
+      - lengthEqual:
+          path: spec.template.spec.volumes
+          count: 1
+        template: hyperdx/deployment.yaml
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: extra
+            emptyDir: {}
+        template: hyperdx/deployment.yaml
+      - notContains:
+          path: spec.template.spec.volumes
+          content:
+            name: dashboards
+            emptyDir: {}
+        template: hyperdx/deployment.yaml
+      - lengthEqual:
+          path: spec.template.spec.containers[0].volumeMounts
+          count: 1
+        template: hyperdx/deployment.yaml
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: extra
+            mountPath: /extra
+        template: hyperdx/deployment.yaml
+      - notContains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: dashboards
+            mountPath: /dashboards
+            readOnly: true
+        template: hyperdx/deployment.yaml
+
+  - it: should add dashboard-watcher sidecar when enabled
+    set:
+      hyperdx:
+        dashboards:
+          enabled: true
+    asserts:
+      - lengthEqual:
+          path: spec.template.spec.containers
+          count: 2
+        template: hyperdx/deployment.yaml
+      - equal:
+          path: spec.template.spec.containers[1].name
+          value: dashboard-watcher
+        template: hyperdx/deployment.yaml
+
+  - it: should set DASHBOARD_PROVISIONER_DIR on the app container
+    set:
+      hyperdx:
+        dashboards:
+          enabled: true
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DASHBOARD_PROVISIONER_DIR
+            value: "/dashboards"
+        template: hyperdx/deployment.yaml
+
+  - it: should use the k8s-sidecar image for watcher
+    set:
+      hyperdx:
+        dashboards:
+          enabled: true
+          sidecarImage: "kiwigrid/k8s-sidecar:2.5.0"
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[1].image
+          value: "kiwigrid/k8s-sidecar:2.5.0"
+        template: hyperdx/deployment.yaml
+
+  - it: should set the discovery label on the watcher
+    set:
+      hyperdx:
+        dashboards:
+          enabled: true
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[1].env
+          content:
+            name: LABEL
+            value: "hyperdx.io/dashboard"
+        template: hyperdx/deployment.yaml
+      - contains:
+          path: spec.template.spec.containers[1].env
+          content:
+            name: LABEL_VALUE
+            value: "true"
+        template: hyperdx/deployment.yaml
+
+  - it: should configure the watcher's discovery behavior env
+    set:
+      hyperdx:
+        dashboards:
+          enabled: true
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[1].env
+          content:
+            name: FOLDER
+            value: "/dashboards"
+        template: hyperdx/deployment.yaml
+      - contains:
+          path: spec.template.spec.containers[1].env
+          content:
+            name: RESOURCE
+            value: "configmap"
+        template: hyperdx/deployment.yaml
+      - contains:
+          path: spec.template.spec.containers[1].env
+          content:
+            name: METHOD
+            value: "WATCH"
+        template: hyperdx/deployment.yaml
+      - contains:
+          path: spec.template.spec.containers[1].env
+          content:
+            name: UNIQUE_FILENAMES
+            value: "true"
+        template: hyperdx/deployment.yaml
+
+  - it: should scope the watcher to the release namespace by default
+    release:
+      namespace: observability
+    set:
+      hyperdx:
+        dashboards:
+          enabled: true
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[1].env
+          content:
+            name: NAMESPACE
+            value: observability
+        template: hyperdx/deployment.yaml
+
+  - it: should watch listed namespaces plus the release namespace
+    release:
+      namespace: observability
+    set:
+      hyperdx:
+        dashboards:
+          enabled: true
+          namespaces:
+            - team-a
+            - team-b
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[1].env
+          content:
+            name: NAMESPACE
+            value: observability,team-a,team-b
+        template: hyperdx/deployment.yaml
+
+  - it: should watch all namespaces when ALL is listed
+    set:
+      hyperdx:
+        dashboards:
+          enabled: true
+          namespaces:
+            - ALL
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[1].env
+          content:
+            name: NAMESPACE
+            value: "ALL"
+        template: hyperdx/deployment.yaml
+
+  - it: should share dashboards volume between app and watcher
+    set:
+      hyperdx:
+        dashboards:
+          enabled: true
+    asserts:
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: dashboards
+            emptyDir: {}
+        template: hyperdx/deployment.yaml
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: dashboards
+            mountPath: /dashboards
+            readOnly: true
+        template: hyperdx/deployment.yaml
+      # Exact match: the watcher's mount must be writable (no readOnly), or it can't
+      # write discovered dashboards into the shared volume.
+      - equal:
+          path: spec.template.spec.containers[1].volumeMounts[0]
+          value:
+            name: dashboards
+            mountPath: /dashboards
+        template: hyperdx/deployment.yaml
+
+  - it: should merge user volumes and volumeMounts with dashboards entries without duplicate keys
+    set:
+      hyperdx:
+        dashboards:
+          enabled: true
+        deployment:
+          volumes:
+            - name: extra
+              emptyDir: {}
+          volumeMounts:
+            - name: extra
+              mountPath: /extra
+    asserts:
+      - lengthEqual:
+          path: spec.template.spec.containers[0].volumeMounts
+          count: 2
+        template: hyperdx/deployment.yaml
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: extra
+            mountPath: /extra
+        template: hyperdx/deployment.yaml
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: dashboards
+            mountPath: /dashboards
+            readOnly: true
+        template: hyperdx/deployment.yaml
+      - lengthEqual:
+          path: spec.template.spec.volumes
+          count: 2
+        template: hyperdx/deployment.yaml
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: extra
+            emptyDir: {}
+        template: hyperdx/deployment.yaml
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: dashboards
+            emptyDir: {}
+        template: hyperdx/deployment.yaml
+
+  - it: should set DASHBOARD_PROVISIONER_ALL_TEAMS on the app container
+    set:
+      hyperdx:
+        dashboards:
+          enabled: true
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DASHBOARD_PROVISIONER_ALL_TEAMS
+            value: "true"
+        template: hyperdx/deployment.yaml
+
+  - it: should apply configured resources to the dashboard-watcher sidecar
+    set:
+      hyperdx:
+        dashboards:
+          enabled: true
+          resources:
+            limits:
+              cpu: 200m
+              memory: 256Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[1].resources.limits.memory
+          value: 256Mi
+        template: hyperdx/deployment.yaml
+      - equal:
+          path: spec.template.spec.containers[1].resources.requests.cpu
+          value: 100m
+        template: hyperdx/deployment.yaml
+
+  - it: should apply the default watcher resources when not overridden
+    set:
+      hyperdx:
+        dashboards:
+          enabled: true
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[1].resources.limits.memory
+          value: 64Mi
+        template: hyperdx/deployment.yaml
+      - equal:
+          path: spec.template.spec.containers[1].resources.limits.cpu
+          value: 50m
+        template: hyperdx/deployment.yaml
+      - equal:
+          path: spec.template.spec.containers[1].resources.requests.memory
+          value: 32Mi
+        template: hyperdx/deployment.yaml
+      - equal:
+          path: spec.template.spec.containers[1].resources.requests.cpu
+          value: 10m
+        template: hyperdx/deployment.yaml
+
+  - it: should auto-create SA when dashboards enabled and no user SA configured
+    set:
+      hyperdx:
+        dashboards:
+          enabled: true
+        serviceAccount:
+          create: false
+          name: ""
+    asserts:
+      - equal:
+          path: spec.template.spec.serviceAccountName
+          value: RELEASE-NAME-clickstack-app
+        template: hyperdx/deployment.yaml
+      - hasDocuments:
+          count: 1
+        template: hyperdx/serviceaccount.yaml
+
+  - it: should use existing user SA and not create a new one
+    set:
+      hyperdx:
+        dashboards:
+          enabled: true
+        serviceAccount:
+          create: false
+          name: "my-custom-sa"
+    asserts:
+      - equal:
+          path: spec.template.spec.serviceAccountName
+          value: my-custom-sa
+        template: hyperdx/deployment.yaml
+      - hasDocuments:
+          count: 0
+        template: hyperdx/serviceaccount.yaml
+
+  - it: should create a namespaced Role and RoleBinding by default
+    release:
+      namespace: observability
+    set:
+      hyperdx:
+        dashboards:
+          enabled: true
+    asserts:
+      - hasDocuments:
+          count: 2
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      - isKind:
+          of: Role
+        documentIndex: 0
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      - equal:
+          path: metadata.namespace
+          value: observability
+        documentIndex: 0
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      - isKind:
+          of: RoleBinding
+        documentIndex: 1
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      - equal:
+          path: metadata.namespace
+          value: observability
+        documentIndex: 1
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      - equal:
+          path: subjects[0].namespace
+          value: observability
+        documentIndex: 1
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      - equal:
+          path: roleRef.kind
+          value: Role
+        documentIndex: 1
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      - equal:
+          path: roleRef.name
+          value: RELEASE-NAME-clickstack-dashboard-provisioner
+        documentIndex: 1
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+
+  - it: should grant configmap list, get, and watch on the default Role
+    set:
+      hyperdx:
+        dashboards:
+          enabled: true
+    asserts:
+      - equal:
+          path: rules[0].verbs
+          value: ["list", "get", "watch"]
+        documentIndex: 0
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+
+  - it: should bind the default Role to the user SA when configured
+    set:
+      hyperdx:
+        dashboards:
+          enabled: true
+        serviceAccount:
+          name: "my-custom-sa"
+    asserts:
+      - equal:
+          path: subjects[0].name
+          value: my-custom-sa
+        documentIndex: 1
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+
+  - it: should bind the default Role to the generated SA when no user SA configured
+    set:
+      hyperdx:
+        dashboards:
+          enabled: true
+    asserts:
+      - equal:
+          path: subjects[0].name
+          value: RELEASE-NAME-clickstack-app
+        documentIndex: 1
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+
+  - it: should create a ClusterRole plus a RoleBinding per namespace when namespaces are listed
+    release:
+      namespace: observability
+    set:
+      hyperdx:
+        dashboards:
+          enabled: true
+          namespaces:
+            - team-a
+            - team-b
+    asserts:
+      - hasDocuments:
+          count: 4
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      - equal:
+          path: rules[0].verbs
+          value: ["list", "get", "watch"]
+        documentIndex: 0
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      # Pin the cross-namespace ClusterRole to ConfigMaps only, same as the [ALL] branch,
+      # so a future added rule can't silently widen the shared SA's access.
+      - equal:
+          path: rules[0].resources
+          value: ["configmaps"]
+        documentIndex: 0
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      - lengthEqual:
+          path: rules
+          count: 1
+        documentIndex: 0
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      - isKind:
+          of: ClusterRole
+        documentIndex: 0
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      - isKind:
+          of: RoleBinding
+        documentIndex: 1
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      - equal:
+          path: metadata.namespace
+          value: observability
+        documentIndex: 1
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      - equal:
+          path: metadata.namespace
+          value: team-a
+        documentIndex: 2
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      - equal:
+          path: metadata.namespace
+          value: team-b
+        documentIndex: 3
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      - equal:
+          path: subjects[0].name
+          value: RELEASE-NAME-clickstack-app
+        documentIndex: 2
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      - equal:
+          path: roleRef.kind
+          value: ClusterRole
+        documentIndex: 2
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      # Cluster-scoped ClusterRole and the per-namespace RoleBindings must both be
+      # namespace-qualified so two same-named releases can't collide.
+      - equal:
+          path: metadata.name
+          value: RELEASE-NAME-clickstack-observability-dashboard-provisioner
+        documentIndex: 0
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      - equal:
+          path: metadata.name
+          value: RELEASE-NAME-clickstack-observability-dashboard-provisioner
+        documentIndex: 2
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      - equal:
+          path: roleRef.name
+          value: RELEASE-NAME-clickstack-observability-dashboard-provisioner
+        documentIndex: 2
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      - equal:
+          path: subjects[0].namespace
+          value: observability
+        documentIndex: 2
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+
+  - it: should deduplicate the release namespace when it is also listed
+    release:
+      namespace: observability
+    set:
+      hyperdx:
+        dashboards:
+          enabled: true
+          namespaces:
+            - observability
+            - team-a
+    asserts:
+      - hasDocuments:
+          count: 3
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      - contains:
+          path: spec.template.spec.containers[1].env
+          content:
+            name: NAMESPACE
+            value: observability,team-a
+        template: hyperdx/deployment.yaml
+
+  - it: should dedupe whitespace-padded near-duplicate namespaces on the trimmed value
+    release:
+      namespace: observability
+    set:
+      hyperdx:
+        dashboards:
+          enabled: true
+          namespaces:
+            - team-a
+            - " team-a "
+    asserts:
+      # ClusterRole + RoleBinding(observability) + RoleBinding(team-a) — the padded
+      # duplicate must collapse, not emit a second colliding RoleBinding.
+      - hasDocuments:
+          count: 3
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      - contains:
+          path: spec.template.spec.containers[1].env
+          content:
+            name: NAMESPACE
+            value: observability,team-a
+        template: hyperdx/deployment.yaml
+
+  - it: should use a namespaced Role when the only effective namespace is the release namespace
+    release:
+      namespace: observability
+    set:
+      hyperdx:
+        dashboards:
+          enabled: true
+          namespaces:
+            - observability
+    asserts:
+      - hasDocuments:
+          count: 2
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      - isKind:
+          of: Role
+        documentIndex: 0
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      - isKind:
+          of: RoleBinding
+        documentIndex: 1
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      - contains:
+          path: spec.template.spec.containers[1].env
+          content:
+            name: NAMESPACE
+            value: observability
+        template: hyperdx/deployment.yaml
+
+  - it: should create a ClusterRole and ClusterRoleBinding when ALL is listed
+    set:
+      hyperdx:
+        dashboards:
+          enabled: true
+          namespaces:
+            - ALL
+    asserts:
+      - hasDocuments:
+          count: 2
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      - isKind:
+          of: ClusterRole
+        documentIndex: 0
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      - isKind:
+          of: ClusterRoleBinding
+        documentIndex: 1
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      - equal:
+          path: rules[0].verbs
+          value: ["list", "get", "watch"]
+        documentIndex: 0
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      # Pin the cluster-wide grant to ConfigMaps only — a future rule for secrets
+      # (or another resource) would silently widen the shared SA's access otherwise.
+      - equal:
+          path: rules[0].resources
+          value: ["configmaps"]
+        documentIndex: 0
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      - lengthEqual:
+          path: rules
+          count: 1
+        documentIndex: 0
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+
+  - it: should bind the ClusterRoleBinding to the SA when ALL is listed
+    release:
+      namespace: observability
+    set:
+      hyperdx:
+        dashboards:
+          enabled: true
+          namespaces:
+            - ALL
+    asserts:
+      - equal:
+          path: subjects[0].name
+          value: RELEASE-NAME-clickstack-app
+        documentIndex: 1
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      - equal:
+          path: subjects[0].namespace
+          value: observability
+        documentIndex: 1
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      - equal:
+          path: roleRef.kind
+          value: ClusterRole
+        documentIndex: 1
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      - equal:
+          path: roleRef.name
+          value: RELEASE-NAME-clickstack-observability-dashboard-provisioner
+        documentIndex: 1
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+
+  - it: should bind the per-namespace RoleBindings to the user SA when configured
+    release:
+      namespace: observability
+    set:
+      hyperdx:
+        dashboards:
+          enabled: true
+          namespaces:
+            - team-a
+            - team-b
+        serviceAccount:
+          name: my-custom-sa
+    asserts:
+      - equal:
+          path: subjects[0].name
+          value: my-custom-sa
+        documentIndex: 1
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      - equal:
+          path: subjects[0].name
+          value: my-custom-sa
+        documentIndex: 3
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+
+  - it: should bind the ClusterRoleBinding to the user SA when ALL is listed
+    set:
+      hyperdx:
+        dashboards:
+          enabled: true
+          namespaces:
+            - ALL
+        serviceAccount:
+          name: my-custom-sa
+    asserts:
+      - equal:
+          path: subjects[0].name
+          value: my-custom-sa
+        documentIndex: 1
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+
+  - it: should fail when ALL is combined with specific namespaces
+    set:
+      hyperdx:
+        dashboards:
+          enabled: true
+          namespaces:
+            - ALL
+            - team-a
+    asserts:
+      - failedTemplate:
+          errorMessage: 'hyperdx.dashboards.namespaces: "ALL" cannot be combined with specific namespaces (it already grants cluster-wide discovery)'
+        template: hyperdx/deployment.yaml
+
+  - it: should fail when a namespace entry is empty or blank
+    set:
+      hyperdx:
+        dashboards:
+          enabled: true
+          namespaces:
+            - ""
+            - team-a
+    asserts:
+      - failedTemplate:
+          errorMessage: "hyperdx.dashboards.namespaces: entries must be non-empty namespace names"
+        template: hyperdx/deployment.yaml
+
+  - it: should fail when a namespace entry is whitespace-only
+    set:
+      hyperdx:
+        dashboards:
+          enabled: true
+          namespaces:
+            - "   "
+            - team-a
+    asserts:
+      - failedTemplate:
+          errorMessage: "hyperdx.dashboards.namespaces: entries must be non-empty namespace names"
+        template: hyperdx/deployment.yaml
+
+  - it: should fail on a case or whitespace variant of the ALL sentinel
+    set:
+      hyperdx:
+        dashboards:
+          enabled: true
+          namespaces:
+            - all
+    asserts:
+      - failedTemplate:
+          errorMessage: 'hyperdx.dashboards.namespaces: use exactly "ALL" (uppercase, no surrounding spaces) for cluster-wide discovery'
+        template: hyperdx/deployment.yaml
+
+  - it: should fail when a namespace entry is not a valid DNS-1123 label
+    set:
+      hyperdx:
+        dashboards:
+          enabled: true
+          namespaces:
+            - Team_A
+    asserts:
+      - failedTemplate:
+          errorMessage: "hyperdx.dashboards.namespaces: entries must be valid DNS-1123 labels (lowercase alphanumeric and '-')"
+        template: hyperdx/deployment.yaml
+
+  - it: should not validate namespaces when dashboards are disabled
+    set:
+      hyperdx:
+        dashboards:
+          enabled: false
+          namespaces:
+            - ALL
+            - team-a
+    asserts:
+      - lengthEqual:
+          path: spec.template.spec.containers
+          count: 1
+        template: hyperdx/deployment.yaml
+      - hasDocuments:
+          count: 0
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+
+  - it: should keep the namespace qualifier in cluster-scoped names when fullname is long
+    release:
+      namespace: observability
+    set:
+      fullnameOverride: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+      hyperdx:
+        dashboards:
+          enabled: true
+          namespaces:
+            - ALL
+    asserts:
+      - matchRegex:
+          path: metadata.name
+          pattern: -observability-dashboard-provisioner$
+        documentIndex: 0
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+
+  - it: should not render any RBAC when rbac.create is false
+    set:
+      hyperdx:
+        dashboards:
+          enabled: true
+          rbac:
+            create: false
+    asserts:
+      - hasDocuments:
+          count: 0
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+
+  - it: should still render the watcher sidecar when rbac.create is false
+    set:
+      hyperdx:
+        dashboards:
+          enabled: true
+          rbac:
+            create: false
+    asserts:
+      - lengthEqual:
+          path: spec.template.spec.containers
+          count: 2
+        template: hyperdx/deployment.yaml
+
+  - it: should not render inline ConfigMap when configMaps is empty
+    set:
+      hyperdx:
+        dashboards:
+          enabled: true
+          configMaps: {}
+    asserts:
+      - hasDocuments:
+          count: 0
+        template: hyperdx/dashboard-configmap.yaml
+
+  - it: should render inline ConfigMap with discovery label
+    set:
+      hyperdx:
+        dashboards:
+          enabled: true
+          configMaps:
+            test.json: |
+              { "name": "Test", "tiles": [] }
+    asserts:
+      - equal:
+          path: metadata.labels["hyperdx.io/dashboard"]
+          value: "true"
+        template: hyperdx/dashboard-configmap.yaml
+      - matchRegex:
+          path: data["test.json"]
+          pattern: '^\{ "name": "Test", "tiles": \[\] \}'
+        template: hyperdx/dashboard-configmap.yaml
+
+  - it: should include multiple dashboard files in inline ConfigMap
+    set:
+      hyperdx:
+        dashboards:
+          enabled: true
+          configMaps:
+            k8s-overview.json: |
+              { "name": "Kubernetes Overview", "tiles": [] }
+            app-metrics.json: |
+              { "name": "App Metrics", "tiles": [] }
+    asserts:
+      - isNotNull:
+          path: data["k8s-overview.json"]
+        template: hyperdx/dashboard-configmap.yaml
+      - isNotNull:
+          path: data["app-metrics.json"]
+        template: hyperdx/dashboard-configmap.yaml
