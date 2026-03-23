@@ -1,5 +1,15 @@
 # helm-charts
 
+## 2.0.0
+
+### Major Changes
+
+- d17b156: Replace inline MongoDB, ClickHouse, and OTEL Collector templates with operator-managed subcharts. See docs/UPGRADE.md for migration instructions.
+
+### Patch Changes
+
+- 92ed474: chore: update appVersion to 2.22.0
+
 ## 1.1.2
 
 ### Patch Changes
