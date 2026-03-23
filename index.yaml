@@ -9,6 +9,34 @@ entries:
         - name: Upstream Project
           url: https://github.com/hyperdxio/hyperdx
     apiVersion: v2
+    appVersion: 2.22.0
+    created: "2026-03-23T17:18:34.250307373Z"
+    dependencies:
+    - alias: otel-collector
+      condition: otel-collector.enabled
+      name: opentelemetry-collector
+      repository: https://open-telemetry.github.io/opentelemetry-helm-charts
+      version: ~0.146.0
+    description: A Helm chart for ClickStack - Full-stack observability with ClickHouse,
+      OpenTelemetry, and HyperDX
+    digest: 57f44c4c6e1a6e962375e0ab318ed817967bfdf8e869bd924a29aa665becf66f
+    home: https://clickhouse.com/docs/use-cases/observability/clickstack
+    name: clickstack
+    sources:
+    - https://github.com/hyperdxio/hyperdx
+    - https://github.com/hyperdxio/helm-charts
+    type: application
+    urls:
+    - https://github.com/ClickHouse/ClickStack-helm-charts/releases/download/clickstack-2.0.0/clickstack-2.0.0.tgz
+    version: 2.0.0
+  - annotations:
+      artifacthub.io/license: MIT
+      artifacthub.io/links: |
+        - name: Chart Source
+          url: https://github.com/hyperdxio/helm-charts
+        - name: Upstream Project
+          url: https://github.com/hyperdxio/hyperdx
+    apiVersion: v2
     appVersion: 2.19.0
     created: "2026-02-26T21:14:53.148995571Z"
     description: A Helm chart for ClickStack - Full-stack observability with ClickHouse,
@@ -99,6 +127,28 @@ entries:
     type: application
     urls:
     - https://github.com/hyperdxio/helm-charts/releases/download/clickstack-1.0.0/clickstack-1.0.0.tgz
+    version: 1.0.0
+  clickstack-operators:
+  - apiVersion: v2
+    appVersion: 1.0.0
+    created: "2026-03-23T17:18:34.470731874Z"
+    dependencies:
+    - alias: mongodb-operator
+      name: mongodb-kubernetes
+      repository: https://mongodb.github.io/helm-charts
+      version: ~1.7.0
+    - alias: clickhouse-operator
+      name: clickhouse-operator-helm
+      repository: oci://ghcr.io/clickhouse
+      version: ~0.0.2
+    description: Operator dependencies for ClickStack. Install this chart before installing
+      clickstack/clickstack to ensure CRDs are registered.
+    digest: af1babc8f88a94e189af27aa45b6b820bd5aa966a3a4a68697689cbb60819f47
+    home: https://clickhouse.com/docs/use-cases/observability/clickstack
+    name: clickstack-operators
+    type: application
+    urls:
+    - https://github.com/ClickHouse/ClickStack-helm-charts/releases/download/clickstack-operators-1.0.0/clickstack-operators-1.0.0.tgz
     version: 1.0.0
   hdx-oss-v2:
   - apiVersion: v2
@@ -361,4 +411,4 @@ entries:
     urls:
     - https://github.com/hyperdxio/helm-charts/releases/download/hdx-oss-v2-0.1.0/hdx-oss-v2-0.1.0.tgz
     version: 0.1.0
-generated: "2026-02-26T21:14:53.149082614Z"
+generated: "2026-03-23T17:18:34.470823419Z"
