@@ -43,6 +43,11 @@ jobs:
           publish: yarn run release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Add Helm dependency repositories
+        run: |
+          helm repo add mongodb https://mongodb.github.io/helm-charts
+          helm repo add open-telemetry https://open-telemetry.github.io/opentelemetry-helm-charts
+          helm repo update
       - name: Run chart-releaser job
         if: steps.changesets.outputs.hasChangesets == 'false'
         uses: helm/chart-releaser-action@v1.7.0
