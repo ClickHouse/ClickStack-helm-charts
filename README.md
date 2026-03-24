@@ -21,6 +21,10 @@ For configuration, cloud deployment, ingress setup, and troubleshooting, see the
 - **`clickstack/clickstack-operators`** - Installs the MongoDB and ClickHouse operator controllers and CRDs. Must be installed first.
 - **`clickstack/clickstack`** - Installs HyperDX, OpenTelemetry Collector, and operator custom resources.
 
+## Additional Manifests
+
+The `clickstack` chart supports deploying arbitrary Kubernetes objects (NetworkPolicy, HPA, ServiceAccount, PodMonitor, ALB Ingress, etc.) alongside the chart's own resources via the `additionalManifests` value. See the [Additional Manifests Guide](docs/ADDITIONAL-MANIFESTS.md) for usage and examples.
+
 ## Operator Dependencies
 
 The `clickstack-operators` chart bundles:

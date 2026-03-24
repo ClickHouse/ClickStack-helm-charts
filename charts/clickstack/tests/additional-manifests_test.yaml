@@ -1,0 +1,119 @@
+suite: Test Additional Manifests
+templates:
+  - additional-manifests.yaml
+tests:
+  - it: should render nothing when additionalManifests is empty
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should render a single manifest
+    set:
+      additionalManifests:
+        - apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: my-extra-config
+          data:
+            key: value
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: ConfigMap
+      - equal:
+          path: metadata.name
+          value: my-extra-config
+      - equal:
+          path: data.key
+          value: value
+
+  - it: should render multiple manifests
+    set:
+      additionalManifests:
+        - apiVersion: v1
+          kind: ServiceAccount
+          metadata:
+            name: my-service-account
+        - apiVersion: networking.k8s.io/v1
+          kind: NetworkPolicy
+          metadata:
+            name: my-network-policy
+          spec:
+            podSelector:
+              matchLabels:
+                app: test
+    asserts:
+      - hasDocuments:
+          count: 2
+      - isKind:
+          of: ServiceAccount
+        documentIndex: 0
+      - equal:
+          path: metadata.name
+          value: my-service-account
+        documentIndex: 0
+      - isKind:
+          of: NetworkPolicy
+        documentIndex: 1
+      - equal:
+          path: metadata.name
+          value: my-network-policy
+        documentIndex: 1
+
+  - it: should evaluate tpl expressions in manifest values
+    set:
+      additionalManifests:
+        - apiVersion: v1
+          kind: ServiceAccount
+          metadata:
+            name: '{{ include "clickstack.fullname" . }}-sa'
+    asserts:
+      - hasDocuments:
+          count: 1
+      - matchRegex:
+          path: metadata.name
+          pattern: -clickstack-sa$
+
+  - it: should render an ALB Ingress with controller-specific annotations
+    set:
+      additionalManifests:
+        - apiVersion: networking.k8s.io/v1
+          kind: Ingress
+          metadata:
+            name: my-alb-ingress
+            annotations:
+              alb.ingress.kubernetes.io/scheme: internet-facing
+              alb.ingress.kubernetes.io/target-type: ip
+              alb.ingress.kubernetes.io/certificate-arn: "arn:aws:acm:us-east-1:123456789:certificate/abc-123"
+              alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+          spec:
+            ingressClassName: alb
+            rules:
+              - host: clickstack.example.com
+                http:
+                  paths:
+                    - path: /
+                      pathType: Prefix
+                      backend:
+                        service:
+                          name: my-app
+                          port:
+                            number: 3000
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: Ingress
+      - equal:
+          path: spec.ingressClassName
+          value: alb
+      - equal:
+          path: metadata.annotations["alb.ingress.kubernetes.io/scheme"]
+          value: internet-facing
+      - equal:
+          path: metadata.annotations["alb.ingress.kubernetes.io/target-type"]
+          value: ip
+      - equal:
+          path: metadata.annotations["alb.ingress.kubernetes.io/certificate-arn"]
+          value: "arn:aws:acm:us-east-1:123456789:certificate/abc-123"

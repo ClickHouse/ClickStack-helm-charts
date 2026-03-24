@@ -318,6 +318,13 @@ clickhouse:
           keep_alive_timeout: 64
           max_concurrent_queries: 100
 
+# Additional Kubernetes manifests to deploy alongside the chart.
+# Each entry is a complete Kubernetes object. Values are rendered through
+# Helm's tpl function so template expressions (Release.Name, include, .Values)
+# are available inside string fields.
+# See docs/ADDITIONAL-MANIFESTS.md for full examples.
+additionalManifests: []
+
 # OpenTelemetry Collector subchart configuration (alias: otel-collector)
 # See https://github.com/open-telemetry/opentelemetry-helm-charts for all options
 # Set otel-collector.enabled to false to disable the OTEL collector entirely.
