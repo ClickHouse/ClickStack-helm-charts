@@ -305,9 +305,7 @@ clickhouse:
               password: '{{ .Values.hyperdx.secrets.CLICKHOUSE_APP_PASSWORD }}'
               profile: default
               grants:
-                - query: "GRANT SHOW ON *.*"
-                - query: "GRANT SELECT ON system.*"
-                - query: "GRANT SELECT ON default.*"
+                - query: "GRANT SHOW ON *.*, SELECT ON system.*, SELECT ON default.*"
             otelcollector:
               password: '{{ .Values.hyperdx.secrets.CLICKHOUSE_PASSWORD }}'
               profile: default
