@@ -86,14 +86,63 @@ jobs:
       - name: Deploy ClickStack chart (Phase 2)
         run: |
           # Create test values for faster deployment
-          cat > test-values.yaml << EOF
+          cat > test-values.yaml << 'EOF'
           hyperdx:
             secrets:
               HYPERDX_API_KEY: "test-api-key-for-ci"
+            config:
+              CUSTOM_OTELCOL_CONFIG_FILE: "/conf/relay.yaml"
             deployment:
               replicas: 1
             service:
               type: NodePort
+          otel-collector:
+            config:
+              extensions:
+                health_check:
+                  endpoint: \${env:MY_POD_IP}:13133
+              receivers:
+                otlp:
+                  protocols:
+                    grpc:
+                      endpoint: \${env:MY_POD_IP}:4317
+                    http:
+                      endpoint: \${env:MY_POD_IP}:4318
+              processors:
+                batch: {}
+                memory_limiter:
+                  check_interval: 5s
+                  limit_percentage: 80
+                  spike_limit_percentage: 25
+              exporters:
+                clickhouse:
+                  endpoint: \${env:CLICKHOUSE_ENDPOINT}
+                  database: \${env:HYPERDX_OTEL_EXPORTER_CLICKHOUSE_DATABASE}
+                  username: \${env:CLICKHOUSE_USER}
+                  password: \${env:CLICKHOUSE_PASSWORD}
+                  logs_table_name: otel_logs
+                  traces_table_name: otel_traces
+                  timeout: 5s
+              service:
+                extensions:
+                  - health_check
+                pipelines:
+                  traces:
+                    receivers: [otlp]
+                    processors: [memory_limiter, batch]
+                    exporters: [clickhouse]
+                  logs:
+                    receivers: [otlp]
+                    processors: [memory_limiter, batch]
+                    exporters: [clickhouse]
+                telemetry:
+                  metrics:
+                    readers:
+                      - pull:
+                          exporter:
+                            prometheus:
+                              host: \${env:MY_POD_IP}
+                              port: 8888
           EOF
 
           # Install the chart
