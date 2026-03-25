@@ -141,6 +141,11 @@ jobs:
 
           kubectl get services
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
       - name: Run comprehensive smoke tests
         run: |
           chmod +x ./scripts/smoke-test.sh

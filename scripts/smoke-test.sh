@@ -311,6 +311,22 @@ wait_for_table_count_increase "$CLICKHOUSE_LOG_TABLE" "$log_baseline" "$TIMEOUT"
 stop_port_forward "$otlp_http_pf_pid"
 stop_port_forward "$clickhouse_pf_pid"
 
+# Verify app works end-to-end with default connection (register + search)
+echo "Running Playwright e2e test..."
+ui_pf_pid=$(start_port_forward "service/$RELEASE_NAME-$CHART_NAME-app" "3000" "3000" "hyperdx-ui-e2e")
+sleep 2
+wait_for_service "http://localhost:3000" "HyperDX UI (e2e)"
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+(
+    cd "$SCRIPT_DIR/e2e"
+    npm install
+    npx playwright install --with-deps chromium
+    npx playwright test
+)
+
+stop_port_forward "$ui_pf_pid"
+
 echo ""
 echo "All smoke tests passed"
 echo "- All pods running"
@@ -320,3 +336,4 @@ echo "- OTEL Collector Deployment available"
 echo "- ClickHouseCluster reconciled (Ready)"
 echo "- MongoDBCommunity reconciled (Running)"
 echo "- OTEL traces and logs persisted to ClickHouse"
+echo "- App registers user and displays logs via default connection"
