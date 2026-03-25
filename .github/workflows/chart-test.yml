@@ -145,7 +145,7 @@ jobs:
         run: |
           chmod +x ./scripts/smoke-test.sh
 
-          TIMEOUT=600 RELEASE_NAME=hyperdx-test NAMESPACE=default ./scripts/smoke-test.sh
+          TIMEOUT=300 RELEASE_NAME=hyperdx-test NAMESPACE=default ./scripts/smoke-test.sh
 
       - name: Collect logs on failure
         if: failure()
