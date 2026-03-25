@@ -217,22 +217,13 @@ send_telemetrygen_signal() {
         body_arg=(--body "clickstack smoke test log ${run_id}")
     fi
 
-    echo "Sending ${signal} to OTEL collector over gRPC..."
-    if docker run --rm --network host "$OTEL_TELEMETRYGEN_IMAGE" "$signal" \
-        --otlp-endpoint "localhost:4317" \
-        --otlp-insecure \
-        "$count_flag" "$count" \
-        --service "clickstack-smoke-test" \
-        "${body_arg[@]}"; then
-        return 0
-    fi
-
-    echo "gRPC send failed for ${signal}; retrying over OTLP HTTP..."
+    echo "Sending ${signal} to OTEL collector over OTLP HTTP..."
     docker run --rm --network host "$OTEL_TELEMETRYGEN_IMAGE" "$signal" \
         --otlp-http \
         --otlp-endpoint "localhost:4318" \
         --otlp-insecure \
         "$count_flag" "$count" \
+        --rate 5 \
         --service "clickstack-smoke-test" \
         "${body_arg[@]}"
 }
@@ -289,7 +280,6 @@ fi
 
 # Verify OTEL data ingestion to ClickHouse
 echo "Verifying OTEL ingestion into ClickHouse..."
-otlp_grpc_pf_pid=$(start_port_forward "service/$RELEASE_NAME-otel-collector" "4317" "4317" "otel-grpc")
 otlp_http_pf_pid=$(start_port_forward "service/$RELEASE_NAME-otel-collector" "4318" "4318" "otel-http")
 clickhouse_pf_pid=$(start_port_forward "service/$CLICKHOUSE_SERVICE" "8123" "8123" "clickhouse-http")
 
@@ -318,7 +308,6 @@ echo "Waiting for traces/logs to land in ClickHouse..."
 wait_for_table_count_increase "$CLICKHOUSE_TRACE_TABLE" "$trace_baseline" "$TIMEOUT"
 wait_for_table_count_increase "$CLICKHOUSE_LOG_TABLE" "$log_baseline" "$TIMEOUT"
 
-stop_port_forward "$otlp_grpc_pf_pid"
 stop_port_forward "$otlp_http_pf_pid"
 stop_port_forward "$clickhouse_pf_pid"
 
