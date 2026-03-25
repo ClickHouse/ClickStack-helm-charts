@@ -12,6 +12,7 @@ The `values.yaml` in this directory:
 - Adds a HorizontalPodAutoscaler for the HyperDX deployment
 
 All of these are defined via `additionalManifests`, which renders arbitrary Kubernetes objects alongside the chart's own resources.
+This file is intentionally plain values YAML so it works directly with `-f` (without wrapper-chart template blocks like `{{- include ... | nindent ... }}`).
 
 ## Prerequisites
 
@@ -28,6 +29,9 @@ helm install clickstack-operators clickstack/clickstack-operators
 # Install ClickStack with ALB values
 helm install my-clickstack clickstack/clickstack \
   -f examples/alb-ingress/values.yaml
+
+# Or, from this directory:
+# helm install my-clickstack clickstack/clickstack -f values.yaml
 ```
 
 ## Customization

@@ -1,17 +1,22 @@
 # Additional Manifests
 
-The `additionalManifests` value lets you deploy arbitrary Kubernetes objects alongside the ClickStack chart. Use it to add resources that the chart does not template natively -- NetworkPolicy, HorizontalPodAutoscaler, ServiceAccount, PodMonitor, custom Ingress controllers, or any other Kubernetes API object.
+The `additionalManifests` value lets you deploy arbitrary Kubernetes objects alongside the ClickStack chart. Use it for resources that the chart does not template natively, such as `NetworkPolicy`, `HorizontalPodAutoscaler`, `ServiceAccount`, `PodMonitor`, custom `Ingress` objects, or any other Kubernetes API object.
 
 ## How it works
 
-Each entry in `additionalManifests` is a complete Kubernetes resource definition. The chart iterates over the list, converts each entry to YAML, and passes it through Helm's `tpl` function. This means you can use any Helm template expression inside string values:
+Each entry in `additionalManifests` is a complete Kubernetes resource definition. The chart:
+
+1. Iterates over each entry in the list
+2. Converts the entry to YAML (`toYaml`)
+3. Evaluates template expressions in that YAML using Helm `tpl`
+
+Template expressions can reference:
 
 - `.Release.Name`, `.Release.Namespace`
 - `include "clickstack.fullname" .` and other chart helpers
-- `.Values.*` references
+- `.Values.*`
 
 ```yaml
-# values.yaml
 additionalManifests:
   - apiVersion: v1
     kind: ConfigMap
@@ -21,25 +26,43 @@ additionalManifests:
       release: '{{ .Release.Name }}'
 ```
 
-> **Important:** Template expressions inside values must be quoted as YAML strings
-> (wrap them in single quotes). Unquoted `{{` is invalid YAML.
+## Values file constraints
+
+`additionalManifests` is configured in a values file, and values files are parsed as YAML before `tpl` runs.
+
+- Any `{{ ... }}` in a values file must be inside a quoted string.
+- Structural template blocks are not valid values YAML (for example, `{{- include ... | nindent ... }}` by itself).
+- For non-string fields (for example, numeric ports), use literal values or named ports.
+- If you need structural templating, use a wrapper chart template instead of a raw values file.
+
+```yaml
+# Valid in values.yaml
+name: '{{ include "clickstack.fullname" . }}-app'
+
+# Invalid in values.yaml (unquoted template expression)
+name: {{ include "clickstack.fullname" . }}-app
+
+# Invalid in values.yaml (structural template block)
+labels:
+  {{- include "clickstack.labels" . | nindent 2 }}
+```
 
 ## Available chart helpers
 
-These helpers are defined in `templates/_helpers.tpl` and can be used inside `additionalManifests` entries:
+These helpers are defined in `templates/_helpers.tpl`:
 
-| Helper | Description | Example output |
-|--------|-------------|----------------|
-| `clickstack.name` | Chart name (truncated to 63 chars) | `clickstack` |
-| `clickstack.fullname` | Release-qualified name | `my-release-clickstack` |
-| `clickstack.chart` | Chart name + version | `clickstack-2.0.0` |
-| `clickstack.labels` | Standard Helm labels block | *(multi-line)* |
-| `clickstack.selectorLabels` | `app.kubernetes.io/name` + `instance` | *(multi-line)* |
-| `clickstack.mongodb.fullname` | MongoDB CR name | `my-release-clickstack-mongodb` |
-| `clickstack.clickhouse.fullname` | ClickHouse CR name | `my-release-clickstack-clickhouse` |
-| `clickstack.otel.fullname` | OTEL Collector name | `my-release-otel-collector` |
+| Helper | Description | Values-file usage |
+|--------|-------------|-------------------|
+| `clickstack.name` | Chart name (truncated to 63 chars) | Safe in quoted scalars |
+| `clickstack.fullname` | Release-qualified name | Safe in quoted scalars |
+| `clickstack.chart` | Chart name + version | Safe in quoted scalars |
+| `clickstack.selectorLabels` | Selector labels block | Wrapper chart templates only |
+| `clickstack.labels` | Standard labels block | Wrapper chart templates only |
+| `clickstack.mongodb.fullname` | MongoDB CR name | Safe in quoted scalars |
+| `clickstack.clickhouse.fullname` | ClickHouse CR name | Safe in quoted scalars |
+| `clickstack.otel.fullname` | OTEL Collector name | Safe in quoted scalars |
 
-## Examples
+## Values-file examples
 
 ### ServiceAccount
 
@@ -51,14 +74,15 @@ additionalManifests:
       name: '{{ include "clickstack.fullname" . }}'
       namespace: '{{ .Release.Namespace }}'
       labels:
-        {{- include "clickstack.labels" . | nindent 8 }}
+        app.kubernetes.io/name: '{{ include "clickstack.name" . }}'
+        app.kubernetes.io/instance: '{{ .Release.Name }}'
       annotations:
         eks.amazonaws.com/role-arn: "arn:aws:iam::123456789:role/my-role"
 ```
 
 ### NetworkPolicy
 
-Restrict ingress traffic to the HyperDX pods:
+Restrict ingress traffic to HyperDX pods:
 
 ```yaml
 additionalManifests:
@@ -69,7 +93,8 @@ additionalManifests:
     spec:
       podSelector:
         matchLabels:
-          {{- include "clickstack.selectorLabels" . | nindent 10 }}
+          app.kubernetes.io/name: '{{ include "clickstack.name" . }}'
+          app.kubernetes.io/instance: '{{ .Release.Name }}'
       policyTypes:
         - Ingress
       ingress:
@@ -79,9 +104,9 @@ additionalManifests:
                   kubernetes.io/metadata.name: ingress-nginx
           ports:
             - protocol: TCP
-              port: {{ .Values.hyperdx.ports.app }}
+              port: 3000
             - protocol: TCP
-              port: {{ .Values.hyperdx.ports.api }}
+              port: 8000
 ```
 
 ### HorizontalPodAutoscaler
@@ -117,32 +142,31 @@ additionalManifests:
     metadata:
       name: '{{ include "clickstack.fullname" . }}'
       labels:
-        {{- include "clickstack.labels" . | nindent 8 }}
+        release: prometheus
     spec:
       selector:
         matchLabels:
-          {{- include "clickstack.selectorLabels" . | nindent 10 }}
+          app.kubernetes.io/name: '{{ include "clickstack.name" . }}'
+          app.kubernetes.io/instance: '{{ .Release.Name }}'
       podMetricsEndpoints:
-        - port: metrics
+        - port: app
           interval: 30s
 ```
 
 ### AWS ALB Ingress
 
-When using the [AWS Load Balancer Controller](https://kubernetes-sigs.github.io/aws-load-balancer-controller/), disable the chart's built-in nginx-centric Ingress and define a fully custom one:
+When using the [AWS Load Balancer Controller](https://kubernetes-sigs.github.io/aws-load-balancer-controller/), disable the chart's built-in nginx Ingress and define a custom ALB Ingress:
 
 ```yaml
 hyperdx:
   ingress:
-    enabled: false   # disable the built-in nginx Ingress
+    enabled: false
 
 additionalManifests:
   - apiVersion: networking.k8s.io/v1
     kind: Ingress
     metadata:
       name: '{{ include "clickstack.fullname" . }}-alb'
-      labels:
-        {{- include "clickstack.labels" . | nindent 8 }}
       annotations:
         alb.ingress.kubernetes.io/scheme: internet-facing
         alb.ingress.kubernetes.io/target-type: ip
@@ -151,10 +175,6 @@ additionalManifests:
         alb.ingress.kubernetes.io/ssl-redirect: "443"
         alb.ingress.kubernetes.io/group.name: clickstack
         alb.ingress.kubernetes.io/healthcheck-path: /api/health
-        alb.ingress.kubernetes.io/healthcheck-interval-seconds: "15"
-        alb.ingress.kubernetes.io/healthcheck-timeout-seconds: "5"
-        alb.ingress.kubernetes.io/healthy-threshold-count: "2"
-        alb.ingress.kubernetes.io/unhealthy-threshold-count: "3"
     spec:
       ingressClassName: alb
       rules:
@@ -167,44 +187,14 @@ additionalManifests:
                   service:
                     name: '{{ include "clickstack.fullname" . }}-app'
                     port:
-                      number: {{ .Values.hyperdx.ports.app }}
+                      name: app
 ```
 
-If you also need the OTEL collector exposed through the ALB, add a second entry:
-
-```yaml
-additionalManifests:
-  # ... app Ingress above ...
-  - apiVersion: networking.k8s.io/v1
-    kind: Ingress
-    metadata:
-      name: '{{ include "clickstack.fullname" . }}-alb-otel'
-      annotations:
-        alb.ingress.kubernetes.io/scheme: internal
-        alb.ingress.kubernetes.io/target-type: ip
-        alb.ingress.kubernetes.io/group.name: clickstack-otel
-        alb.ingress.kubernetes.io/healthcheck-path: /
-        alb.ingress.kubernetes.io/healthcheck-port: "13133"
-    spec:
-      ingressClassName: alb
-      rules:
-        - host: otel.internal.example.com
-          http:
-            paths:
-              - path: /
-                pathType: Prefix
-                backend:
-                  service:
-                    name: '{{ include "clickstack.otel.fullname" . }}'
-                    port:
-                      number: 4318
-```
-
-For a complete, ready-to-use ALB example, see [`examples/alb-ingress/`](../examples/alb-ingress/).
+For a complete ALB setup example, see [`examples/alb-ingress/`](../examples/alb-ingress/).
 
 ### TargetGroupBinding
 
-For ALB scenarios that require explicit TargetGroupBinding resources (e.g. pre-provisioned target groups):
+For ALB scenarios that require explicit `TargetGroupBinding` resources:
 
 ```yaml
 additionalManifests:
@@ -215,24 +205,29 @@ additionalManifests:
     spec:
       serviceRef:
         name: '{{ include "clickstack.fullname" . }}-app'
-        port: {{ .Values.hyperdx.ports.app }}
+        port: app
       targetGroupARN: "arn:aws:elasticloadbalancing:us-east-1:123456789:targetgroup/my-tg/abc123"
       targetType: ip
 ```
 
-## Tips
+## Advanced: wrapper chart templates
 
-### Quoting template expressions
+If you need structural helpers like `include "clickstack.labels" . | nindent 4`, render them from a wrapper chart template (`templates/*.yaml`) instead of putting those blocks directly in values files.
 
-YAML requires `{{` to be inside a quoted string. Always use single quotes around values that contain template expressions:
+Example wrapper chart template snippet:
 
 ```yaml
-# Correct
-name: '{{ include "clickstack.fullname" . }}'
-
-# Incorrect -- YAML parse error
-name: {{ include "clickstack.fullname" . }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "clickstack.fullname" . }}-extra
+  labels:
+    {{- include "clickstack.labels" . | nindent 4 }}
+data:
+  appPort: "{{ .Values.hyperdx.ports.app }}"
 ```
+
+## Tips
 
 ### Helm hooks
 
@@ -259,33 +254,8 @@ additionalManifests:
 
 ### CRD ordering
 
-If your additional manifests include custom resource instances (e.g. `PodMonitor`), the CRDs must already exist in the cluster. Install CRDs before the chart release, either via the operator chart (`clickstack-operators`) or a separate step. Helm installs CRDs from `crds/` before templates, but `additionalManifests` entries are normal templates and cannot define CRDs.
+If your additional manifests include custom resources (for example, `PodMonitor`), the CRDs must already exist in the cluster before install/upgrade.
 
 ### Combining multiple resources
 
-You can define as many entries as needed. They are rendered in list order:
-
-```yaml
-additionalManifests:
-  - apiVersion: v1
-    kind: ServiceAccount
-    metadata:
-      name: '{{ include "clickstack.fullname" . }}'
-  - apiVersion: networking.k8s.io/v1
-    kind: NetworkPolicy
-    metadata:
-      name: '{{ include "clickstack.fullname" . }}-netpol'
-    spec:
-      podSelector: {}
-  - apiVersion: autoscaling/v2
-    kind: HorizontalPodAutoscaler
-    metadata:
-      name: '{{ include "clickstack.fullname" . }}-hpa'
-    spec:
-      scaleTargetRef:
-        apiVersion: apps/v1
-        kind: Deployment
-        name: '{{ include "clickstack.fullname" . }}-app'
-      minReplicas: 2
-      maxReplicas: 10
-```
+`additionalManifests` is a list. Entries are rendered in list order, and each entry becomes its own YAML document.

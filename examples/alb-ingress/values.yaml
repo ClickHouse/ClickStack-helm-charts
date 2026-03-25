@@ -12,6 +12,8 @@
 #
 # Usage:
 #   helm install my-clickstack clickstack/clickstack -f values.yaml
+#   # From repo root:
+#   # helm install my-clickstack clickstack/clickstack -f examples/alb-ingress/values.yaml
 #
 # Customize the values below for your environment:
 #   - Replace certificate-arn with your ACM certificate ARN
@@ -38,8 +40,6 @@ additionalManifests:
     kind: Ingress
     metadata:
       name: '{{ include "clickstack.fullname" . }}-alb'
-      labels:
-        {{- include "clickstack.labels" . | nindent 8 }}
       annotations:
         alb.ingress.kubernetes.io/scheme: internet-facing
         alb.ingress.kubernetes.io/target-type: ip
@@ -65,15 +65,13 @@ additionalManifests:
                   service:
                     name: '{{ include "clickstack.fullname" . }}-app'
                     port:
-                      number: {{ .Values.hyperdx.ports.app }}
+                      name: app
 
   # -- ALB Ingress for the OTEL collector (internal) --
   - apiVersion: networking.k8s.io/v1
     kind: Ingress
     metadata:
       name: '{{ include "clickstack.fullname" . }}-alb-otel'
-      labels:
-        {{- include "clickstack.labels" . | nindent 8 }}
       annotations:
         alb.ingress.kubernetes.io/scheme: internal
         alb.ingress.kubernetes.io/target-type: ip
@@ -99,8 +97,6 @@ additionalManifests:
     kind: HorizontalPodAutoscaler
     metadata:
       name: '{{ include "clickstack.fullname" . }}-hpa'
-      labels:
-        {{- include "clickstack.labels" . | nindent 8 }}
     spec:
       scaleTargetRef:
         apiVersion: apps/v1

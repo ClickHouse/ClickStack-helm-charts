@@ -23,7 +23,7 @@ For configuration, cloud deployment, ingress setup, and troubleshooting, see the
 
 ## Additional Manifests
 
-The `clickstack` chart supports deploying arbitrary Kubernetes objects (NetworkPolicy, HPA, ServiceAccount, PodMonitor, ALB Ingress, etc.) alongside the chart's own resources via the `additionalManifests` value. See the [Additional Manifests Guide](docs/ADDITIONAL-MANIFESTS.md) for usage and examples.
+The `clickstack` chart supports deploying arbitrary Kubernetes objects (NetworkPolicy, HPA, ServiceAccount, PodMonitor, ALB Ingress, etc.) alongside the chart's own resources via the `additionalManifests` value. See the [Additional Manifests Guide](docs/ADDITIONAL-MANIFESTS.md) for values-file constraints and examples, including [AWS ALB example values](examples/alb-ingress/values.yaml).
 
 ## Operator Dependencies
 
