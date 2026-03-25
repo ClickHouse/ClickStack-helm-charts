@@ -204,117 +204,6 @@ wait_for_table_count_increase() {
     done
 }
 
-send_otlp_trace_payload() {
-    local run_id=$1
-    local start_nano=$2
-    local end_nano=$3
-
-    cat <<EOF | curl -sS --fail -H "Content-Type: application/json" --data-binary @- "http://localhost:4318/v1/traces" > /dev/null
-{
-  "resourceSpans": [
-    {
-      "resource": {
-        "attributes": [
-          {
-            "key": "service.name",
-            "value": {
-              "stringValue": "clickstack-smoke-test"
-            }
-          },
-          {
-            "key": "smoke.test.run_id",
-            "value": {
-              "stringValue": "${run_id}"
-            }
-          }
-        ]
-      },
-      "scopeSpans": [
-        {
-          "scope": {
-            "name": "clickstack-smoke-test"
-          },
-          "spans": [
-            {
-              "traceId": "5b8efff798038103d269b633813fc60c",
-              "spanId": "eee19b7ec3c1b174",
-              "name": "clickstack-smoke-span",
-              "kind": 2,
-              "startTimeUnixNano": "${start_nano}",
-              "endTimeUnixNano": "${end_nano}",
-              "attributes": [
-                {
-                  "key": "smoke.test",
-                  "value": {
-                    "stringValue": "true"
-                  }
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    }
-  ]
-}
-EOF
-}
-
-send_otlp_log_payload() {
-    local run_id=$1
-    local log_time_nano=$2
-
-    cat <<EOF | curl -sS --fail -H "Content-Type: application/json" --data-binary @- "http://localhost:4318/v1/logs" > /dev/null
-{
-  "resourceLogs": [
-    {
-      "resource": {
-        "attributes": [
-          {
-            "key": "service.name",
-            "value": {
-              "stringValue": "clickstack-smoke-test"
-            }
-          },
-          {
-            "key": "smoke.test.run_id",
-            "value": {
-              "stringValue": "${run_id}"
-            }
-          }
-        ]
-      },
-      "scopeLogs": [
-        {
-          "scope": {
-            "name": "clickstack-smoke-test"
-          },
-          "logRecords": [
-            {
-              "timeUnixNano": "${log_time_nano}",
-              "severityNumber": 9,
-              "severityText": "Info",
-              "body": {
-                "stringValue": "clickstack smoke test log record"
-              },
-              "attributes": [
-                {
-                  "key": "smoke.test",
-                  "value": {
-                    "stringValue": "true"
-                  }
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    }
-  ]
-}
-EOF
-}
-
 # Check pods
 echo "Checking pod status..."
 kubectl wait --for=condition=Ready pods -l app.kubernetes.io/instance=$RELEASE_NAME --timeout=${TIMEOUT}s -n $NAMESPACE
@@ -367,7 +256,6 @@ fi
 
 # Verify OTEL data ingestion to ClickHouse
 echo "Verifying OTEL ingestion into ClickHouse..."
-otlp_pf_pid=$(start_port_forward "service/$RELEASE_NAME-otel-collector" "4318" "4318" "otel-ingest")
 clickhouse_pf_pid=$(start_port_forward "service/$CLICKHOUSE_SERVICE" "8123" "8123" "clickhouse-http")
 
 CLICKHOUSE_HTTP_PASSWORD=$(get_secret_value "$CLICKHOUSE_SECRET_NAME" "CLICKHOUSE_APP_PASSWORD")
@@ -381,18 +269,19 @@ log_baseline=$(wait_for_table_queryable "$CLICKHOUSE_LOG_TABLE" "$TIMEOUT")
 echo "Baseline count ${CLICKHOUSE_DATABASE}.${CLICKHOUSE_TRACE_TABLE}: ${trace_baseline}"
 echo "Baseline count ${CLICKHOUSE_DATABASE}.${CLICKHOUSE_LOG_TABLE}: ${log_baseline}"
 
-run_id=$(date +%s)
-trace_start_nano=$((run_id * 1000000000))
-trace_end_nano=$((trace_start_nano + 1000000))
-log_time_nano=$((trace_end_nano + 1000000))
+# Trigger app activity to generate telemetry that should be exported to collector.
+echo "Generating HyperDX activity to trigger OTEL telemetry..."
+activity_pf_pid=$(start_port_forward "service/$RELEASE_NAME-$CHART_NAME-app" "3000" "3000" "hyperdx-activity")
+check_endpoint "http://localhost:3000" "200" "UI activity request 1"
+check_endpoint "http://localhost:3000" "200" "UI activity request 2"
+check_endpoint "http://localhost:3000" "200" "UI activity request 3"
+stop_port_forward "$activity_pf_pid"
 
-send_otlp_trace_payload "$run_id" "$trace_start_nano" "$trace_end_nano"
-send_otlp_log_payload "$run_id" "$log_time_nano"
+echo "Waiting for traces/logs to land in ClickHouse..."
 
 wait_for_table_count_increase "$CLICKHOUSE_TRACE_TABLE" "$trace_baseline" "$TIMEOUT"
 wait_for_table_count_increase "$CLICKHOUSE_LOG_TABLE" "$log_baseline" "$TIMEOUT"
 
-stop_port_forward "$otlp_pf_pid"
 stop_port_forward "$clickhouse_pf_pid"
 
 echo ""
