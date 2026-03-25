@@ -1,5 +1,15 @@
 # helm-charts
 
+## 2.1.0
+
+### Minor Changes
+
+- a615199: Add `additionalManifests` value for deploying arbitrary Kubernetes objects (NetworkPolicy, HPA, ServiceAccount, PodMonitor, ALB Ingress, etc.) alongside the chart. See docs/ADDITIONAL-MANIFESTS.md for usage and examples.
+
+### Patch Changes
+
+- 6f29e73: fix: combine ClickHouse app user grants into single query
+
 ## 2.0.0
 
 ### Major Changes
