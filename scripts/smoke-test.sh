@@ -14,6 +14,8 @@ CLICKHOUSE_DATABASE=${CLICKHOUSE_DATABASE:-default}
 CLICKHOUSE_TRACE_TABLE=${CLICKHOUSE_TRACE_TABLE:-otel_traces}
 CLICKHOUSE_LOG_TABLE=${CLICKHOUSE_LOG_TABLE:-otel_logs}
 INGESTION_POLL_INTERVAL=${INGESTION_POLL_INTERVAL:-5}
+OTEL_TELEMETRYGEN_IMAGE=${OTEL_TELEMETRYGEN_IMAGE:-ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen:latest}
+OTEL_SIGNAL_COUNT=${OTEL_SIGNAL_COUNT:-20}
 
 PORT_FORWARD_PIDS=()
 PORT_FORWARD_LOGS=()
@@ -204,6 +206,37 @@ wait_for_table_count_increase() {
     done
 }
 
+send_telemetrygen_signal() {
+    local signal=$1
+    local count_flag=$2
+    local count=$3
+    local run_id=$4
+    local body_arg=()
+
+    if [ "$signal" = "logs" ]; then
+        body_arg=(--body "clickstack smoke test log ${run_id}")
+    fi
+
+    echo "Sending ${signal} to OTEL collector over gRPC..."
+    if docker run --rm --network host "$OTEL_TELEMETRYGEN_IMAGE" "$signal" \
+        --otlp-endpoint "localhost:4317" \
+        --otlp-insecure \
+        "$count_flag" "$count" \
+        --service "clickstack-smoke-test" \
+        "${body_arg[@]}"; then
+        return 0
+    fi
+
+    echo "gRPC send failed for ${signal}; retrying over OTLP HTTP..."
+    docker run --rm --network host "$OTEL_TELEMETRYGEN_IMAGE" "$signal" \
+        --otlp-http \
+        --otlp-endpoint "localhost:4318" \
+        --otlp-insecure \
+        "$count_flag" "$count" \
+        --service "clickstack-smoke-test" \
+        "${body_arg[@]}"
+}
+
 # Check pods
 echo "Checking pod status..."
 kubectl wait --for=condition=Ready pods -l app.kubernetes.io/instance=$RELEASE_NAME --timeout=${TIMEOUT}s -n $NAMESPACE
@@ -256,6 +289,8 @@ fi
 
 # Verify OTEL data ingestion to ClickHouse
 echo "Verifying OTEL ingestion into ClickHouse..."
+otlp_grpc_pf_pid=$(start_port_forward "service/$RELEASE_NAME-otel-collector" "4317" "4317" "otel-grpc")
+otlp_http_pf_pid=$(start_port_forward "service/$RELEASE_NAME-otel-collector" "4318" "4318" "otel-http")
 clickhouse_pf_pid=$(start_port_forward "service/$CLICKHOUSE_SERVICE" "8123" "8123" "clickhouse-http")
 
 CLICKHOUSE_HTTP_PASSWORD=$(get_secret_value "$CLICKHOUSE_SECRET_NAME" "CLICKHOUSE_APP_PASSWORD")
@@ -269,19 +304,22 @@ log_baseline=$(wait_for_table_queryable "$CLICKHOUSE_LOG_TABLE" "$TIMEOUT")
 echo "Baseline count ${CLICKHOUSE_DATABASE}.${CLICKHOUSE_TRACE_TABLE}: ${trace_baseline}"
 echo "Baseline count ${CLICKHOUSE_DATABASE}.${CLICKHOUSE_LOG_TABLE}: ${log_baseline}"
 
-# Trigger app activity to generate telemetry that should be exported to collector.
-echo "Generating HyperDX activity to trigger OTEL telemetry..."
-activity_pf_pid=$(start_port_forward "service/$RELEASE_NAME-$CHART_NAME-app" "3000" "3000" "hyperdx-activity")
-check_endpoint "http://localhost:3000" "200" "UI activity request 1"
-check_endpoint "http://localhost:3000" "200" "UI activity request 2"
-check_endpoint "http://localhost:3000" "200" "UI activity request 3"
-stop_port_forward "$activity_pf_pid"
+if ! command -v docker > /dev/null 2>&1; then
+    echo "ERROR: docker is required to run telemetrygen for OTEL ingestion checks"
+    exit 1
+fi
+
+run_id=$(date +%s)
+send_telemetrygen_signal "traces" "--traces" "$OTEL_SIGNAL_COUNT" "$run_id"
+send_telemetrygen_signal "logs" "--logs" "$OTEL_SIGNAL_COUNT" "$run_id"
 
 echo "Waiting for traces/logs to land in ClickHouse..."
 
 wait_for_table_count_increase "$CLICKHOUSE_TRACE_TABLE" "$trace_baseline" "$TIMEOUT"
 wait_for_table_count_increase "$CLICKHOUSE_LOG_TABLE" "$log_baseline" "$TIMEOUT"
 
+stop_port_forward "$otlp_grpc_pf_pid"
+stop_port_forward "$otlp_http_pf_pid"
 stop_port_forward "$clickhouse_pf_pid"
 
 echo ""
