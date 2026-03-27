@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "clickstack.fullname" . }}-app
+  name: {{ include "clickstack.hyperdx.fullname" . }}
   labels:
     {{- include "clickstack.labels" . | nindent 4 }}
     app: {{ include "clickstack.fullname" . }}

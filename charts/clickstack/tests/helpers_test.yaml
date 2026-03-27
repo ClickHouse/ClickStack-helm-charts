@@ -22,8 +22,16 @@ tests:
     asserts:
       - equal:
           path: metadata.name
-          value: direct-override-app
-          
+          value: direct-override
+
+  - it: should not append -app suffix when fullnameOverride is set
+    set:
+      fullnameOverride: hyperdx-api
+    asserts:
+      - equal:
+          path: metadata.name
+          value: hyperdx-api
+
   - it: should render common labels correctly
     asserts:
       - matchRegex:
