@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "clickstack.fullname" . }}-app
+  name: {{ include "clickstack.hyperdx.fullname" . }}
   labels:
     {{- include "clickstack.labels" . | nindent 4 }}
   {{- if .Values.hyperdx.service.annotations }}

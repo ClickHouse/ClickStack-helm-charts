@@ -1,5 +1,11 @@
 # helm-charts
 
+## 2.1.1
+
+### Patch Changes
+
+- 00897b5: Make the `-app` suffix on HyperDX Deployment and Service names conditional on `fullnameOverride`. When `fullnameOverride` is set, the suffix is omitted so users get full control over resource naming. The default behavior (no override) is unchanged.
+
 ## 2.1.0
 
 ### Minor Changes

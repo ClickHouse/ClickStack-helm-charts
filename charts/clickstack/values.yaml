@@ -38,7 +38,7 @@ hyperdx:
     CLICKHOUSE_ENDPOINT: 'tcp://{{ include "clickstack.clickhouse.svc" . }}:{{ .Values.clickhouse.nativePort }}?dial_timeout=10s'
     CLICKHOUSE_SERVER_ENDPOINT: '{{ include "clickstack.clickhouse.svc" . }}:{{ .Values.clickhouse.nativePort }}'
     CLICKHOUSE_PROMETHEUS_METRICS_ENDPOINT: '{{ include "clickstack.clickhouse.svc" . }}:{{ .Values.clickhouse.prometheus.port }}'
-    OPAMP_SERVER_URL: 'http://{{ include "clickstack.fullname" . }}-app:{{ .Values.hyperdx.ports.opamp }}'
+    OPAMP_SERVER_URL: 'http://{{ include "clickstack.hyperdx.fullname" . }}:{{ .Values.hyperdx.ports.opamp }}'
 
   # ── K8s Secret (clickstack-secret) ───────────────────────
   # Shared sensitive environment variables. Used by HyperDX and OTEL collector via envFrom.

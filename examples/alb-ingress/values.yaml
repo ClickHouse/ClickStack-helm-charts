@@ -63,7 +63,7 @@ additionalManifests:
                 pathType: Prefix
                 backend:
                   service:
-                    name: '{{ include "clickstack.fullname" . }}-app'
+                    name: '{{ include "clickstack.hyperdx.fullname" . }}'
                     port:
                       name: app
 
@@ -101,7 +101,7 @@ additionalManifests:
       scaleTargetRef:
         apiVersion: apps/v1
         kind: Deployment
-        name: '{{ include "clickstack.fullname" . }}-app'
+        name: '{{ include "clickstack.hyperdx.fullname" . }}'
       minReplicas: 2
       maxReplicas: 10
       metrics:

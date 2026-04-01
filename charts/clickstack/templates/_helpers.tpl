@@ -22,6 +22,19 @@ Create a default fully qualified app name.
 {{- end }}
 
 {{/*
+HyperDX app resource name. When fullnameOverride is set the user expects full
+control over naming, so the -app suffix is omitted. Without the override the
+suffix is kept for backward compatibility.
+*/}}
+{{- define "clickstack.hyperdx.fullname" -}}
+{{- if .Values.fullnameOverride -}}
+{{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" -}}
+{{- else -}}
+{{- printf "%s-app" (include "clickstack.fullname" .) -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
 Create chart name and version as used by the chart label.
 */}}
 {{- define "clickstack.chart" -}}
