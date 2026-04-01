@@ -1,8 +1,8 @@
 # ClickStack with AWS ALB Ingress
 #
 # This example deploys ClickStack with an AWS Application Load Balancer
-# instead of the chart's built-in nginx Ingress. It uses additionalManifests
-# to define a fully custom Ingress resource with ALB-specific annotations.
+# using the chart's passthrough ingress pattern. Annotations and spec are
+# passed through directly, so any ALB-specific configuration is supported.
 #
 # Prerequisites:
 #   - AWS Load Balancer Controller installed in the cluster
@@ -22,37 +22,20 @@
 
 hyperdx:
   ingress:
-    enabled: false  # disable the built-in nginx Ingress
-
-  deployment:
-    replicas: 2
-    resources:
-      requests:
-        cpu: 500m
-        memory: 512Mi
-      limits:
-        cpu: "2"
-        memory: 2Gi
-
-additionalManifests:
-  # -- ALB Ingress for the HyperDX app (public-facing) --
-  - apiVersion: networking.k8s.io/v1
-    kind: Ingress
-    metadata:
-      name: '{{ include "clickstack.fullname" . }}-alb'
-      annotations:
-        alb.ingress.kubernetes.io/scheme: internet-facing
-        alb.ingress.kubernetes.io/target-type: ip
-        alb.ingress.kubernetes.io/certificate-arn: "arn:aws:acm:us-east-1:123456789:certificate/your-cert-id"
-        alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
-        alb.ingress.kubernetes.io/ssl-redirect: "443"
-        alb.ingress.kubernetes.io/group.name: clickstack
-        alb.ingress.kubernetes.io/healthcheck-path: /api/health
-        alb.ingress.kubernetes.io/healthcheck-interval-seconds: "15"
-        alb.ingress.kubernetes.io/healthcheck-timeout-seconds: "5"
-        alb.ingress.kubernetes.io/healthy-threshold-count: "2"
-        alb.ingress.kubernetes.io/unhealthy-threshold-count: "3"
-        alb.ingress.kubernetes.io/target-group-attributes: stickiness.enabled=true,stickiness.lb_cookie.duration_seconds=3600
+    enabled: true
+    annotations:
+      alb.ingress.kubernetes.io/scheme: internet-facing
+      alb.ingress.kubernetes.io/target-type: ip
+      alb.ingress.kubernetes.io/certificate-arn: "arn:aws:acm:us-east-1:123456789:certificate/your-cert-id"
+      alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+      alb.ingress.kubernetes.io/ssl-redirect: "443"
+      alb.ingress.kubernetes.io/group.name: clickstack
+      alb.ingress.kubernetes.io/healthcheck-path: /api/health
+      alb.ingress.kubernetes.io/healthcheck-interval-seconds: "15"
+      alb.ingress.kubernetes.io/healthcheck-timeout-seconds: "5"
+      alb.ingress.kubernetes.io/healthy-threshold-count: "2"
+      alb.ingress.kubernetes.io/unhealthy-threshold-count: "3"
+      alb.ingress.kubernetes.io/target-group-attributes: stickiness.enabled=true,stickiness.lb_cookie.duration_seconds=3600
     spec:
       ingressClassName: alb
       rules:
@@ -66,42 +49,35 @@ additionalManifests:
                     name: '{{ include "clickstack.hyperdx.fullname" . }}'
                     port:
                       name: app
-
-  # -- ALB Ingress for the OTEL collector (internal) --
-  - apiVersion: networking.k8s.io/v1
-    kind: Ingress
-    metadata:
-      name: '{{ include "clickstack.fullname" . }}-alb-otel'
-      annotations:
-        alb.ingress.kubernetes.io/scheme: internal
-        alb.ingress.kubernetes.io/target-type: ip
-        alb.ingress.kubernetes.io/group.name: clickstack-otel
-        alb.ingress.kubernetes.io/healthcheck-path: /
-        alb.ingress.kubernetes.io/healthcheck-port: "13133"
-    spec:
-      ingressClassName: alb
-      rules:
-        - host: otel.internal.example.com
-          http:
+    additionalIngresses:
+      - name: otel-collector
+        annotations:
+          alb.ingress.kubernetes.io/scheme: internal
+          alb.ingress.kubernetes.io/target-type: ip
+          alb.ingress.kubernetes.io/group.name: clickstack-otel
+          alb.ingress.kubernetes.io/healthcheck-path: /
+          alb.ingress.kubernetes.io/healthcheck-port: "13133"
+        ingressClassName: alb
+        hosts:
+          - host: otel.internal.example.com
             paths:
               - path: /
                 pathType: Prefix
-                backend:
-                  service:
-                    name: '{{ include "clickstack.otel.fullname" . }}'
-                    port:
-                      number: 4318
+                port: 4318
 
-  # -- HorizontalPodAutoscaler for the HyperDX app --
-  - apiVersion: autoscaling/v2
-    kind: HorizontalPodAutoscaler
-    metadata:
-      name: '{{ include "clickstack.fullname" . }}-hpa'
+  deployment:
+    replicas: 2
+    resources:
+      requests:
+        cpu: 500m
+        memory: 512Mi
+      limits:
+        cpu: "2"
+        memory: 2Gi
+
+  autoscaling:
+    enabled: true
     spec:
-      scaleTargetRef:
-        apiVersion: apps/v1
-        kind: Deployment
-        name: '{{ include "clickstack.hyperdx.fullname" . }}'
       minReplicas: 2
       maxReplicas: 10
       metrics:

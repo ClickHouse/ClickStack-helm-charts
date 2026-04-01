@@ -1,0 +1,59 @@
+suite: Test NetworkPolicy
+templates:
+  - hyperdx/networkpolicy.yaml
+tests:
+  - it: should not render NetworkPolicy when disabled
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should render NetworkPolicy with egress deny list
+    set:
+      hyperdx:
+        networkPolicy:
+          enabled: true
+          spec:
+            podSelector: {}
+            policyTypes:
+              - Egress
+            egress:
+              - to:
+                  - ipBlock:
+                      cidr: 0.0.0.0/0
+                      except:
+                        - 169.254.169.254/32
+    asserts:
+      - isKind:
+          of: NetworkPolicy
+      - equal:
+          path: spec.policyTypes[0]
+          value: Egress
+      - equal:
+          path: spec.egress[0].to[0].ipBlock.except[0]
+          value: 169.254.169.254/32
+
+  - it: should render NetworkPolicy with ingress rules
+    set:
+      hyperdx:
+        networkPolicy:
+          enabled: true
+          spec:
+            podSelector:
+              matchLabels:
+                app: test
+            policyTypes:
+              - Ingress
+            ingress:
+              - from:
+                  - namespaceSelector:
+                      matchLabels:
+                        name: monitoring
+    asserts:
+      - isKind:
+          of: NetworkPolicy
+      - equal:
+          path: spec.podSelector.matchLabels.app
+          value: test
+      - equal:
+          path: spec.policyTypes[0]
+          value: Ingress

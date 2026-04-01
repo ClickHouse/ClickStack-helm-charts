@@ -1,0 +1,76 @@
+suite: Test HorizontalPodAutoscaler
+templates:
+  - hyperdx/hpa.yaml
+tests:
+  - it: should not render HPA when autoscaling is disabled
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should render HPA when autoscaling is enabled
+    set:
+      hyperdx:
+        autoscaling:
+          enabled: true
+          spec:
+            minReplicas: 2
+            maxReplicas: 10
+            metrics:
+              - type: Resource
+                resource:
+                  name: cpu
+                  target:
+                    type: Utilization
+                    averageUtilization: 80
+    asserts:
+      - isKind:
+          of: HorizontalPodAutoscaler
+      - equal:
+          path: spec.scaleTargetRef.apiVersion
+          value: apps/v1
+      - equal:
+          path: spec.scaleTargetRef.kind
+          value: Deployment
+      - matchRegex:
+          path: spec.scaleTargetRef.name
+          pattern: -app$
+      - equal:
+          path: spec.minReplicas
+          value: 2
+      - equal:
+          path: spec.maxReplicas
+          value: 10
+
+  - it: should use fullnameOverride for scaleTargetRef name
+    set:
+      fullnameOverride: hyperdx-api
+      hyperdx:
+        autoscaling:
+          enabled: true
+          spec:
+            minReplicas: 1
+            maxReplicas: 5
+    asserts:
+      - equal:
+          path: spec.scaleTargetRef.name
+          value: hyperdx-api
+
+  - it: should render HPA with memory metric
+    set:
+      hyperdx:
+        autoscaling:
+          enabled: true
+          spec:
+            minReplicas: 1
+            maxReplicas: 5
+            metrics:
+              - type: Resource
+                resource:
+                  name: memory
+                  target:
+                    type: Utilization
+                    averageUtilization: 90
+    asserts:
+      - equal:
+          path: spec.metrics[0].resource.name
+          value: memory

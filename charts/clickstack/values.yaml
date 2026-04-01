@@ -42,6 +42,11 @@ hyperdx:
 
   # ── K8s Secret (clickstack-secret) ───────────────────────
   # Shared sensitive environment variables. Used by HyperDX and OTEL collector via envFrom.
+  #
+  # Advanced: set to null to skip Secret creation entirely. This is useful when
+  # managing secrets externally via deployment.env valueFrom entries. Requires
+  # mongodb, clickhouse, and otel-collector to all be disabled. Users must
+  # provide all required environment variables through their own secret management.
   secrets:
     HYPERDX_API_KEY: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
     CLICKHOUSE_PASSWORD: "otelcollectorpass"
@@ -199,27 +204,47 @@ hyperdx:
   service:
     type: ClusterIP
     annotations: {}
+    # Expose the API port (8000) on the Service. Useful when deploying the
+    # API-only image or when external traffic needs to reach port 8000 directly.
+    apiPort:
+      enabled: false
 
   # ── K8s Ingress ──────────────────────────────────────────
+  # The primary ingress uses a passthrough pattern: annotations and spec are
+  # rendered verbatim so any ingress controller (nginx, ALB, Traefik, etc.)
+  # can be configured via values alone.
+  # additionalIngresses is kept as a power feature for multi-ingress setups.
   ingress:
     enabled: false
-    ingressClassName: nginx
     annotations: {}
-    host: "localhost"
-    path: "/(.*)"
-    pathType: "ImplementationSpecific"
-    proxyBodySize: "100m"
-    proxyConnectTimeout: "60"
-    proxySendTimeout: "60"
-    proxyReadTimeout: "60"
-    tls:
-      enabled: false
-      secretName: "hyperdx-tls"
+    spec: {}
     additionalIngresses: []
 
   # ── K8s PodDisruptionBudget ──────────────────────────────
   podDisruptionBudget:
     enabled: false
+
+  # ── K8s HorizontalPodAutoscaler ─────────────────────────
+  # When enabled, the Deployment's replicas field is omitted (HPA manages it).
+  # The spec is passed through verbatim -- provide any valid autoscaling/v2
+  # HPA spec fields (minReplicas, maxReplicas, metrics, behavior, etc.).
+  autoscaling:
+    enabled: false
+    spec: {}
+
+  # ── K8s NetworkPolicy ───────────────────────────────────
+  # The spec is passed through verbatim -- provide any valid NetworkPolicy spec
+  # (podSelector, policyTypes, egress, ingress rules, etc.).
+  networkPolicy:
+    enabled: false
+    spec: {}
+
+  # ── K8s ServiceAccount ──────────────────────────────────
+  # When enabled, a ServiceAccount is created and referenced by the Deployment.
+  # Use annotations for provider-specific bindings (e.g., eks.amazonaws.com/role-arn).
+  serviceAccount:
+    enabled: false
+    annotations: {}
 
   # ── K8s CronJob ──────────────────────────────────────────
   tasks:

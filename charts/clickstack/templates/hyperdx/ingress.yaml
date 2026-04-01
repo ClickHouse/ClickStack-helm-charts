@@ -1,46 +1,19 @@
-{{- if .Values.hyperdx.ingress.enabled -}}
+{{- if .Values.hyperdx.ingress.enabled }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: {{ include "clickstack.hyperdx.fullname" . }}-ingress
   labels:
     {{- include "clickstack.labels" . | nindent 4 }}
+  {{- with .Values.hyperdx.ingress.annotations }}
   annotations:
-    {{ $reqAnnotations := dict }}
-    {{- if eq .Values.hyperdx.ingress.ingressClassName "nginx" }}
-      {{ $reqAnnotations = dict "nginx.ingress.kubernetes.io/rewrite-target" "/$1"
-                               "nginx.ingress.kubernetes.io/use-regex" "true"
-                               "nginx.ingress.kubernetes.io/proxy-body-size" .Values.hyperdx.ingress.proxyBodySize
-                               "nginx.ingress.kubernetes.io/proxy-connect-timeout" .Values.hyperdx.ingress.proxyConnectTimeout
-                               "nginx.ingress.kubernetes.io/proxy-send-timeout" .Values.hyperdx.ingress.proxySendTimeout
-                               "nginx.ingress.kubernetes.io/proxy-read-timeout" .Values.hyperdx.ingress.proxyReadTimeout
-      }}
-      {{- if .Values.hyperdx.ingress.tls.enabled }}
-        {{ $_ := set $reqAnnotations "nginx.ingress.kubernetes.io/ssl-redirect" "true" }}
-        {{ $_ := set $reqAnnotations "nginx.ingress.kubernetes.io/force-ssl-redirect" "true" }}
-      {{- end }}
-    {{- end }}
-    {{ toYaml (mergeOverwrite .Values.hyperdx.ingress.annotations $reqAnnotations) | nindent 4}}
-spec:
-  ingressClassName: {{ .Values.hyperdx.ingress.ingressClassName }}
-  {{- if .Values.hyperdx.ingress.tls.enabled }}
-  tls:
-  - hosts:
-    - {{ .Values.hyperdx.ingress.host | default "localhost" }}
-    secretName: {{ .Values.hyperdx.ingress.tls.secretName | default "hyperdx-tls" }}
+    {{- toYaml . | nindent 4 }}
   {{- end }}
-  rules:
-    - host: {{ .Values.hyperdx.ingress.host | default "localhost" }}
-      http:
-        paths:
-          - path: {{ .Values.hyperdx.ingress.path | default "/(.*)" }}
-            pathType: {{ .Values.hyperdx.ingress.pathType | default "ImplementationSpecific" }}
-            backend:
-              service:
-                name: {{ include "clickstack.hyperdx.fullname" . }}
-                port:
-                  number: {{ .Values.hyperdx.ports.app }}
-{{- range .Values.hyperdx.ingress.additionalIngresses}}
+{{- with .Values.hyperdx.ingress.spec }}
+spec:
+  {{- toYaml . | nindent 2 }}
+{{- end }}
+{{- range .Values.hyperdx.ingress.additionalIngresses }}
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress

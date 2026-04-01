@@ -11,7 +11,9 @@ metadata:
     {{- end -}}
     {{- end }}
 spec:
+  {{- if not .Values.hyperdx.autoscaling.enabled }}
   replicas: {{ .Values.hyperdx.deployment.replicas | default 1 }}
+  {{- end }}
   selector:
     matchLabels:
       {{- include "clickstack.selectorLabels" . | nindent 6 }}
@@ -42,6 +44,9 @@ spec:
       {{- end }}
       {{- if .Values.hyperdx.deployment.priorityClassName }}
       priorityClassName: {{ .Values.hyperdx.deployment.priorityClassName | quote }}
+      {{- end }}
+      {{- if .Values.hyperdx.serviceAccount.enabled }}
+      serviceAccountName: {{ include "clickstack.hyperdx.fullname" . }}
       {{- end }}
       {{- if .Values.global.imagePullSecrets }}
       imagePullSecrets:
@@ -92,8 +97,10 @@ spec:
           envFrom:
             - configMapRef:
                 name: clickstack-config
+            {{- if not (kindIs "invalid" .Values.hyperdx.secrets) }}
             - secretRef:
                 name: clickstack-secret
+            {{- end }}
           env:
             {{- if .Values.hyperdx.deployment.useExistingConfigSecret }}
             - name: DEFAULT_CONNECTIONS
@@ -109,7 +116,7 @@ spec:
                   key: {{ .Values.hyperdx.deployment.existingConfigSourcesKey | quote }}
                   optional: false
             {{- else }}
-            {{- if .Values.hyperdx.deployment.defaultConnections }}
+            {{- if and .Values.hyperdx.deployment.defaultConnections (not (kindIs "invalid" .Values.hyperdx.secrets)) }}
             - name: DEFAULT_CONNECTIONS
               value: {{ tpl .Values.hyperdx.deployment.defaultConnections . | quote }}
             {{- end }}

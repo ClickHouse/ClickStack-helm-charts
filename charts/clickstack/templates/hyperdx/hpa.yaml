@@ -1,0 +1,16 @@
+{{- if .Values.hyperdx.autoscaling.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "clickstack.hyperdx.fullname" . }}
+  labels:
+    {{- include "clickstack.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "clickstack.hyperdx.fullname" . }}
+  {{- with .Values.hyperdx.autoscaling.spec }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}
+{{- end }}
