@@ -2,8 +2,6 @@
 set -e
 set -o pipefail
 
-NAMESPACE=${NAMESPACE:-default}
-RELEASE_NAME=${RELEASE_NAME:-hyperdx-api-only-test}
 DEPLOYMENT_NAME="hyperdx-api"
 TIMEOUT=${TIMEOUT:-300}
 
