@@ -87,7 +87,7 @@ hyperdx:
                   - 169.254.169.254/32
 
   serviceAccount:
-    enabled: true
+    create: true
     annotations:
       eks.amazonaws.com/role-arn: "arn:aws:iam::123456789:role/my-api-role"
 

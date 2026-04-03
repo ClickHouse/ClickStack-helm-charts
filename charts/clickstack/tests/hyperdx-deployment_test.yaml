@@ -255,6 +255,43 @@ tests:
           path: spec.template.spec.containers[0].readinessProbe.httpGet.port
           value: 9000
 
+  - it: should not set serviceAccountName by default
+    asserts:
+      - isNull:
+          path: spec.template.spec.serviceAccountName
+
+  - it: should set serviceAccountName when serviceAccount.create is true
+    set:
+      hyperdx:
+        serviceAccount:
+          create: true
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.serviceAccountName
+          pattern: -app$
+
+  - it: should set serviceAccountName to existing SA when create is false but name is set
+    set:
+      hyperdx:
+        serviceAccount:
+          create: false
+          name: "my-existing-sa"
+    asserts:
+      - equal:
+          path: spec.template.spec.serviceAccountName
+          value: my-existing-sa
+
+  - it: should use custom name in serviceAccountName when create is true and name is set
+    set:
+      hyperdx:
+        serviceAccount:
+          create: true
+          name: "my-custom-sa"
+    asserts:
+      - equal:
+          path: spec.template.spec.serviceAccountName
+          value: my-custom-sa
+
   - it: should not include imagePullSecrets when not configured
     asserts:
       - isNull:

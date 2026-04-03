@@ -45,8 +45,8 @@ spec:
       {{- if .Values.hyperdx.deployment.priorityClassName }}
       priorityClassName: {{ .Values.hyperdx.deployment.priorityClassName | quote }}
       {{- end }}
-      {{- if .Values.hyperdx.serviceAccount.enabled }}
-      serviceAccountName: {{ include "clickstack.hyperdx.fullname" . }}
+      {{- if or .Values.hyperdx.serviceAccount.create .Values.hyperdx.serviceAccount.name }}
+      serviceAccountName: {{ .Values.hyperdx.serviceAccount.name | default (include "clickstack.hyperdx.fullname" .) }}
       {{- end }}
       {{- if .Values.global.imagePullSecrets }}
       imagePullSecrets:

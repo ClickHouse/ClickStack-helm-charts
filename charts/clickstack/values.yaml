@@ -242,10 +242,12 @@ hyperdx:
     spec: {}
 
   # ── K8s ServiceAccount ──────────────────────────────────
-  # When enabled, a ServiceAccount is created and referenced by the Deployment.
+  # When create is true, a ServiceAccount is created and referenced by the Deployment.
+  # When create is false but name is set, the Deployment references an existing SA.
   # Use annotations for provider-specific bindings (e.g., eks.amazonaws.com/role-arn).
   serviceAccount:
-    enabled: false
+    create: false
+    name: ""            # if empty and create is true, uses the chart fullname
     annotations: {}
 
   # ── K8s CronJob ──────────────────────────────────────────
