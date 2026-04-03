@@ -176,11 +176,77 @@ jobs:
           helm uninstall hyperdx-test || true
           kind delete cluster --name hyperdx-test || true
 
+  test-api-only:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: "3.12.0"
+
+      - name: Update appVersion for nightly builds
+        if: github.event_name == 'schedule'
+        run: |
+          echo "Updating appVersion to 2-nightly for scheduled builds"
+          sed -i 's/^appVersion:.*/appVersion: 2-nightly/' charts/clickstack/Chart.yaml
+
+      - name: Create kind cluster
+        uses: helm/kind-action@v1
+        with:
+          cluster_name: hyperdx-api-only-test
+
+      - name: Build chart dependencies
+        run: |
+          helm repo add open-telemetry https://open-telemetry.github.io/opentelemetry-helm-charts
+          helm dependency build charts/clickstack
+
+      - name: Deploy ClickStack chart (API-only config)
+        run: |
+          helm install hyperdx-api-only-test ./charts/clickstack \
+            -f scripts/test-api-only-values.yaml \
+            --timeout=5m
+
+      - name: Verify API-only deployment
+        run: |
+          chmod +x ./scripts/verify-api-only.sh
+          RELEASE_NAME=hyperdx-api-only-test NAMESPACE=default ./scripts/verify-api-only.sh
+
+      - name: Collect logs on failure
+        if: failure()
+        run: |
+          echo "=== Pod Status ==="
+          kubectl get pods -o wide
+
+          echo "=== Events ==="
+          kubectl get events --sort-by=.metadata.creationTimestamp
+
+          echo "=== All Pod Logs ==="
+          for pod in $(kubectl get pods -o jsonpath='{.items[*].metadata.name}'); do
+            echo "--- Logs for $pod ---"
+            kubectl logs "$pod" --all-containers --tail=200 || true
+          done
+
+          echo "=== All Resources ==="
+          kubectl get deployment,svc,hpa,networkpolicy,sa,ingress,secret -o wide || true
+
+          echo "=== Pod Descriptions ==="
+          kubectl describe pods || true
+
+      - name: Cleanup
+        if: always()
+        run: |
+          helm uninstall hyperdx-api-only-test || true
+          kind delete cluster --name hyperdx-api-only-test || true
+
   otel-cicd-action:
     if: always()
     name: OpenTelemetry Export Trace
     runs-on: ubuntu-latest
-    needs: [test-helm-chart]
+    needs: [test-helm-chart, test-api-only]
     steps:
       - name: Export workflow
         uses: corentinmusard/otel-cicd-action@v4
