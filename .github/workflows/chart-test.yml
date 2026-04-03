@@ -204,11 +204,50 @@ jobs:
           helm repo add open-telemetry https://open-telemetry.github.io/opentelemetry-helm-charts
           helm dependency build charts/clickstack
 
+      - name: Deploy standalone MongoDB
+        run: |
+          cat <<'EOF' | kubectl apply -f -
+          apiVersion: v1
+          kind: Pod
+          metadata:
+            name: standalone-mongo
+            labels:
+              app: standalone-mongo
+          spec:
+            containers:
+              - name: mongo
+                image: mongo:5.0
+                ports:
+                  - containerPort: 27017
+                env:
+                  - name: MONGO_INITDB_ROOT_USERNAME
+                    value: "hyperdx"
+                  - name: MONGO_INITDB_ROOT_PASSWORD
+                    value: "testpass"
+          ---
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: standalone-mongo
+          spec:
+            selector:
+              app: standalone-mongo
+            ports:
+              - port: 27017
+                targetPort: 27017
+          EOF
+
+          echo "Waiting for standalone MongoDB to be ready..."
+          kubectl wait --for=condition=Ready pod/standalone-mongo --timeout=120s
+
       - name: Deploy ClickStack chart (API-only config)
         run: |
           helm install hyperdx-api-only-test ./charts/clickstack \
             -f scripts/test-api-only-values.yaml \
             --timeout=5m
+
+          echo "Waiting for deployment to be available..."
+          kubectl wait --for=condition=Available deployment/hyperdx-api --timeout=300s
 
       - name: Verify API-only deployment
         run: |

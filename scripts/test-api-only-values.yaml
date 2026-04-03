@@ -12,7 +12,7 @@ hyperdx:
 
   config:
     PORT: "8000"
-    MONGO_URI: ""
+    MONGO_URI: "mongodb://hyperdx:testpass@standalone-mongo:27017/hyperdx?authSource=admin"
     CLICKHOUSE_ENDPOINT: ""
     CLICKHOUSE_SERVER_ENDPOINT: ""
     CLICKHOUSE_PROMETHEUS_METRICS_ENDPOINT: ""

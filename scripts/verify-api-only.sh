@@ -135,7 +135,7 @@ PORT_FORWARD_PID=$!
 sleep 5
 
 if kill -0 "$PORT_FORWARD_PID" 2>/dev/null; then
-    HEALTH_CODE=$(curl -s -w "%{http_code}" -o /dev/null "http://localhost:18000/health" 2>/dev/null || echo "000")
+    HEALTH_CODE=$(curl -s -w "%{http_code}" -o /dev/null --max-time 10 "http://localhost:18000/health" 2>/dev/null || echo "000")
     if [ "$HEALTH_CODE" = "200" ]; then
         assert_pass "Health endpoint /health returned 200"
     else
