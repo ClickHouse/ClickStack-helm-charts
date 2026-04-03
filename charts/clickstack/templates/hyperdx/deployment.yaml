@@ -97,7 +97,7 @@ spec:
           envFrom:
             - configMapRef:
                 name: clickstack-config
-            {{- if not (kindIs "invalid" .Values.hyperdx.secrets) }}
+            {{- if ne .Values.hyperdx.secrets nil }}
             - secretRef:
                 name: clickstack-secret
             {{- end }}
@@ -116,7 +116,7 @@ spec:
                   key: {{ .Values.hyperdx.deployment.existingConfigSourcesKey | quote }}
                   optional: false
             {{- else }}
-            {{- if and .Values.hyperdx.deployment.defaultConnections (not (kindIs "invalid" .Values.hyperdx.secrets)) }}
+            {{- if and .Values.hyperdx.deployment.defaultConnections (ne .Values.hyperdx.secrets nil) }}
             - name: DEFAULT_CONNECTIONS
               value: {{ tpl .Values.hyperdx.deployment.defaultConnections . | quote }}
             {{- end }}
