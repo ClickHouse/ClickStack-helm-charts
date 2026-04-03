@@ -15,6 +15,31 @@ hyperdx:
     app: 3000
     opamp: 4320
 
+  # ── Dashboard provisioning ────────────────────────────────
+  # Discovers and upserts dashboard JSON into MongoDB (matched by name, never deletes)
+  #
+  # Two ways to provide dashboards:
+  # 1. Inline: set configMaps below with dashboard JSON
+  # 2. External: any ConfigMap in the cluster with the label "hyperdx.io/dashboard: true"
+  #    will be discovered automatically (ideal for application charts managing their own dashboards)
+  dashboards:
+    enabled: false
+    # Image for the k8s-sidecar that watches for labeled ConfigMaps
+    sidecarImage: "kiwigrid/k8s-sidecar:2.5.0"
+    # Inline dashboard definitions - key is filename, value is exported dashboard JSON
+    configMaps: {}
+    # Example:
+    # configMaps:
+    #   k8s-overview.json: |
+    #     { "name": "Kubernetes Overview", "tiles": [...] }
+    resources:
+      limits:
+        cpu: 100m
+        memory: 128Mi
+      requests:
+        cpu: 50m
+        memory: 64Mi
+
   # ── K8s ConfigMap (clickstack-config) ────────────────────
   # Shared non-sensitive environment variables. Used by HyperDX and OTEL collector via envFrom.
   # All values support Helm template expressions (rendered via tpl).
