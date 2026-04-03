@@ -136,3 +136,45 @@ tests:
       - equal:
           path: spec.type
           value: ClusterIP
+
+  - it: should not expose api port by default
+    asserts:
+      - lengthEqual:
+          path: spec.ports
+          count: 2
+
+  - it: should expose api port when apiPort is enabled
+    set:
+      hyperdx:
+        service:
+          apiPort:
+            enabled: true
+    asserts:
+      - lengthEqual:
+          path: spec.ports
+          count: 3
+      - equal:
+          path: spec.ports[1].port
+          value: 8000
+      - equal:
+          path: spec.ports[1].targetPort
+          value: 8000
+      - equal:
+          path: spec.ports[1].name
+          value: api
+
+  - it: should use custom api port when provided
+    set:
+      hyperdx:
+        ports:
+          api: 9000
+        service:
+          apiPort:
+            enabled: true
+    asserts:
+      - equal:
+          path: spec.ports[1].port
+          value: 9000
+      - equal:
+          path: spec.ports[1].targetPort
+          value: 9000

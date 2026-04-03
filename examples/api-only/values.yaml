@@ -1,0 +1,114 @@
+# ClickStack API-only deployment
+#
+# This example deploys the HyperDX API-only image with external MongoDB,
+# ClickHouse, and OTEL collector. All subcharts are disabled and secrets
+# are managed externally. This pattern is used when the API runs as a
+# standalone service and the dependencies are provided by an existing
+# infrastructure.
+#
+# Prerequisites:
+#   - External MongoDB, ClickHouse, and OTEL collector available
+#   - Kubernetes Secrets for connection strings pre-created in the namespace
+#
+# Usage:
+#   helm install my-api clickstack/clickstack -f values.yaml
+
+fullnameOverride: "hyperdx-api"
+
+mongodb:
+  enabled: false
+
+clickhouse:
+  enabled: false
+
+otel-collector:
+  enabled: false
+
+hyperdx:
+  secrets: null
+
+  config:
+    PORT: "8000"
+    OTEL_SERVICE_NAME: "my-hdx-api"
+    RUN_SCHEDULED_TASKS_EXTERNALLY: "true"
+    # Override defaults that reference disabled subcharts / null secrets
+    MONGO_URI: ""
+    CLICKHOUSE_ENDPOINT: ""
+    CLICKHOUSE_SERVER_ENDPOINT: ""
+    CLICKHOUSE_PROMETHEUS_METRICS_ENDPOINT: ""
+    OPAMP_SERVER_URL: ""
+
+  deployment:
+    defaultConnections: ""
+    defaultSources: ""
+    image:
+      repository: my-registry.example.com/hyperdx-api
+      tag: "2.22.0"
+    env:
+      - name: MONGO_URI
+        valueFrom:
+          secretKeyRef:
+            name: my-documentdb-secret
+            key: connection-string
+      - name: HYPERDX_API_KEY
+        valueFrom:
+          secretKeyRef:
+            name: my-hyperdx-secret
+            key: api-key
+
+  service:
+    apiPort:
+      enabled: true
+
+  autoscaling:
+    enabled: true
+    spec:
+      minReplicas: 2
+      maxReplicas: 10
+      metrics:
+        - type: Resource
+          resource:
+            name: cpu
+            target:
+              type: Utilization
+              averageUtilization: 80
+
+  networkPolicy:
+    enabled: true
+    spec:
+      podSelector: {}
+      policyTypes:
+        - Egress
+      egress:
+        - to:
+            - ipBlock:
+                cidr: 0.0.0.0/0
+                except:
+                  - 169.254.169.254/32
+
+  serviceAccount:
+    create: true
+    annotations:
+      eks.amazonaws.com/role-arn: "arn:aws:iam::123456789:role/my-api-role"
+
+  ingress:
+    enabled: true
+    annotations:
+      alb.ingress.kubernetes.io/scheme: internet-facing
+      alb.ingress.kubernetes.io/target-type: instance
+      alb.ingress.kubernetes.io/certificate-arn: "arn:aws:acm:us-east-1:123456789:certificate/your-cert-id"
+      alb.ingress.kubernetes.io/healthcheck-path: /health
+      alb.ingress.kubernetes.io/healthcheck-port: traffic-port
+    spec:
+      ingressClassName: alb
+      rules:
+        - host: api.example.com
+          http:
+            paths:
+              - path: /
+                pathType: Prefix
+                backend:
+                  service:
+                    name: hyperdx-api
+                    port:
+                      number: 8000

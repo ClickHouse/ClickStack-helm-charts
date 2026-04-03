@@ -1,0 +1,4 @@
+needs_operators: true
+needs_local_storage: true
+needs_nodejs: true
+timeout: 600

@@ -1,18 +1,16 @@
 # ClickStack with AWS ALB Ingress
 
-This example shows how to deploy ClickStack using an [AWS Application Load Balancer](https://kubernetes-sigs.github.io/aws-load-balancer-controller/) instead of the chart's built-in nginx Ingress.
+This example shows how to deploy ClickStack using an [AWS Application Load Balancer](https://kubernetes-sigs.github.io/aws-load-balancer-controller/) with the chart's passthrough ingress pattern.
 
 ## What's included
 
 The `values.yaml` in this directory:
 
-- Disables the built-in nginx Ingress (`hyperdx.ingress.enabled: false`)
-- Creates a public-facing ALB Ingress for the HyperDX app with HTTPS, SSL redirect, health checks, and session stickiness
-- Creates an internal ALB Ingress for the OTEL collector endpoint
-- Adds a HorizontalPodAutoscaler for the HyperDX deployment
+- Configures the primary ingress with ALB annotations and spec (public-facing, HTTPS, health checks, session stickiness)
+- Adds an internal ALB ingress for the OTEL collector endpoint via `additionalIngresses`
+- Enables a HorizontalPodAutoscaler for the HyperDX deployment
 
-All of these are defined via `additionalManifests`, which renders arbitrary Kubernetes objects alongside the chart's own resources.
-This file is intentionally plain values YAML so it works directly with `-f` (without wrapper-chart template blocks like `{{- include ... | nindent ... }}`).
+The primary ingress uses the chart's passthrough pattern: `annotations` and `spec` are rendered verbatim, so any ALB-specific configuration is expressed directly in values.
 
 ## Prerequisites
 
@@ -36,17 +34,15 @@ helm install my-clickstack clickstack/clickstack \
 
 ## Customization
 
-Edit `values.yaml` to match your environment:
-
 | Setting | Where to change | Description |
 |---------|-----------------|-------------|
-| Domain | `rules[].host` | Replace `clickstack.example.com` and `otel.internal.example.com` with your domains |
+| Domain | `spec.rules[].host` | Replace `clickstack.example.com` and `otel.internal.example.com` with your domains |
 | Certificate | `certificate-arn` annotation | Replace with your ACM certificate ARN |
 | ALB scheme | `scheme` annotation | `internet-facing` for public, `internal` for private |
 | Subnets | Add `subnets` annotation | Explicit subnet IDs if auto-discovery is not configured |
-| HPA thresholds | `minReplicas`, `maxReplicas`, `averageUtilization` | Tune autoscaling to your workload |
+| HPA thresholds | `autoscaling.spec` | Tune minReplicas, maxReplicas, and metric targets |
 
 ## Further reading
 
-- [Additional Manifests Guide](../../docs/ADDITIONAL-MANIFESTS.md) for the full reference on `additionalManifests`
+- [Additional Manifests Guide](../../docs/ADDITIONAL-MANIFESTS.md) for the `additionalManifests` power feature
 - [AWS Load Balancer Controller annotations](https://kubernetes-sigs.github.io/aws-load-balancer-controller/latest/guide/ingress/annotations/) for all available ALB annotations

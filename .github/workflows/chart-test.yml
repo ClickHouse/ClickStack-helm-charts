@@ -1,22 +1,40 @@
 name: Helm Chart Integration Test
 
 on:
-  # Run on merge to main
   push:
     branches: [main]
-  # Run on pull requests
   pull_request:
     branches: [main]
-  # Run nightly at 2 AM UTC
   schedule:
     - cron: "0 2 * * *"
-  # Allow manual trigger
   workflow_dispatch:
 
 jobs:
-  test-helm-chart:
+  discover:
     runs-on: ubuntu-latest
+    outputs:
+      suites: ${{ steps.find.outputs.suites }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
+      - name: Discover test suites
+        id: find
+        run: |
+          SUITES=$(ls -d integration-tests/*/suite.yaml \
+            | xargs -I{} dirname {} \
+            | xargs -I{} basename {} \
+            | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          echo "suites=$SUITES" >> "$GITHUB_OUTPUT"
+          echo "Discovered suites: $SUITES"
+
+  integration-test:
+    needs: discover
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: ${{ fromJson(needs.discover.outputs.suites) }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -31,141 +49,41 @@ jobs:
         run: |
           echo "Updating appVersion to 2-nightly for scheduled builds"
           sed -i 's/^appVersion:.*/appVersion: 2-nightly/' charts/clickstack/Chart.yaml
-          echo "Updated Chart.yaml:"
-          cat charts/clickstack/Chart.yaml
 
-      - name: Create kind cluster config
+      - name: Read suite config
+        id: config
         run: |
-          cat > kind-config.yaml << EOF
-          kind: Cluster
-          apiVersion: kind.x-k8s.io/v1alpha4
-          nodes:
-          - role: control-plane
-            extraPortMappings:
-            - containerPort: 30000
-              hostPort: 3000
-              protocol: TCP
-            - containerPort: 30001
-              hostPort: 4318
-              protocol: TCP
-          EOF
-
-      - name: Create kind cluster
-        uses: helm/kind-action@v1
-        with:
-          cluster_name: hyperdx-test
-          config: kind-config.yaml
-
-      - name: Install local-path-provisioner
-        run: |
-          kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/v0.0.24/deploy/local-path-storage.yaml
-          kubectl patch storageclass local-path -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
-
-      - name: Build chart dependencies
-        run: |
-          helm repo add mongodb https://mongodb.github.io/helm-charts
-          helm repo add open-telemetry https://open-telemetry.github.io/opentelemetry-helm-charts
-          helm dependency build charts/clickstack-operators
-          helm dependency build charts/clickstack
-
-      - name: Run Helm unit tests
-        run: |
-          helm plugin install https://github.com/helm-unittest/helm-unittest.git --version v1.0.3 ${{ runner.debug && '--debug' || ''}} || true
-          helm unittest charts/clickstack
-
-      - name: Install operators (Phase 1)
-        run: |
-          helm install clickstack-operators ./charts/clickstack-operators --timeout=5m
-
-      - name: Wait for CRDs
-        run: |
-          kubectl wait --for=condition=Established crds --all --timeout=60s
-          echo "CRDs registered:"
-          kubectl get crds | grep -E "clickhouse|mongodb" || true
-
-      - name: Deploy ClickStack chart (Phase 2)
-        run: |
-          # Create test values for faster deployment
-          cat > test-values.yaml << 'EOF'
-          hyperdx:
-            secrets:
-              HYPERDX_API_KEY: "test-api-key-for-ci"
-            config:
-              OPAMP_SERVER_URL: ""
-            deployment:
-              replicas: 1
-            service:
-              type: NodePort
-          EOF
-
-          # Install the chart
-          helm install hyperdx-test ./charts/clickstack -f test-values.yaml --timeout=10m
-
-          # Wait for ClickHouse to be ready so its DNS record is available
-          # before the OTEL collector's seed/migration step tries to connect
-          echo "Waiting for ClickHouseCluster to be ready..."
-          kubectl wait --for=condition=Ready clickhousecluster --all --timeout=300s
-
-          echo "Waiting for MongoDBCommunity to reach Running phase..."
-          kubectl wait --for=jsonpath='{.status.phase}'=Running mongodbcommunity --all --timeout=300s
-
-          # Give services time to initialize after CRs are ready
-          echo "Waiting for services to initialize..."
-          sleep 30
-
-      - name: Wait for operators and CRs
-        run: |
-          echo "Waiting for all pods to be ready..."
-          kubectl wait --for=condition=Ready pods --all --timeout=600s || true
-
-          echo "Pod status:"
-          kubectl get pods -o wide
-
-          echo "Checking MongoDBCommunity CR..."
-          kubectl get mongodbcommunity -o wide || true
-
-          echo "Checking ClickHouseCluster CR..."
-          kubectl get clickhousecluster -o wide || true
-
-      - name: Verify deployment
-        timeout-minutes: 4
-        run: |
-          echo "Initial pod status:"
-          kubectl get pods -o wide
-
-          echo "Waiting for all pods to be ready..."
-          kubectl wait --for=condition=Ready pods --all --timeout=600s
-
-          echo "Final pod status:"
-          kubectl get pods -o wide
-
-          kubectl get services
+          NEEDS_NODEJS=$(yq '.needs_nodejs // false' "integration-tests/${{ matrix.suite }}/suite.yaml")
+          echo "needs_nodejs=$NEEDS_NODEJS" >> "$GITHUB_OUTPUT"
 
       - name: Set up Node.js
+        if: steps.config.outputs.needs_nodejs == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: '24'
 
-      - name: Run comprehensive smoke tests
+      - name: Run integration test suite
         run: |
-          chmod +x ./scripts/smoke-test.sh
-
-          TIMEOUT=300 RELEASE_NAME=hyperdx-test NAMESPACE=default ./scripts/smoke-test.sh
+          chmod +x integration-tests/run-suite.sh
+          integration-tests/run-suite.sh "${{ matrix.suite }}"
 
       - name: Collect logs on failure
         if: failure()
         run: |
           echo "=== Pod Status ==="
-          kubectl get pods -o wide
+          kubectl get pods -o wide || true
 
           echo "=== Events ==="
-          kubectl get events --sort-by=.metadata.creationTimestamp
+          kubectl get events --sort-by=.metadata.creationTimestamp || true
 
           echo "=== All Pod Logs ==="
-          for pod in $(kubectl get pods -o jsonpath='{.items[*].metadata.name}'); do
+          for pod in $(kubectl get pods -o jsonpath='{.items[*].metadata.name}' 2>/dev/null); do
             echo "--- Logs for $pod ---"
             kubectl logs "$pod" --all-containers --tail=200 || true
           done
+
+          echo "=== All Resources ==="
+          kubectl get deployment,svc,hpa,networkpolicy,sa,ingress,secret -o wide || true
 
           echo "=== Pod Descriptions ==="
           kubectl describe pods || true
@@ -173,14 +91,14 @@ jobs:
       - name: Cleanup
         if: always()
         run: |
-          helm uninstall hyperdx-test || true
-          kind delete cluster --name hyperdx-test || true
+          helm uninstall "test-${{ matrix.suite }}" || true
+          kind delete cluster --name "test-${{ matrix.suite }}" || true
 
   otel-cicd-action:
     if: always()
     name: OpenTelemetry Export Trace
     runs-on: ubuntu-latest
-    needs: [test-helm-chart]
+    needs: [integration-test]
     steps:
       - name: Export workflow
         uses: corentinmusard/otel-cicd-action@v4

@@ -1,0 +1,81 @@
+fullnameOverride: "hyperdx-api"
+
+mongodb:
+  enabled: false
+clickhouse:
+  enabled: false
+otel-collector:
+  enabled: false
+
+hyperdx:
+  secrets: null
+
+  config:
+    PORT: "8000"
+    MONGO_URI: "mongodb://hyperdx:testpass@standalone-mongo:27017/hyperdx?authSource=admin"
+    CLICKHOUSE_ENDPOINT: ""
+    CLICKHOUSE_SERVER_ENDPOINT: ""
+    CLICKHOUSE_PROMETHEUS_METRICS_ENDPOINT: ""
+    OPAMP_SERVER_URL: ""
+
+  deployment:
+    defaultConnections: ""
+    defaultSources: ""
+    image:
+      repository: docker.hyperdx.io/hyperdx/hyperdx
+    env:
+      - name: HYPERDX_API_KEY
+        value: "test-api-key-for-ci"
+
+  service:
+    apiPort:
+      enabled: true
+
+  autoscaling:
+    enabled: true
+    spec:
+      minReplicas: 1
+      maxReplicas: 3
+      metrics:
+        - type: Resource
+          resource:
+            name: cpu
+            target:
+              type: Utilization
+              averageUtilization: 80
+
+  networkPolicy:
+    enabled: true
+    spec:
+      podSelector: {}
+      policyTypes:
+        - Egress
+      egress:
+        - to:
+            - ipBlock:
+                cidr: 0.0.0.0/0
+                except:
+                  - 169.254.169.254/32
+
+  serviceAccount:
+    create: true
+    annotations:
+      ci-test/purpose: "integration-test"
+
+  ingress:
+    enabled: true
+    annotations:
+      nginx.ingress.kubernetes.io/rewrite-target: /
+    spec:
+      ingressClassName: nginx
+      rules:
+        - host: hyperdx-api.test.local
+          http:
+            paths:
+              - path: /
+                pathType: Prefix
+                backend:
+                  service:
+                    name: hyperdx-api
+                    port:
+                      number: 8000

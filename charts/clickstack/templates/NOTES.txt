@@ -15,17 +15,16 @@ When disabling a component, override the corresponding endpoints in hyperdx.conf
 to point at your external service (e.g. CLICKHOUSE_ENDPOINT, MONGO_URI).
 
 {{- if .Values.hyperdx.ingress.enabled }}
-Application URL: {{ if .Values.hyperdx.ingress.tls.enabled }}https{{ else }}http{{ end }}://{{ .Values.hyperdx.ingress.host }}
+Ingress is enabled. Check your ingress resource for the configured host:
+  kubectl get ingress -l "app.kubernetes.io/name={{ include "clickstack.name" . }}"
 {{- else }}
 Application Access:
   For security, the service uses ClusterIP and is not exposed externally by default.
-  Choose one of the following secure access methods:
+  Choose one of the following access methods:
   
-  1. Enable Ingress with TLS (Recommended for Production):
-     helm upgrade {{ .Release.Name }} <chart-name-or-path> \
-       --set hyperdx.ingress.enabled=true \
-       --set hyperdx.ingress.host=your-domain.com \
-       --set hyperdx.ingress.tls.enabled=true
+  1. Enable Ingress (Recommended for Production):
+     Configure hyperdx.ingress with your annotations and spec.
+     See the chart documentation for nginx and ALB examples.
   
   2. Port Forward (Development/Testing):
      kubectl port-forward svc/{{ include "clickstack.hyperdx.fullname" . }} {{ .Values.hyperdx.ports.app }}:{{ .Values.hyperdx.ports.app }}

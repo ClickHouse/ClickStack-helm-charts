@@ -1,0 +1,15 @@
+{{- if .Values.hyperdx.networkPolicy.enabled }}
+{{- if not .Values.hyperdx.networkPolicy.spec }}
+{{- fail "hyperdx.networkPolicy.spec is required when networkPolicy is enabled" }}
+{{- end }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "clickstack.hyperdx.fullname" . }}-network-policy
+  labels:
+    {{- include "clickstack.labels" . | nindent 4 }}
+{{- with .Values.hyperdx.networkPolicy.spec }}
+spec:
+  {{- toYaml . | nindent 2 }}
+{{- end }}
+{{- end }}

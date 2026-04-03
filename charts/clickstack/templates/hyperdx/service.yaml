@@ -16,6 +16,11 @@ spec:
     - port: {{ .Values.hyperdx.ports.app }}
       targetPort: {{ .Values.hyperdx.ports.app }}
       name: app
+    {{- if .Values.hyperdx.service.apiPort.enabled }}
+    - port: {{ .Values.hyperdx.ports.api }}
+      targetPort: {{ .Values.hyperdx.ports.api }}
+      name: api
+    {{- end }}
     - port: {{ .Values.hyperdx.ports.opamp }}
       targetPort: {{ .Values.hyperdx.ports.opamp }}
       name: opamp

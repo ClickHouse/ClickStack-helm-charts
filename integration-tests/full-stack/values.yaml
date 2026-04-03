@@ -1,0 +1,9 @@
+hyperdx:
+  secrets:
+    HYPERDX_API_KEY: "test-api-key-for-ci"
+  config:
+    OPAMP_SERVER_URL: ""
+  deployment:
+    replicas: 1
+  service:
+    type: NodePort
