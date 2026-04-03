@@ -55,6 +55,22 @@ tests:
           path: spec.scaleTargetRef.name
           value: hyperdx-api
 
+  - it: should fail when spec includes scaleTargetRef
+    set:
+      hyperdx:
+        autoscaling:
+          enabled: true
+          spec:
+            scaleTargetRef:
+              apiVersion: apps/v1
+              kind: Deployment
+              name: my-custom-deployment
+            minReplicas: 1
+            maxReplicas: 5
+    asserts:
+      - failedTemplate:
+          errorMessage: "hyperdx.autoscaling.spec must not include scaleTargetRef -- the chart auto-wires it to the HyperDX Deployment. Remove scaleTargetRef from your autoscaling.spec values."
+
   - it: should render HPA with memory metric
     set:
       hyperdx:

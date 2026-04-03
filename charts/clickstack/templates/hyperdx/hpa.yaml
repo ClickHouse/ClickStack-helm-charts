@@ -1,4 +1,7 @@
 {{- if .Values.hyperdx.autoscaling.enabled }}
+{{- if hasKey .Values.hyperdx.autoscaling.spec "scaleTargetRef" }}
+{{- fail "hyperdx.autoscaling.spec must not include scaleTargetRef -- the chart auto-wires it to the HyperDX Deployment. Remove scaleTargetRef from your autoscaling.spec values." }}
+{{- end }}
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:

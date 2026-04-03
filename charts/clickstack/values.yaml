@@ -228,6 +228,8 @@ hyperdx:
   # When enabled, the Deployment's replicas field is omitted (HPA manages it).
   # The spec is passed through verbatim -- provide any valid autoscaling/v2
   # HPA spec fields (minReplicas, maxReplicas, metrics, behavior, etc.).
+  # NOTE: Do not include scaleTargetRef in spec. The chart auto-wires it to the
+  # HyperDX Deployment. If scaleTargetRef is present, the template will fail.
   autoscaling:
     enabled: false
     spec: {}
