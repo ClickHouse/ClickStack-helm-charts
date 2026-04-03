@@ -67,6 +67,16 @@ tests:
           path: spec.rules[0].http.paths[0].backend.service.port.number
           value: 8000
 
+  - it: should fail when ingress is enabled but spec is empty
+    set:
+      hyperdx:
+        ingress:
+          enabled: true
+          spec: {}
+    asserts:
+      - failedTemplate:
+          errorMessage: "hyperdx.ingress.spec is required when ingress is enabled"
+
   - it: should render primary ingress with nginx configuration
     set:
       hyperdx:

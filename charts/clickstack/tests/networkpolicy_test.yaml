@@ -7,6 +7,16 @@ tests:
       - hasDocuments:
           count: 0
 
+  - it: should fail when networkPolicy is enabled but spec is empty
+    set:
+      hyperdx:
+        networkPolicy:
+          enabled: true
+          spec: {}
+    asserts:
+      - failedTemplate:
+          errorMessage: "hyperdx.networkPolicy.spec is required when networkPolicy is enabled"
+
   - it: should render NetworkPolicy with egress deny list
     set:
       hyperdx:

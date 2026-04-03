@@ -1,4 +1,7 @@
 {{- if .Values.hyperdx.networkPolicy.enabled }}
+{{- if not .Values.hyperdx.networkPolicy.spec }}
+{{- fail "hyperdx.networkPolicy.spec is required when networkPolicy is enabled" }}
+{{- end }}
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
