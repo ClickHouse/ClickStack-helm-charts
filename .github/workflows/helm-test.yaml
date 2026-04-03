@@ -37,10 +37,12 @@ jobs:
           helm repo add open-telemetry https://open-telemetry.github.io/opentelemetry-helm-charts
           helm dependency build charts/clickstack
 
-      - name: Validate ALB example values render
+      - name: Validate example values render
         run: |
           helm template clickstack-example charts/clickstack \
             -f examples/alb-ingress/values.yaml >/dev/null
+          helm template clickstack-example charts/clickstack \
+            -f examples/api-only/values.yaml >/dev/null
 
       - name: Run helm-unittest
         run: |
