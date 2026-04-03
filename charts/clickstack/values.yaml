@@ -59,7 +59,7 @@ hyperdx:
       repository: docker.hyperdx.io/hyperdx/hyperdx
       tag:
       pullPolicy: IfNotPresent
-    replicas: 1
+    replicas: 1     # ignored when autoscaling.enabled is true (HPA manages replicas)
     resources: {}
     livenessProbe:
       enabled: true
@@ -230,6 +230,10 @@ hyperdx:
   # HPA spec fields (minReplicas, maxReplicas, metrics, behavior, etc.).
   # NOTE: Do not include scaleTargetRef in spec. The chart auto-wires it to the
   # HyperDX Deployment. If scaleTargetRef is present, the template will fail.
+  # IMPORTANT: If you later disable autoscaling, the Deployment will revert to
+  # deployment.replicas (default 1). Set deployment.replicas to your desired
+  # baseline before disabling autoscaling, or use minReplicas in the HPA spec
+  # as your effective minimum.
   autoscaling:
     enabled: false
     spec: {}
