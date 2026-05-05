@@ -108,7 +108,7 @@ hyperdx:
             "tableName": "otel_logs"
           },
           "kind": "log",
-          "timestampValueExpression": "TimestampTime",
+          "timestampValueExpression": "Timestamp",
           "name": "Logs",
           "displayedTimestampValueExpression": "Timestamp",
           "implicitColumnExpression": "Body",
