@@ -1,0 +1,18 @@
+{{- if and .Values.hyperdx.dashboards.enabled .Values.hyperdx.dashboards.configMaps }}
+{{- /*
+  Inline dashboard ConfigMap; labeled for discovery by the dashboard provisioner
+  alongside any external dashboard ConfigMaps from application charts.
+*/ -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "clickstack.fullname" . }}-dashboards
+  labels:
+    {{- include "clickstack.labels" . | nindent 4 }}
+    hyperdx.io/dashboard: "true"
+data:
+  {{- range $key, $value := .Values.hyperdx.dashboards.configMaps }}
+  {{ $key }}: |
+    {{- $value | nindent 4 }}
+  {{- end }}
+{{- end }}
