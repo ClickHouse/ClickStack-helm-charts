@@ -152,6 +152,134 @@ tests:
           path: spec.template.spec.initContainers[0].imagePullPolicy
           value: Always
 
+  - it: should not include initContainers when mongodb is disabled and no user init containers are provided
+    set:
+      mongodb:
+        enabled: false
+    asserts:
+      - isNull:
+          path: spec.template.spec.initContainers
+
+  - it: should render only user-provided initContainers when mongodb is disabled
+    set:
+      mongodb:
+        enabled: false
+      hyperdx:
+        deployment:
+          initContainers:
+            - name: fetch-cert
+              image: busybox:1.36.1
+              command: ['sh', '-c', 'wget -O /certs/bundle.pem https://example.com/bundle.pem']
+              volumeMounts:
+                - name: certs
+                  mountPath: /certs
+    asserts:
+      - lengthEqual:
+          path: spec.template.spec.initContainers
+          count: 1
+      - equal:
+          path: spec.template.spec.initContainers[0].name
+          value: fetch-cert
+      - equal:
+          path: spec.template.spec.initContainers[0].image
+          value: busybox:1.36.1
+      - equal:
+          path: spec.template.spec.initContainers[0].volumeMounts[0].mountPath
+          value: /certs
+
+  - it: should render wait-for-mongodb first then user initContainers when both are set
+    set:
+      mongodb:
+        enabled: true
+      hyperdx:
+        deployment:
+          initContainers:
+            - name: fetch-cert
+              image: busybox:1.36.1
+              command: ['sh', '-c', 'wget -O /certs/bundle.pem https://example.com/bundle.pem']
+    asserts:
+      - lengthEqual:
+          path: spec.template.spec.initContainers
+          count: 2
+      - equal:
+          path: spec.template.spec.initContainers[0].name
+          value: wait-for-mongodb
+      - equal:
+          path: spec.template.spec.initContainers[1].name
+          value: fetch-cert
+
+  - it: should not include volumes by default
+    asserts:
+      - isNull:
+          path: spec.template.spec.volumes
+
+  - it: should render user-provided volumes when set
+    set:
+      hyperdx:
+        deployment:
+          volumes:
+            - name: certs
+              emptyDir: {}
+            - name: saml-cert
+              configMap:
+                name: hyperdx-saml-cert
+    asserts:
+      - lengthEqual:
+          path: spec.template.spec.volumes
+          count: 2
+      - equal:
+          path: spec.template.spec.volumes[0].name
+          value: certs
+      - isSubset:
+          path: spec.template.spec.volumes[0]
+          content:
+            emptyDir: {}
+      - equal:
+          path: spec.template.spec.volumes[1].name
+          value: saml-cert
+      - equal:
+          path: spec.template.spec.volumes[1].configMap.name
+          value: hyperdx-saml-cert
+
+  - it: should not include volumeMounts on the app container by default
+    asserts:
+      - isNull:
+          path: spec.template.spec.containers[0].volumeMounts
+
+  - it: should render user-provided volumeMounts on the app container including subPath and readOnly
+    set:
+      hyperdx:
+        deployment:
+          volumeMounts:
+            - name: certs
+              mountPath: /certs
+            - name: saml-cert
+              mountPath: /etc/hyperdx/idp-cert.pem
+              subPath: idp-cert.pem
+              readOnly: true
+    asserts:
+      - lengthEqual:
+          path: spec.template.spec.containers[0].volumeMounts
+          count: 2
+      - equal:
+          path: spec.template.spec.containers[0].volumeMounts[0].name
+          value: certs
+      - equal:
+          path: spec.template.spec.containers[0].volumeMounts[0].mountPath
+          value: /certs
+      - equal:
+          path: spec.template.spec.containers[0].volumeMounts[1].name
+          value: saml-cert
+      - equal:
+          path: spec.template.spec.containers[0].volumeMounts[1].mountPath
+          value: /etc/hyperdx/idp-cert.pem
+      - equal:
+          path: spec.template.spec.containers[0].volumeMounts[1].subPath
+          value: idp-cert.pem
+      - equal:
+          path: spec.template.spec.containers[0].volumeMounts[1].readOnly
+          value: true
+
   - it: should include livenessProbe with default values when enabled
     asserts:
       - isSubset:
