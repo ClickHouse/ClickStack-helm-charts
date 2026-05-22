@@ -25,6 +25,10 @@ jobs:
         run: |
           sed -i "s/^appVersion: .*/appVersion: ${{ github.event.inputs.tag }}/" charts/clickstack/Chart.yaml
 
+      - name: Update otel-collector image tag in values.yaml
+        run: |
+          sed -i '/clickstack-otel-collector/{n;s/tag: "[^"]*"/tag: "${{ github.event.inputs.tag }}"/}' charts/clickstack/values.yaml
+
       - name: Create changeset
         run: |
           mkdir -p .changeset
@@ -43,8 +47,9 @@ jobs:
           commit-message: "chore: Update appVersion to ${{ github.event.inputs.tag }}"
           title: "Update appVersion to ${{ github.event.inputs.tag }}"
           body: |
-            This PR updates the appVersion in Chart.yaml to `${{ github.event.inputs.tag }}`.
-            
+            This PR updates the appVersion in Chart.yaml to `${{ github.event.inputs.tag }}` and aligns the otel-collector image tag in values.yaml.
+
             - Updated `charts/clickstack/Chart.yaml`
+            - Updated `otel-collector.image.tag` in `charts/clickstack/values.yaml`
           branch: update-app-version-${{ github.event.inputs.tag }}
           delete-branch: true
