@@ -80,6 +80,13 @@ hyperdx:
     annotations: {}
     labels: {}
     env: []
+    # Additional init containers to run before the HyperDX container starts.
+    # Useful for fetching certificates, warming caches, or other startup tasks.
+    initContainers: []
+    # Additional volumes to attach to the pod.
+    volumes: []
+    # Additional volume mounts to apply to the HyperDX container.
+    volumeMounts: []
     waitForMongodb:
       image: "busybox@sha256:1fcf5df59121b92d61e066df1788e8df0cc35623f5d62d9679a41e163b6a0cdb"
       pullPolicy: IfNotPresent

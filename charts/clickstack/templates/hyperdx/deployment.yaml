@@ -52,12 +52,21 @@ spec:
       imagePullSecrets:
         {{- toYaml .Values.global.imagePullSecrets | nindent 8 }}
       {{- end }}
-      {{- if .Values.mongodb.enabled }}
+      {{- if or .Values.mongodb.enabled .Values.hyperdx.deployment.initContainers }}
       initContainers:
+        {{- if .Values.mongodb.enabled }}
         - name: wait-for-mongodb
           image: {{ .Values.hyperdx.deployment.waitForMongodb.image }}
           imagePullPolicy: {{ .Values.hyperdx.deployment.waitForMongodb.pullPolicy }}
           command: ['sh', '-c', 'until nc -z {{ include "clickstack.mongodb.svc" . }} 27017; do echo waiting for mongodb; sleep 2; done;']
+        {{- end }}
+        {{- with .Values.hyperdx.deployment.initContainers }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- end }}
+      {{- with .Values.hyperdx.deployment.volumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
       {{- end }}
       containers:
         - name: app
@@ -93,6 +102,10 @@ spec:
             periodSeconds: {{ .Values.hyperdx.deployment.readinessProbe.periodSeconds }}
             timeoutSeconds: {{ .Values.hyperdx.deployment.readinessProbe.timeoutSeconds }}
             failureThreshold: {{ .Values.hyperdx.deployment.readinessProbe.failureThreshold }}
+          {{- end }}
+          {{- with .Values.hyperdx.deployment.volumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
           {{- end }}
           envFrom:
             - configMapRef:
