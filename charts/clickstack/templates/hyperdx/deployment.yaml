@@ -72,6 +72,14 @@ spec:
         - name: app
           image: "{{ .Values.hyperdx.deployment.image.repository }}:{{ .Values.hyperdx.deployment.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.hyperdx.deployment.image.pullPolicy }}
+          {{- if .Values.hyperdx.deployment.command }}
+          command: 
+            {{- toYaml .Values.hyperdx.deployment.command | nindent 12 }}
+          {{- end }}
+          {{- if .Values.hyperdx.deployment.args }}
+          args: 
+            {{- toYaml .Values.hyperdx.deployment.args | nindent 12 }}
+          {{- end }}
           ports:
             - name: app-port
               containerPort: {{ .Values.hyperdx.ports.app }}

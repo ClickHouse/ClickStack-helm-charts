@@ -59,6 +59,8 @@ hyperdx:
       repository: docker.hyperdx.io/hyperdx/hyperdx
       tag:
       pullPolicy: IfNotPresent
+    command: []
+    args: []
     replicas: 1     # ignored when autoscaling.enabled is true (HPA manages replicas)
     resources: {}
     livenessProbe:
