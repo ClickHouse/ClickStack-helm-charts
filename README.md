@@ -7,6 +7,12 @@
 helm repo add clickstack https://clickhouse.github.io/ClickStack-helm-charts
 helm repo update
 
+# Prerequisite: cert-manager (the ClickHouse operator uses it for webhook + metrics TLS)
+helm repo add jetstack https://charts.jetstack.io
+helm install cert-manager jetstack/cert-manager \
+  --namespace cert-manager --create-namespace \
+  --version v1.21.0 --set crds.enabled=true --wait
+
 # Step 1: Install operators and CRDs
 helm install clickstack-operators clickstack/clickstack-operators
 

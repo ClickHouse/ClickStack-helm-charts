@@ -60,6 +60,19 @@ helm dependency build "$REPO_ROOT/charts/clickstack"
 echo ""
 
 if [ "$NEEDS_OPERATORS" = "true" ]; then
+    # clickhouse-operator (>=0.0.5) renders cert-manager Certificate/Issuer resources, so cert-manager
+    # must be installed first. Use Helm --wait: its startupapicheck hook blocks until the webhook is
+    # actually serving, avoiding a race where the operator's admission calls hit it too early.
+    CERT_MANAGER_VERSION="v1.21.0"
+    echo "--- Installing cert-manager ${CERT_MANAGER_VERSION} ---"
+    helm repo add jetstack https://charts.jetstack.io 2>/dev/null || true
+    helm install cert-manager jetstack/cert-manager \
+        --namespace cert-manager --create-namespace \
+        --version "${CERT_MANAGER_VERSION}" \
+        --set crds.enabled=true \
+        --wait --timeout=5m
+    echo ""
+
     echo "--- Installing clickstack-operators ---"
     helm install clickstack-operators "$REPO_ROOT/charts/clickstack-operators" --timeout=5m
     echo "Waiting for CRDs..."

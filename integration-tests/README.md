@@ -68,7 +68,7 @@ For each suite, the harness (`run-suite.sh`) runs these steps in order:
 2. Create Kind cluster (uses `kind-config.yaml` if present)
 3. Install local-path-provisioner (if `needs_local_storage: true`)
 4. Build Helm chart dependencies
-5. Install clickstack-operators (if `needs_operators: true`)
+5. Install cert-manager, then clickstack-operators (if `needs_operators: true`)
 6. Run `prereq.sh` (if present and executable)
 7. `helm install` with `values.yaml` and configured timeout
 8. Run `assert.sh`
