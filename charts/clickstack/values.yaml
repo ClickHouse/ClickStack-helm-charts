@@ -1,24 +1,20 @@
+# -- Global defaults applied across chart workloads.
 global:
+  # -- Optional prefix for container images (e.g. registry.example.com/).
   imageRegistry: ""
-  # List of image pull secrets to use for pulling images from private registries
-  # This helps avoid rate limiting (429 errors) when pulling from Docker Hub
-  # Example:
-  # imagePullSecrets:
-  #   - name: regcred
-  #   - name: docker-hub-secret
+  # -- Image pull secrets for private registries. Helps avoid Docker Hub rate limits.
   imagePullSecrets: []
 
 hyperdx:
-  # Ports shared across Deployment, Service, ConfigMap, and Ingress
+  # -- Ports shared across Deployment, Service, ConfigMap, and Ingress.
   ports:
     api: 8000
     app: 3000
     opamp: 4320
 
-  # ── K8s ConfigMap (clickstack-config) ────────────────────
-  # Shared non-sensitive environment variables. Used by HyperDX and OTEL collector via envFrom.
-  # All values support Helm template expressions (rendered via tpl).
-  # Override any entry with a plain string to point at an external service.
+  # -- Shared non-sensitive environment variables (clickstack-config ConfigMap).
+  # Used by HyperDX and OTEL collector via envFrom. Values support tpl expressions.
+  # Override entries with plain strings to point at external services.
   config:
     APP_PORT: "3000"
     API_PORT: "8000"
@@ -40,26 +36,25 @@ hyperdx:
     CLICKHOUSE_PROMETHEUS_METRICS_ENDPOINT: '{{ include "clickstack.clickhouse.svc" . }}:{{ .Values.clickhouse.prometheus.port }}'
     OPAMP_SERVER_URL: 'http://{{ include "clickstack.hyperdx.fullname" . }}:{{ .Values.hyperdx.ports.opamp }}'
 
-  # ── K8s Secret (clickstack-secret) ───────────────────────
-  # Shared sensitive environment variables. Used by HyperDX and OTEL collector via envFrom.
-  #
-  # Advanced: set to null to skip Secret creation entirely. This is useful when
-  # managing secrets externally via deployment.env valueFrom entries. Requires
-  # mongodb, clickhouse, and otel-collector to all be disabled. Users must
-  # provide all required environment variables through their own secret management.
+  # -- Shared sensitive environment variables (clickstack-secret).
+  # Set to null to skip Secret creation (requires mongodb, clickhouse, and otel-collector disabled).
   secrets:
     HYPERDX_API_KEY: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
     CLICKHOUSE_PASSWORD: "otelcollectorpass"
     CLICKHOUSE_APP_PASSWORD: "hyperdx"
     MONGODB_PASSWORD: "hyperdx"
 
-  # ── K8s Deployment ───────────────────────────────────────
+  # -- HyperDX Deployment spec (image, probes, scheduling, init containers, volumes).
+  # defaultConnections/defaultSources JSON: set to "" to disable; use useExistingConfigSecret for external secrets.
   deployment:
     image:
+      # -- HyperDX container image repository.
       repository: docker.hyperdx.io/hyperdx/hyperdx
+      # -- Image tag. Defaults to Chart appVersion when empty.
       tag:
       pullPolicy: IfNotPresent
-    replicas: 1     # ignored when autoscaling.enabled is true (HPA manages replicas)
+    # -- Pod replica count. Ignored when hyperdx.autoscaling.enabled is true.
+    replicas: 1
     resources: {}
     livenessProbe:
       enabled: true
@@ -80,20 +75,18 @@ hyperdx:
     annotations: {}
     labels: {}
     env: []
-    # Additional init containers to run before the HyperDX container starts.
-    # Useful for fetching certificates, warming caches, or other startup tasks.
+    # -- Additional init containers to run before the HyperDX container starts.
     initContainers: []
-    # Additional volumes to attach to the pod.
+    # -- Additional volumes to attach to the pod.
     volumes: []
-    # Additional volume mounts to apply to the HyperDX container.
+    # -- Additional volume mounts for the HyperDX container.
     volumeMounts: []
     waitForMongodb:
       image: "busybox@sha256:1fcf5df59121b92d61e066df1788e8df0cc35623f5d62d9679a41e163b6a0cdb"
       pullPolicy: IfNotPresent
-    # Default connections and sources (ENABLED BY DEFAULT)
-    # Set to empty string to disable: defaultConnections: "" or defaultSources: ""
-    # To use an existing secret, set useExistingConfigSecret: true
+    # -- Load HyperDX connections JSON from an existing Secret instead of defaultConnections.
     useExistingConfigSecret: false
+    # -- Secret containing connections and sources JSON when useExistingConfigSecret is true.
     existingConfigSecret: ""
     existingConfigConnectionsKey: "connections.json"
     existingConfigSourcesKey: "sources.json"
@@ -207,61 +200,45 @@ hyperdx:
         }
       ]
 
-  # ── K8s Service ──────────────────────────────────────────
+  # -- HyperDX Service (ClusterIP by default).
   service:
     type: ClusterIP
     annotations: {}
-    # Expose the API port (8000) on the Service. Useful when deploying the
-    # API-only image or when external traffic needs to reach port 8000 directly.
+    # -- Expose the API port (8000) on the Service for API-only or direct API access.
     apiPort:
       enabled: false
 
-  # ── K8s Ingress ──────────────────────────────────────────
-  # The primary ingress uses a passthrough pattern: annotations and spec are
-  # rendered verbatim so any ingress controller (nginx, ALB, Traefik, etc.)
-  # can be configured via values alone.
-  # additionalIngresses is kept as a power feature for multi-ingress setups.
+  # -- Ingress for HyperDX. annotations and spec are rendered verbatim (nginx, ALB, Traefik, etc.).
+  # Use additionalIngresses for multi-ingress setups (e.g. separate OTEL collector ingress).
   ingress:
     enabled: false
     annotations: {}
     spec: {}
     additionalIngresses: []
 
-  # ── K8s PodDisruptionBudget ──────────────────────────────
+  # -- PodDisruptionBudget for the HyperDX Deployment.
   podDisruptionBudget:
     enabled: false
 
-  # ── K8s HorizontalPodAutoscaler ─────────────────────────
-  # When enabled, the Deployment's replicas field is omitted (HPA manages it).
-  # The spec is passed through verbatim -- provide any valid autoscaling/v2
-  # HPA spec fields (minReplicas, maxReplicas, metrics, behavior, etc.).
-  # NOTE: Do not include scaleTargetRef in spec. The chart auto-wires it to the
-  # HyperDX Deployment. If scaleTargetRef is present, the template will fail.
-  # IMPORTANT: If you later disable autoscaling, the Deployment will revert to
-  # deployment.replicas (default 1). Set deployment.replicas to your desired
-  # baseline before disabling autoscaling, or use minReplicas in the HPA spec
-  # as your effective minimum.
+  # -- HorizontalPodAutoscaler for HyperDX. spec is passed through verbatim (autoscaling/v2).
+  # Do not include scaleTargetRef — the chart auto-wires it. Omitting replicas when enabled.
   autoscaling:
     enabled: false
     spec: {}
 
-  # ── K8s NetworkPolicy ───────────────────────────────────
-  # The spec is passed through verbatim -- provide any valid NetworkPolicy spec
-  # (podSelector, policyTypes, egress, ingress rules, etc.).
+  # -- NetworkPolicy for HyperDX. spec is passed through verbatim.
   networkPolicy:
     enabled: false
     spec: {}
 
-  # ── K8s ServiceAccount ──────────────────────────────────
-  # When create is true, a ServiceAccount is created and referenced by the Deployment.
-  # When create is false but name is set, the Deployment references an existing SA.
-  # Use annotations for provider-specific bindings (e.g., eks.amazonaws.com/role-arn).
+  # -- ServiceAccount for HyperDX. Set create: true to provision one; use annotations for IRSA/GCP bindings.
   serviceAccount:
     create: false
-    name: ""            # if empty and create is true, uses the chart fullname
+    # -- ServiceAccount name. Defaults to chart fullname when create is true and name is empty.
+    name: ""
     annotations: {}
 
-  # ── K8s CronJob ──────────────────────────────────────────
+  # -- Scheduled HyperDX background tasks (CronJobs).
   tasks:
     enabled: false
     checkAlerts:
@@ -275,11 +252,10 @@ hyperdx:
           cpu: 100m
           memory: 128Mi
 
+# -- In-cluster MongoDB via MongoDBCommunity CR. Set enabled: false for external MongoDB.
 mongodb:
   enabled: true
-  # Full MongoDBCommunity CRD spec -- rendered verbatim into the CR.
-  # See https://github.com/mongodb/mongodb-kubernetes/tree/master/docs/mongodbcommunity
-  # for all available fields. Add persistence, nodeSelector, tolerations, etc. here.
+  # -- MongoDBCommunity CRD spec (rendered verbatim). See MongoDB Kubernetes Operator docs.
   spec:
     members: 1
     type: ReplicaSet
@@ -301,16 +277,18 @@ mongodb:
     additionalMongodConfig:
       storage.wiredTiger.engineConfig.journalCompressor: zlib
 
+# -- In-cluster ClickHouse via ClickHouseCluster CR. Set enabled: false for external ClickHouse.
 clickhouse:
   enabled: true
-  # Ports used for cross-service wiring (defaultConnections)
+  # -- HTTP interface port for in-cluster connections.
   port: 8123
+  # -- Native TCP port used in connection strings.
   nativePort: 9000
   prometheus:
+    # -- Expose ClickHouse Prometheus metrics endpoint.
     enabled: true
     port: 9363
-  # Full KeeperCluster CRD spec -- rendered verbatim into the CR.
-  # See https://clickhouse.com/docs/clickhouse-operator/guides/introduction
+  # -- KeeperCluster CRD spec (rendered verbatim). See ClickHouse Operator docs.
   keeper:
     spec:
       replicas: 1
@@ -320,8 +298,7 @@ clickhouse:
         resources:
           requests:
             storage: 5Gi
-  # Full ClickHouseCluster CRD spec -- rendered verbatim into the CR.
-  # See https://clickhouse.com/docs/clickhouse-operator/guides/configuration
+  # -- ClickHouseCluster CRD spec (rendered verbatim). See ClickHouse Operator docs.
   cluster:
     spec:
       containerTemplate:
@@ -356,17 +333,13 @@ clickhouse:
           keep_alive_timeout: 64
           max_concurrent_queries: 100
 
-# Additional Kubernetes manifests to deploy alongside the chart.
-# Each entry is a complete Kubernetes object. Values are rendered through
-# Helm's tpl function so template expressions (Release.Name, include, .Values)
-# are available inside string fields.
-# See docs/ADDITIONAL-MANIFESTS.md for full examples.
+# -- Additional Kubernetes manifests deployed alongside the chart (supports tpl).
+# See docs/ADDITIONAL-MANIFESTS.md for examples.
 additionalManifests: []
 
-# OpenTelemetry Collector subchart configuration (alias: otel-collector)
-# See https://github.com/open-telemetry/opentelemetry-helm-charts for all options
-# Set otel-collector.enabled to false to disable the OTEL collector entirely.
+# -- OpenTelemetry Collector subchart. Set enabled: false to use an external collector.
 otel-collector:
+  # -- Deploy the bundled OpenTelemetry Collector subchart.
   enabled: true
   mode: deployment
   image:

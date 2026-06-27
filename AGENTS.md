@@ -89,6 +89,7 @@ make docs
 ```
 
 Regenerates `charts/*/README.md` from `values.yaml` using [helm-docs](https://github.com/norwoodj/helm-docs).
+Only values with `#` comments in `values.yaml` appear in the README (`--ignore-non-descriptions`).
 Each chart README includes version and CI build status badges.
 The pre-commit hook verifies docs are up to date when values or templates change.
 
@@ -141,6 +142,8 @@ Requires: `kind`, `helm`, `kubectl`, `yq`.
 
 ### Values Structure (`values.yaml`)
 - Top-level keys: `global`, `hyperdx`, `clickhouse`, `mongodb`, `otel-collector`
+- Document user-facing values with `# --` comments directly above each key (helm-docs format)
+- `make docs` omits undocumented keys (`--ignore-non-descriptions`); prefer commenting parent keys for operator/subchart passthrough specs
 - `hyperdx.config` — non-sensitive env vars (ConfigMap), supports `tpl` expressions
 - `hyperdx.secrets` — sensitive env vars (Secret); set to `null` to skip creation
 - `hyperdx.deployment` — Deployment spec (image, replicas, resources, probes, etc.)

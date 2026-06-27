@@ -12,4 +12,5 @@ echo "Generating chart README files..."
 "${HELM_DOCS_BIN}" \
   --chart-search-root "${ROOT_DIR}/charts" \
   --template-files README.md.gotmpl \
-  --badge-style flat
+  --badge-style flat \
+  --ignore-non-descriptions

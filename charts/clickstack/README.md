@@ -32,162 +32,47 @@ See the [ClickStack Helm documentation](https://clickhouse.com/docs/use-cases/ob
 |------------|------|---------|
 | https://open-telemetry.github.io/opentelemetry-helm-charts | otel-collector(opentelemetry-collector) | ~0.146.0 |
 
+Documented values below. Undocumented keys (operator CRD passthrough fields, subchart defaults) are omitted — see the linked operator and subchart docs above.
+
 ## Values
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| additionalManifests | list | `[]` |  |
-| clickhouse.cluster.spec.containerTemplate.image.repository | string | `"clickhouse/clickhouse-server"` |  |
-| clickhouse.cluster.spec.containerTemplate.image.tag | string | `"25.7-alpine"` |  |
-| clickhouse.cluster.spec.dataVolumeClaimSpec.accessModes[0] | string | `"ReadWriteOnce"` |  |
-| clickhouse.cluster.spec.dataVolumeClaimSpec.resources.requests.storage | string | `"10Gi"` |  |
-| clickhouse.cluster.spec.keeperClusterRef.name | string | `"{{ include \"clickstack.clickhouse.keeper\" . }}"` |  |
-| clickhouse.cluster.spec.replicas | int | `1` |  |
-| clickhouse.cluster.spec.settings.extraConfig.keep_alive_timeout | int | `64` |  |
-| clickhouse.cluster.spec.settings.extraConfig.max_concurrent_queries | int | `100` |  |
-| clickhouse.cluster.spec.settings.extraConfig.max_connections | int | `4096` |  |
-| clickhouse.cluster.spec.settings.extraUsersConfig.users.app.grants[0].query | string | `"GRANT SHOW ON *.*, SELECT ON system.*, SELECT ON default.*"` |  |
-| clickhouse.cluster.spec.settings.extraUsersConfig.users.app.password | string | `"{{ .Values.hyperdx.secrets.CLICKHOUSE_APP_PASSWORD }}"` |  |
-| clickhouse.cluster.spec.settings.extraUsersConfig.users.app.profile | string | `"default"` |  |
-| clickhouse.cluster.spec.settings.extraUsersConfig.users.otelcollector.grants[0].query | string | `"GRANT SELECT,INSERT,CREATE,SHOW ON default.*"` |  |
-| clickhouse.cluster.spec.settings.extraUsersConfig.users.otelcollector.password | string | `"{{ .Values.hyperdx.secrets.CLICKHOUSE_PASSWORD }}"` |  |
-| clickhouse.cluster.spec.settings.extraUsersConfig.users.otelcollector.profile | string | `"default"` |  |
-| clickhouse.cluster.spec.shards | int | `1` |  |
-| clickhouse.enabled | bool | `true` |  |
-| clickhouse.keeper.spec.dataVolumeClaimSpec.accessModes[0] | string | `"ReadWriteOnce"` |  |
-| clickhouse.keeper.spec.dataVolumeClaimSpec.resources.requests.storage | string | `"5Gi"` |  |
-| clickhouse.keeper.spec.replicas | int | `1` |  |
-| clickhouse.nativePort | int | `9000` |  |
-| clickhouse.port | int | `8123` |  |
-| clickhouse.prometheus.enabled | bool | `true` |  |
-| clickhouse.prometheus.port | int | `9363` |  |
-| global.imagePullSecrets | list | `[]` |  |
-| global.imageRegistry | string | `""` |  |
-| hyperdx.autoscaling.enabled | bool | `false` |  |
-| hyperdx.autoscaling.spec | object | `{}` |  |
-| hyperdx.config.API_PORT | string | `"8000"` |  |
-| hyperdx.config.APP_PORT | string | `"3000"` |  |
-| hyperdx.config.CLICKHOUSE_ENDPOINT | string | `"tcp://{{ include \"clickstack.clickhouse.svc\" . }}:{{ .Values.clickhouse.nativePort }}?dial_timeout=10s"` |  |
-| hyperdx.config.CLICKHOUSE_PROMETHEUS_METRICS_ENDPOINT | string | `"{{ include \"clickstack.clickhouse.svc\" . }}:{{ .Values.clickhouse.prometheus.port }}"` |  |
-| hyperdx.config.CLICKHOUSE_SERVER_ENDPOINT | string | `"{{ include \"clickstack.clickhouse.svc\" . }}:{{ .Values.clickhouse.nativePort }}"` |  |
-| hyperdx.config.CLICKHOUSE_USER | string | `"otelcollector"` |  |
-| hyperdx.config.FRONTEND_URL | string | `"http://localhost:3000"` |  |
-| hyperdx.config.HYPERDX_API_PORT | string | `"8000"` |  |
-| hyperdx.config.HYPERDX_APP_PORT | string | `"3000"` |  |
-| hyperdx.config.HYPERDX_LOG_LEVEL | string | `"info"` |  |
-| hyperdx.config.HYPERDX_OTEL_EXPORTER_CLICKHOUSE_DATABASE | string | `"default"` |  |
-| hyperdx.config.MONGO_URI | string | `"mongodb://hyperdx:{{ .Values.hyperdx.secrets.MONGODB_PASSWORD }}@{{ include \"clickstack.mongodb.svc\" . }}:27017/hyperdx?authSource=hyperdx"` |  |
-| hyperdx.config.OPAMP_PORT | string | `"4320"` |  |
-| hyperdx.config.OPAMP_SERVER_URL | string | `"http://{{ include \"clickstack.hyperdx.fullname\" . }}:{{ .Values.hyperdx.ports.opamp }}"` |  |
-| hyperdx.config.OTEL_EXPORTER_OTLP_ENDPOINT | string | `"http://{{ include \"clickstack.otel.fullname\" . }}:4318"` |  |
-| hyperdx.config.OTEL_SERVICE_NAME | string | `"hdx-oss-api"` |  |
-| hyperdx.config.RUN_SCHEDULED_TASKS_EXTERNALLY | string | `"false"` |  |
-| hyperdx.config.USAGE_STATS_ENABLED | string | `"true"` |  |
-| hyperdx.deployment.annotations | object | `{}` |  |
-| hyperdx.deployment.defaultConnections | string | `"[\n  {\n    \"name\": \"Local ClickHouse\",\n    \"host\": \"http://{{ include \"clickstack.clickhouse.svc\" . }}:8123\",\n    \"port\": 8123,\n    \"username\": \"app\",\n    \"password\": \"{{ .Values.hyperdx.secrets.CLICKHOUSE_APP_PASSWORD }}\"\n  }\n]\n"` |  |
-| hyperdx.deployment.defaultSources | string | `"[\n  {\n    \"from\": {\n      \"databaseName\": \"default\",\n      \"tableName\": \"otel_logs\"\n    },\n    \"kind\": \"log\",\n    \"timestampValueExpression\": \"Timestamp\",\n    \"name\": \"Logs\",\n    \"displayedTimestampValueExpression\": \"Timestamp\",\n    \"implicitColumnExpression\": \"Body\",\n    \"serviceNameExpression\": \"ServiceName\",\n    \"bodyExpression\": \"Body\",\n    \"eventAttributesExpression\": \"LogAttributes\",\n    \"resourceAttributesExpression\": \"ResourceAttributes\",\n    \"defaultTableSelectExpression\": \"Timestamp,ServiceName,SeverityText,Body\",\n    \"severityTextExpression\": \"SeverityText\",\n    \"traceIdExpression\": \"TraceId\",\n    \"spanIdExpression\": \"SpanId\",\n    \"connection\": \"Local ClickHouse\",\n    \"traceSourceId\": \"Traces\",\n    \"sessionSourceId\": \"Sessions\",\n    \"metricSourceId\": \"Metrics\"\n  },\n  {\n    \"from\": {\n      \"databaseName\": \"default\",\n      \"tableName\": \"otel_traces\"\n    },\n    \"kind\": \"trace\",\n    \"timestampValueExpression\": \"Timestamp\",\n    \"name\": \"Traces\",\n    \"displayedTimestampValueExpression\": \"Timestamp\",\n    \"implicitColumnExpression\": \"SpanName\",\n    \"serviceNameExpression\": \"ServiceName\",\n    \"bodyExpression\": \"SpanName\",\n    \"eventAttributesExpression\": \"SpanAttributes\",\n    \"resourceAttributesExpression\": \"ResourceAttributes\",\n    \"defaultTableSelectExpression\": \"Timestamp,ServiceName,StatusCode,round(Duration/1e6),SpanName\",\n    \"traceIdExpression\": \"TraceId\",\n    \"spanIdExpression\": \"SpanId\",\n    \"durationExpression\": \"Duration\",\n    \"durationPrecision\": 9,\n    \"parentSpanIdExpression\": \"ParentSpanId\",\n    \"spanNameExpression\": \"SpanName\",\n    \"spanKindExpression\": \"SpanKind\",\n    \"statusCodeExpression\": \"StatusCode\",\n    \"statusMessageExpression\": \"StatusMessage\",\n    \"connection\": \"Local ClickHouse\",\n    \"logSourceId\": \"Logs\",\n    \"sessionSourceId\": \"Sessions\",\n    \"metricSourceId\": \"Metrics\"\n  },\n  {\n    \"from\": {\n      \"databaseName\": \"default\",\n      \"tableName\": \"\"\n    },\n    \"kind\": \"metric\",\n    \"timestampValueExpression\": \"TimeUnix\",\n    \"name\": \"Metrics\",\n    \"resourceAttributesExpression\": \"ResourceAttributes\",\n    \"metricTables\": {\n      \"gauge\": \"otel_metrics_gauge\",\n      \"histogram\": \"otel_metrics_histogram\",\n      \"sum\": \"otel_metrics_sum\",\n      \"_id\": \"682586a8b1f81924e628e808\",\n      \"id\": \"682586a8b1f81924e628e808\"\n    },\n    \"connection\": \"Local ClickHouse\",\n    \"logSourceId\": \"Logs\",\n    \"traceSourceId\": \"Traces\",\n    \"sessionSourceId\": \"Sessions\"\n  },\n  {\n    \"from\": {\n      \"databaseName\": \"default\",\n      \"tableName\": \"hyperdx_sessions\"\n    },\n    \"kind\": \"session\",\n    \"timestampValueExpression\": \"TimestampTime\",\n    \"name\": \"Sessions\",\n    \"displayedTimestampValueExpression\": \"Timestamp\",\n    \"implicitColumnExpression\": \"Body\",\n    \"serviceNameExpression\": \"ServiceName\",\n    \"bodyExpression\": \"Body\",\n    \"eventAttributesExpression\": \"LogAttributes\",\n    \"resourceAttributesExpression\": \"ResourceAttributes\",\n    \"defaultTableSelectExpression\": \"Timestamp,ServiceName,SeverityText,Body\",\n    \"severityTextExpression\": \"SeverityText\",\n    \"traceIdExpression\": \"TraceId\",\n    \"spanIdExpression\": \"SpanId\",\n    \"connection\": \"Local ClickHouse\",\n    \"logSourceId\": \"Logs\",\n    \"traceSourceId\": \"Traces\",\n    \"metricSourceId\": \"Metrics\"\n  }\n]\n"` |  |
-| hyperdx.deployment.env | list | `[]` |  |
-| hyperdx.deployment.existingConfigConnectionsKey | string | `"connections.json"` |  |
-| hyperdx.deployment.existingConfigSecret | string | `""` |  |
-| hyperdx.deployment.existingConfigSourcesKey | string | `"sources.json"` |  |
-| hyperdx.deployment.image.pullPolicy | string | `"IfNotPresent"` |  |
-| hyperdx.deployment.image.repository | string | `"docker.hyperdx.io/hyperdx/hyperdx"` |  |
-| hyperdx.deployment.image.tag | string | `nil` |  |
-| hyperdx.deployment.initContainers | list | `[]` |  |
-| hyperdx.deployment.labels | object | `{}` |  |
-| hyperdx.deployment.livenessProbe.enabled | bool | `true` |  |
-| hyperdx.deployment.livenessProbe.failureThreshold | int | `3` |  |
-| hyperdx.deployment.livenessProbe.initialDelaySeconds | int | `10` |  |
-| hyperdx.deployment.livenessProbe.periodSeconds | int | `30` |  |
-| hyperdx.deployment.livenessProbe.timeoutSeconds | int | `5` |  |
-| hyperdx.deployment.nodeSelector | object | `{}` |  |
-| hyperdx.deployment.priorityClassName | string | `""` |  |
-| hyperdx.deployment.readinessProbe.enabled | bool | `true` |  |
-| hyperdx.deployment.readinessProbe.failureThreshold | int | `3` |  |
-| hyperdx.deployment.readinessProbe.initialDelaySeconds | int | `1` |  |
-| hyperdx.deployment.readinessProbe.periodSeconds | int | `10` |  |
-| hyperdx.deployment.readinessProbe.timeoutSeconds | int | `5` |  |
-| hyperdx.deployment.replicas | int | `1` |  |
-| hyperdx.deployment.resources | object | `{}` |  |
-| hyperdx.deployment.tolerations | list | `[]` |  |
-| hyperdx.deployment.topologySpreadConstraints | list | `[]` |  |
-| hyperdx.deployment.useExistingConfigSecret | bool | `false` |  |
-| hyperdx.deployment.volumeMounts | list | `[]` |  |
-| hyperdx.deployment.volumes | list | `[]` |  |
-| hyperdx.deployment.waitForMongodb.image | string | `"busybox@sha256:1fcf5df59121b92d61e066df1788e8df0cc35623f5d62d9679a41e163b6a0cdb"` |  |
-| hyperdx.deployment.waitForMongodb.pullPolicy | string | `"IfNotPresent"` |  |
-| hyperdx.ingress.additionalIngresses | list | `[]` |  |
-| hyperdx.ingress.annotations | object | `{}` |  |
-| hyperdx.ingress.enabled | bool | `false` |  |
-| hyperdx.ingress.spec | object | `{}` |  |
-| hyperdx.networkPolicy.enabled | bool | `false` |  |
-| hyperdx.networkPolicy.spec | object | `{}` |  |
-| hyperdx.podDisruptionBudget.enabled | bool | `false` |  |
-| hyperdx.ports.api | int | `8000` |  |
-| hyperdx.ports.app | int | `3000` |  |
-| hyperdx.ports.opamp | int | `4320` |  |
-| hyperdx.secrets.CLICKHOUSE_APP_PASSWORD | string | `"hyperdx"` |  |
-| hyperdx.secrets.CLICKHOUSE_PASSWORD | string | `"otelcollectorpass"` |  |
-| hyperdx.secrets.HYPERDX_API_KEY | string | `"xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"` |  |
-| hyperdx.secrets.MONGODB_PASSWORD | string | `"hyperdx"` |  |
-| hyperdx.service.annotations | object | `{}` |  |
-| hyperdx.service.apiPort.enabled | bool | `false` |  |
-| hyperdx.service.type | string | `"ClusterIP"` |  |
-| hyperdx.serviceAccount.annotations | object | `{}` |  |
-| hyperdx.serviceAccount.create | bool | `false` |  |
-| hyperdx.serviceAccount.name | string | `""` |  |
-| hyperdx.tasks.checkAlerts.additionalArgs | object | `{}` |  |
-| hyperdx.tasks.checkAlerts.resources.limits.cpu | string | `"200m"` |  |
-| hyperdx.tasks.checkAlerts.resources.limits.memory | string | `"256Mi"` |  |
-| hyperdx.tasks.checkAlerts.resources.requests.cpu | string | `"100m"` |  |
-| hyperdx.tasks.checkAlerts.resources.requests.memory | string | `"128Mi"` |  |
-| hyperdx.tasks.checkAlerts.schedule | string | `"*/1 * * * *"` |  |
-| hyperdx.tasks.enabled | bool | `false` |  |
-| mongodb.enabled | bool | `true` |  |
-| mongodb.spec.additionalMongodConfig."storage.wiredTiger.engineConfig.journalCompressor" | string | `"zlib"` |  |
-| mongodb.spec.members | int | `1` |  |
-| mongodb.spec.security.authentication.modes[0] | string | `"SCRAM"` |  |
-| mongodb.spec.type | string | `"ReplicaSet"` |  |
-| mongodb.spec.users[0].db | string | `"hyperdx"` |  |
-| mongodb.spec.users[0].name | string | `"hyperdx"` |  |
-| mongodb.spec.users[0].passwordSecretRef.name | string | `"{{ include \"clickstack.mongodb.fullname\" . }}-password"` |  |
-| mongodb.spec.users[0].roles[0].db | string | `"hyperdx"` |  |
-| mongodb.spec.users[0].roles[0].name | string | `"dbOwner"` |  |
-| mongodb.spec.users[0].roles[1].db | string | `"admin"` |  |
-| mongodb.spec.users[0].roles[1].name | string | `"clusterMonitor"` |  |
-| mongodb.spec.users[0].scramCredentialsSecretName | string | `"{{ include \"clickstack.mongodb.fullname\" . }}-scram"` |  |
-| mongodb.spec.version | string | `"5.0.32"` |  |
-| otel-collector.enabled | bool | `true` |  |
-| otel-collector.extraEnvsFrom[0].configMapRef.name | string | `"clickstack-config"` |  |
-| otel-collector.extraEnvsFrom[1].secretRef.name | string | `"clickstack-secret"` |  |
-| otel-collector.image.repository | string | `"docker.clickhouse.com/clickhouse/clickstack-otel-collector"` |  |
-| otel-collector.image.tag | string | `"2.19.0"` |  |
-| otel-collector.mode | string | `"deployment"` |  |
-| otel-collector.ports.fluentd.containerPort | int | `24225` |  |
-| otel-collector.ports.fluentd.enabled | bool | `true` |  |
-| otel-collector.ports.fluentd.protocol | string | `"TCP"` |  |
-| otel-collector.ports.fluentd.servicePort | int | `24225` |  |
-| otel-collector.ports.health-check.containerPort | int | `13133` |  |
-| otel-collector.ports.health-check.enabled | bool | `true` |  |
-| otel-collector.ports.health-check.protocol | string | `"TCP"` |  |
-| otel-collector.ports.health-check.servicePort | int | `13133` |  |
-| otel-collector.ports.jaeger-compact.enabled | bool | `false` |  |
-| otel-collector.ports.jaeger-grpc.enabled | bool | `false` |  |
-| otel-collector.ports.jaeger-thrift.enabled | bool | `false` |  |
-| otel-collector.ports.metrics.containerPort | int | `8888` |  |
-| otel-collector.ports.metrics.enabled | bool | `true` |  |
-| otel-collector.ports.metrics.protocol | string | `"TCP"` |  |
-| otel-collector.ports.metrics.servicePort | int | `8888` |  |
-| otel-collector.ports.otlp-http.containerPort | int | `4318` |  |
-| otel-collector.ports.otlp-http.enabled | bool | `true` |  |
-| otel-collector.ports.otlp-http.protocol | string | `"TCP"` |  |
-| otel-collector.ports.otlp-http.servicePort | int | `4318` |  |
-| otel-collector.ports.otlp.appProtocol | string | `"grpc"` |  |
-| otel-collector.ports.otlp.containerPort | int | `4317` |  |
-| otel-collector.ports.otlp.enabled | bool | `true` |  |
-| otel-collector.ports.otlp.protocol | string | `"TCP"` |  |
-| otel-collector.ports.otlp.servicePort | int | `4317` |  |
-| otel-collector.ports.zipkin.enabled | bool | `false` |  |
+| additionalManifests | list | `[]` | Additional Kubernetes manifests deployed alongside the chart (supports tpl). See docs/ADDITIONAL-MANIFESTS.md for examples. |
+| clickhouse | object | `{"cluster":{"spec":{"containerTemplate":{"image":{"repository":"clickhouse/clickhouse-server","tag":"25.7-alpine"}},"dataVolumeClaimSpec":{"accessModes":["ReadWriteOnce"],"resources":{"requests":{"storage":"10Gi"}}},"keeperClusterRef":{"name":"{{ include \"clickstack.clickhouse.keeper\" . }}"},"replicas":1,"settings":{"extraConfig":{"keep_alive_timeout":64,"max_concurrent_queries":100,"max_connections":4096},"extraUsersConfig":{"users":{"app":{"grants":[{"query":"GRANT SHOW ON *.*, SELECT ON system.*, SELECT ON default.*"}],"password":"{{ .Values.hyperdx.secrets.CLICKHOUSE_APP_PASSWORD }}","profile":"default"},"otelcollector":{"grants":[{"query":"GRANT SELECT,INSERT,CREATE,SHOW ON default.*"}],"password":"{{ .Values.hyperdx.secrets.CLICKHOUSE_PASSWORD }}","profile":"default"}}}},"shards":1}},"enabled":true,"keeper":{"spec":{"dataVolumeClaimSpec":{"accessModes":["ReadWriteOnce"],"resources":{"requests":{"storage":"5Gi"}}},"replicas":1}},"nativePort":9000,"port":8123,"prometheus":{"enabled":true,"port":9363}}` | In-cluster ClickHouse via ClickHouseCluster CR. Set enabled: false for external ClickHouse. |
+| clickhouse.cluster | object | `{"spec":{"containerTemplate":{"image":{"repository":"clickhouse/clickhouse-server","tag":"25.7-alpine"}},"dataVolumeClaimSpec":{"accessModes":["ReadWriteOnce"],"resources":{"requests":{"storage":"10Gi"}}},"keeperClusterRef":{"name":"{{ include \"clickstack.clickhouse.keeper\" . }}"},"replicas":1,"settings":{"extraConfig":{"keep_alive_timeout":64,"max_concurrent_queries":100,"max_connections":4096},"extraUsersConfig":{"users":{"app":{"grants":[{"query":"GRANT SHOW ON *.*, SELECT ON system.*, SELECT ON default.*"}],"password":"{{ .Values.hyperdx.secrets.CLICKHOUSE_APP_PASSWORD }}","profile":"default"},"otelcollector":{"grants":[{"query":"GRANT SELECT,INSERT,CREATE,SHOW ON default.*"}],"password":"{{ .Values.hyperdx.secrets.CLICKHOUSE_PASSWORD }}","profile":"default"}}}},"shards":1}}` | ClickHouseCluster CRD spec (rendered verbatim). See ClickHouse Operator docs. |
+| clickhouse.keeper | object | `{"spec":{"dataVolumeClaimSpec":{"accessModes":["ReadWriteOnce"],"resources":{"requests":{"storage":"5Gi"}}},"replicas":1}}` | KeeperCluster CRD spec (rendered verbatim). See ClickHouse Operator docs. |
+| clickhouse.nativePort | int | `9000` | Native TCP port used in connection strings. |
+| clickhouse.port | int | `8123` | HTTP interface port for in-cluster connections. |
+| clickhouse.prometheus.enabled | bool | `true` | Expose ClickHouse Prometheus metrics endpoint. |
+| global | object | `{"imagePullSecrets":[],"imageRegistry":""}` | Global defaults applied across chart workloads. |
+| global.imagePullSecrets | list | `[]` | Image pull secrets for private registries. Helps avoid Docker Hub rate limits. |
+| global.imageRegistry | string | `""` | Optional prefix for container images (e.g. registry.example.com/). |
+| hyperdx.autoscaling | object | `{"enabled":false,"spec":{}}` | HorizontalPodAutoscaler for HyperDX. spec is passed through verbatim (autoscaling/v2). Do not include scaleTargetRef — the chart auto-wires it. Omitting replicas when enabled. |
+| hyperdx.config | object | `{"API_PORT":"8000","APP_PORT":"3000","CLICKHOUSE_ENDPOINT":"tcp://{{ include \"clickstack.clickhouse.svc\" . }}:{{ .Values.clickhouse.nativePort }}?dial_timeout=10s","CLICKHOUSE_PROMETHEUS_METRICS_ENDPOINT":"{{ include \"clickstack.clickhouse.svc\" . }}:{{ .Values.clickhouse.prometheus.port }}","CLICKHOUSE_SERVER_ENDPOINT":"{{ include \"clickstack.clickhouse.svc\" . }}:{{ .Values.clickhouse.nativePort }}","CLICKHOUSE_USER":"otelcollector","FRONTEND_URL":"http://localhost:3000","HYPERDX_API_PORT":"8000","HYPERDX_APP_PORT":"3000","HYPERDX_LOG_LEVEL":"info","HYPERDX_OTEL_EXPORTER_CLICKHOUSE_DATABASE":"default","MONGO_URI":"mongodb://hyperdx:{{ .Values.hyperdx.secrets.MONGODB_PASSWORD }}@{{ include \"clickstack.mongodb.svc\" . }}:27017/hyperdx?authSource=hyperdx","OPAMP_PORT":"4320","OPAMP_SERVER_URL":"http://{{ include \"clickstack.hyperdx.fullname\" . }}:{{ .Values.hyperdx.ports.opamp }}","OTEL_EXPORTER_OTLP_ENDPOINT":"http://{{ include \"clickstack.otel.fullname\" . }}:4318","OTEL_SERVICE_NAME":"hdx-oss-api","RUN_SCHEDULED_TASKS_EXTERNALLY":"false","USAGE_STATS_ENABLED":"true"}` | Shared non-sensitive environment variables (clickstack-config ConfigMap). Used by HyperDX and OTEL collector via envFrom. Values support tpl expressions. Override entries with plain strings to point at external services. |
+| hyperdx.deployment | object | `{"annotations":{},"defaultConnections":"[\n  {\n    \"name\": \"Local ClickHouse\",\n    \"host\": \"http://{{ include \"clickstack.clickhouse.svc\" . }}:8123\",\n    \"port\": 8123,\n    \"username\": \"app\",\n    \"password\": \"{{ .Values.hyperdx.secrets.CLICKHOUSE_APP_PASSWORD }}\"\n  }\n]\n","defaultSources":"[\n  {\n    \"from\": {\n      \"databaseName\": \"default\",\n      \"tableName\": \"otel_logs\"\n    },\n    \"kind\": \"log\",\n    \"timestampValueExpression\": \"Timestamp\",\n    \"name\": \"Logs\",\n    \"displayedTimestampValueExpression\": \"Timestamp\",\n    \"implicitColumnExpression\": \"Body\",\n    \"serviceNameExpression\": \"ServiceName\",\n    \"bodyExpression\": \"Body\",\n    \"eventAttributesExpression\": \"LogAttributes\",\n    \"resourceAttributesExpression\": \"ResourceAttributes\",\n    \"defaultTableSelectExpression\": \"Timestamp,ServiceName,SeverityText,Body\",\n    \"severityTextExpression\": \"SeverityText\",\n    \"traceIdExpression\": \"TraceId\",\n    \"spanIdExpression\": \"SpanId\",\n    \"connection\": \"Local ClickHouse\",\n    \"traceSourceId\": \"Traces\",\n    \"sessionSourceId\": \"Sessions\",\n    \"metricSourceId\": \"Metrics\"\n  },\n  {\n    \"from\": {\n      \"databaseName\": \"default\",\n      \"tableName\": \"otel_traces\"\n    },\n    \"kind\": \"trace\",\n    \"timestampValueExpression\": \"Timestamp\",\n    \"name\": \"Traces\",\n    \"displayedTimestampValueExpression\": \"Timestamp\",\n    \"implicitColumnExpression\": \"SpanName\",\n    \"serviceNameExpression\": \"ServiceName\",\n    \"bodyExpression\": \"SpanName\",\n    \"eventAttributesExpression\": \"SpanAttributes\",\n    \"resourceAttributesExpression\": \"ResourceAttributes\",\n    \"defaultTableSelectExpression\": \"Timestamp,ServiceName,StatusCode,round(Duration/1e6),SpanName\",\n    \"traceIdExpression\": \"TraceId\",\n    \"spanIdExpression\": \"SpanId\",\n    \"durationExpression\": \"Duration\",\n    \"durationPrecision\": 9,\n    \"parentSpanIdExpression\": \"ParentSpanId\",\n    \"spanNameExpression\": \"SpanName\",\n    \"spanKindExpression\": \"SpanKind\",\n    \"statusCodeExpression\": \"StatusCode\",\n    \"statusMessageExpression\": \"StatusMessage\",\n    \"connection\": \"Local ClickHouse\",\n    \"logSourceId\": \"Logs\",\n    \"sessionSourceId\": \"Sessions\",\n    \"metricSourceId\": \"Metrics\"\n  },\n  {\n    \"from\": {\n      \"databaseName\": \"default\",\n      \"tableName\": \"\"\n    },\n    \"kind\": \"metric\",\n    \"timestampValueExpression\": \"TimeUnix\",\n    \"name\": \"Metrics\",\n    \"resourceAttributesExpression\": \"ResourceAttributes\",\n    \"metricTables\": {\n      \"gauge\": \"otel_metrics_gauge\",\n      \"histogram\": \"otel_metrics_histogram\",\n      \"sum\": \"otel_metrics_sum\",\n      \"_id\": \"682586a8b1f81924e628e808\",\n      \"id\": \"682586a8b1f81924e628e808\"\n    },\n    \"connection\": \"Local ClickHouse\",\n    \"logSourceId\": \"Logs\",\n    \"traceSourceId\": \"Traces\",\n    \"sessionSourceId\": \"Sessions\"\n  },\n  {\n    \"from\": {\n      \"databaseName\": \"default\",\n      \"tableName\": \"hyperdx_sessions\"\n    },\n    \"kind\": \"session\",\n    \"timestampValueExpression\": \"TimestampTime\",\n    \"name\": \"Sessions\",\n    \"displayedTimestampValueExpression\": \"Timestamp\",\n    \"implicitColumnExpression\": \"Body\",\n    \"serviceNameExpression\": \"ServiceName\",\n    \"bodyExpression\": \"Body\",\n    \"eventAttributesExpression\": \"LogAttributes\",\n    \"resourceAttributesExpression\": \"ResourceAttributes\",\n    \"defaultTableSelectExpression\": \"Timestamp,ServiceName,SeverityText,Body\",\n    \"severityTextExpression\": \"SeverityText\",\n    \"traceIdExpression\": \"TraceId\",\n    \"spanIdExpression\": \"SpanId\",\n    \"connection\": \"Local ClickHouse\",\n    \"logSourceId\": \"Logs\",\n    \"traceSourceId\": \"Traces\",\n    \"metricSourceId\": \"Metrics\"\n  }\n]\n","env":[],"existingConfigConnectionsKey":"connections.json","existingConfigSecret":"","existingConfigSourcesKey":"sources.json","image":{"pullPolicy":"IfNotPresent","repository":"docker.hyperdx.io/hyperdx/hyperdx","tag":null},"initContainers":[],"labels":{},"livenessProbe":{"enabled":true,"failureThreshold":3,"initialDelaySeconds":10,"periodSeconds":30,"timeoutSeconds":5},"nodeSelector":{},"priorityClassName":"","readinessProbe":{"enabled":true,"failureThreshold":3,"initialDelaySeconds":1,"periodSeconds":10,"timeoutSeconds":5},"replicas":1,"resources":{},"tolerations":[],"topologySpreadConstraints":[],"useExistingConfigSecret":false,"volumeMounts":[],"volumes":[],"waitForMongodb":{"image":"busybox@sha256:1fcf5df59121b92d61e066df1788e8df0cc35623f5d62d9679a41e163b6a0cdb","pullPolicy":"IfNotPresent"}}` | HyperDX Deployment spec (image, probes, scheduling, init containers, volumes). defaultConnections/defaultSources JSON: set to "" to disable; use useExistingConfigSecret for external secrets. |
+| hyperdx.deployment.existingConfigSecret | string | `""` | Secret containing connections and sources JSON when useExistingConfigSecret is true. |
+| hyperdx.deployment.image.repository | string | `"docker.hyperdx.io/hyperdx/hyperdx"` | HyperDX container image repository. |
+| hyperdx.deployment.image.tag | string | `nil` | Image tag. Defaults to Chart appVersion when empty. |
+| hyperdx.deployment.initContainers | list | `[]` | Additional init containers to run before the HyperDX container starts. |
+| hyperdx.deployment.replicas | int | `1` | Pod replica count. Ignored when hyperdx.autoscaling.enabled is true. |
+| hyperdx.deployment.useExistingConfigSecret | bool | `false` | Load HyperDX connections JSON from an existing Secret instead of defaultConnections. |
+| hyperdx.deployment.volumeMounts | list | `[]` | Additional volume mounts for the HyperDX container. |
+| hyperdx.deployment.volumes | list | `[]` | Additional volumes to attach to the pod. |
+| hyperdx.ingress | object | `{"additionalIngresses":[],"annotations":{},"enabled":false,"spec":{}}` | Ingress for HyperDX. annotations and spec are rendered verbatim (nginx, ALB, Traefik, etc.). Use additionalIngresses for multi-ingress setups (e.g. separate OTEL collector ingress). |
+| hyperdx.networkPolicy | object | `{"enabled":false,"spec":{}}` | NetworkPolicy for HyperDX. spec is passed through verbatim. |
+| hyperdx.podDisruptionBudget | object | `{"enabled":false}` | PodDisruptionBudget for the HyperDX Deployment. |
+| hyperdx.ports | object | `{"api":8000,"app":3000,"opamp":4320}` | Ports shared across Deployment, Service, ConfigMap, and Ingress. |
+| hyperdx.secrets | object | `{"CLICKHOUSE_APP_PASSWORD":"hyperdx","CLICKHOUSE_PASSWORD":"otelcollectorpass","HYPERDX_API_KEY":"xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx","MONGODB_PASSWORD":"hyperdx"}` | Shared sensitive environment variables (clickstack-secret). Set to null to skip Secret creation (requires mongodb, clickhouse, and otel-collector disabled). |
+| hyperdx.service | object | `{"annotations":{},"apiPort":{"enabled":false},"type":"ClusterIP"}` | HyperDX Service (ClusterIP by default). |
+| hyperdx.service.apiPort | object | `{"enabled":false}` | Expose the API port (8000) on the Service for API-only or direct API access. |
+| hyperdx.serviceAccount | object | `{"annotations":{},"create":false,"name":""}` | ServiceAccount for HyperDX. Set create: true to provision one; use annotations for IRSA/GCP bindings. |
+| hyperdx.serviceAccount.name | string | `""` | ServiceAccount name. Defaults to chart fullname when create is true and name is empty. |
+| hyperdx.tasks | object | `{"checkAlerts":{"additionalArgs":{},"resources":{"limits":{"cpu":"200m","memory":"256Mi"},"requests":{"cpu":"100m","memory":"128Mi"}},"schedule":"*/1 * * * *"},"enabled":false}` | Scheduled HyperDX background tasks (CronJobs). |
+| mongodb | object | `{"enabled":true,"spec":{"additionalMongodConfig":{"storage.wiredTiger.engineConfig.journalCompressor":"zlib"},"members":1,"security":{"authentication":{"modes":["SCRAM"]}},"type":"ReplicaSet","users":[{"db":"hyperdx","name":"hyperdx","passwordSecretRef":{"name":"{{ include \"clickstack.mongodb.fullname\" . }}-password"},"roles":[{"db":"hyperdx","name":"dbOwner"},{"db":"admin","name":"clusterMonitor"}],"scramCredentialsSecretName":"{{ include \"clickstack.mongodb.fullname\" . }}-scram"}],"version":"5.0.32"}}` | In-cluster MongoDB via MongoDBCommunity CR. Set enabled: false for external MongoDB. |
+| mongodb.spec | object | `{"additionalMongodConfig":{"storage.wiredTiger.engineConfig.journalCompressor":"zlib"},"members":1,"security":{"authentication":{"modes":["SCRAM"]}},"type":"ReplicaSet","users":[{"db":"hyperdx","name":"hyperdx","passwordSecretRef":{"name":"{{ include \"clickstack.mongodb.fullname\" . }}-password"},"roles":[{"db":"hyperdx","name":"dbOwner"},{"db":"admin","name":"clusterMonitor"}],"scramCredentialsSecretName":"{{ include \"clickstack.mongodb.fullname\" . }}-scram"}],"version":"5.0.32"}` | MongoDBCommunity CRD spec (rendered verbatim). See MongoDB Kubernetes Operator docs. |
+| otel-collector | object | `{"enabled":true,"extraEnvsFrom":[{"configMapRef":{"name":"clickstack-config"}},{"secretRef":{"name":"clickstack-secret"}}],"image":{"repository":"docker.clickhouse.com/clickhouse/clickstack-otel-collector","tag":"2.19.0"},"mode":"deployment","ports":{"fluentd":{"containerPort":24225,"enabled":true,"protocol":"TCP","servicePort":24225},"health-check":{"containerPort":13133,"enabled":true,"protocol":"TCP","servicePort":13133},"jaeger-compact":{"enabled":false},"jaeger-grpc":{"enabled":false},"jaeger-thrift":{"enabled":false},"metrics":{"containerPort":8888,"enabled":true,"protocol":"TCP","servicePort":8888},"otlp":{"appProtocol":"grpc","containerPort":4317,"enabled":true,"protocol":"TCP","servicePort":4317},"otlp-http":{"containerPort":4318,"enabled":true,"protocol":"TCP","servicePort":4318},"zipkin":{"enabled":false}}}` | OpenTelemetry Collector subchart. Set enabled: false to use an external collector. |
+| otel-collector.enabled | bool | `true` | Deploy the bundled OpenTelemetry Collector subchart. |
 
 ----------------------------------------------
 Autogenerated from chart metadata using [helm-docs v1.14.2](https://github.com/norwoodj/helm-docs/releases/v1.14.2)
