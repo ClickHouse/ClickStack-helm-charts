@@ -100,8 +100,12 @@ HELMCOV_IMAGE=ghcr.io/example/helmcov@sha256:... make coverage
 ```
 
 Uses the digest-pinned image in `scripts/tool-versions.env` with a **30% line
-coverage threshold**. Outputs `coverage.out` (Go coverprofile) and `coverage.xml`
-(Cobertura). CI runs `make coverage` via `.github/workflows/helmcov.yaml`.
+coverage threshold** for local runs. Outputs `coverage.out` (Go coverprofile) and
+`coverage.xml` (Cobertura).
+
+CI runs the [helmcov GitHub Action](https://github.com/jordan-simonovski/helmcov)
+via `.github/workflows/helmcov.yaml`, which posts or updates a pull request
+comment with line/branch coverage and uncovered details.
 
 ### Chart README (helm-docs)
 
@@ -213,7 +217,7 @@ tests:
 | Workflow | File | Trigger | Purpose |
 |----------|------|---------|---------|
 | Helm Chart Tests | `helm-test.yaml` | push/PR to main | Unit tests + example validation |
-| Helm Template Coverage | `helmcov.yaml` | push/PR to main | helmcov template line/branch coverage |
+| Helm Template Coverage | `helmcov.yaml` | push/PR to main | helmcov action; PR comment with line/branch coverage |
 | Integration Test | `chart-test.yml` | push/PR/nightly | Kind-based integration suites |
 | Release | `release.yml` | after tests pass on main | Changeset version + chart release |
 | Update App Version | `update-app-version.yml` | workflow_dispatch | Bump `appVersion` in Chart.yaml |
