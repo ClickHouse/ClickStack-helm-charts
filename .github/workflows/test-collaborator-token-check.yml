@@ -31,15 +31,19 @@ jobs:
             const { owner, repo } = context.repo;
             const input = (process.env.TARGET_USER || '').trim();
             // teeohhem: private ClickHouse member with write access (the bug case) -> expect INTERNAL
-            // octocat:  no access -> expect EXTERNAL (control)
+            // octocat:  no granted access (public repo gives implicit read) -> expect EXTERNAL (control)
             const users = input ? [input] : ['teeohhem', 'octocat'];
+            // Public repos grant everyone implicit 'read', so test for actual
+            // granted access (triage and up), not merely permission != 'none'.
+            const isInternal = (p) => !!(p && (p.admin || p.maintain || p.push || p.triage));
             for (const username of users) {
               try {
                 const { data, status } = await github.rest.repos.getCollaboratorPermissionLevel({
                   owner, repo, username,
                 });
-                const verdict = data.permission !== 'none' ? 'INTERNAL' : 'EXTERNAL';
-                core.info(`[${username}] HTTP ${status} permission='${data.permission}' role='${data.role_name}' => ${verdict}`);
+                const perms = data.user?.permissions ?? {};
+                const verdict = isInternal(perms) ? 'INTERNAL' : 'EXTERNAL';
+                core.info(`[${username}] HTTP ${status} permission='${data.permission}' role='${data.role_name}' perms=${JSON.stringify(perms)} => ${verdict}`);
               } catch (e) {
                 if (e.status === 404) {
                   core.info(`[${username}] HTTP 404 not a collaborator => EXTERNAL`);
