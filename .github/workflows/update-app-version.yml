@@ -26,14 +26,38 @@ jobs:
           TAG: ${{ github.event.inputs.tag }}
         run: |
           set -euo pipefail
-          sed -i "s/^appVersion: .*/appVersion: $TAG/" charts/clickstack/Chart.yaml
+          tmp=$(mktemp)
+          awk -v tag="$TAG" '
+            /^appVersion:/ { $0 = "appVersion: " tag; updated = 1 }
+            { print }
+            END { exit updated ? 0 : 1 }
+          ' charts/clickstack/Chart.yaml > "$tmp"
+          mv "$tmp" charts/clickstack/Chart.yaml
 
       - name: Update otel-collector image tag in values.yaml
         env:
           TAG: ${{ github.event.inputs.tag }}
         run: |
           set -euo pipefail
-          sed -i '/clickstack-otel-collector/{n;s/tag: "[^"]*"/tag: "'"$TAG"'"/}' charts/clickstack/values.yaml
+          tmp=$(mktemp)
+          awk -v tag="$TAG" '
+            /repository: docker\.clickhouse\.com\/clickhouse\/clickstack-otel-collector[[:space:]]*$/ {
+              in_collector_image = 1
+              print
+              next
+            }
+            in_collector_image && /^[[:space:]]{0,2}[[:alnum:]_-]+:/ {
+              in_collector_image = 0
+            }
+            in_collector_image && /^[[:space:]]*tag:/ {
+              sub(/tag: .*/, "tag: \"" tag "\"")
+              updated = 1
+              in_collector_image = 0
+            }
+            { print }
+            END { exit updated ? 0 : 1 }
+          ' charts/clickstack/values.yaml > "$tmp"
+          mv "$tmp" charts/clickstack/values.yaml
           awk -v tag="$TAG" '
             /repository: docker\.clickhouse\.com\/clickhouse\/clickstack-otel-collector/ { in_image = 1; next }
             in_image && /^[[:space:]]*tag:/ {

@@ -60,6 +60,9 @@ jobs:
             exit 1
           fi
 
+          EXPECTED_COLLECTOR_IMAGE="image: \"docker.clickhouse.com/clickhouse/clickstack-otel-collector:${APP_VERSION}\""
+          helm template clickstack-version-check charts/clickstack | grep -F "$EXPECTED_COLLECTOR_IMAGE"
+
       - name: Validate example values render
         run: |
           helm template clickstack-example charts/clickstack \

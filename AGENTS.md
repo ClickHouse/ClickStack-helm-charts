@@ -163,5 +163,5 @@ tests:
 - Unit tests: `charts/clickstack/tests/*_test.yaml`
 - Integration suites: `integration-tests/*/`
 - Example values: `examples/*/values.yaml`
-- Version sync script: `scripts/update-chart-versions.js`
+- Chart version sync script: `scripts/update-chart-versions.js`
 - Smoke test: `scripts/smoke-test.sh`
