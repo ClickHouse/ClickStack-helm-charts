@@ -1,0 +1,52 @@
+name: TEST token collaborator check
+
+# Throwaway workflow to verify the built-in GITHUB_TOKEN can resolve a user's
+# repo permission (including access granted via private teams) under the same
+# permissions the external-contributor-alerts workflow runs with.
+# Delete this file once the result is confirmed.
+
+on:
+  push:
+    branches: [test/collaborator-token-check]
+  workflow_dispatch:
+    inputs:
+      username:
+        description: "Login to check (overrides the default list)"
+        required: false
+
+# Mirror external-contributor-alerts.yml so the token is identical.
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v9
+        env:
+          TARGET_USER: ${{ inputs.username }}
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const input = (process.env.TARGET_USER || '').trim();
+            // teeohhem: private ClickHouse member with write access (the bug case) -> expect INTERNAL
+            // octocat:  no access -> expect EXTERNAL (control)
+            const users = input ? [input] : ['teeohhem', 'octocat'];
+            for (const username of users) {
+              try {
+                const { data, status } = await github.rest.repos.getCollaboratorPermissionLevel({
+                  owner, repo, username,
+                });
+                const verdict = data.permission !== 'none' ? 'INTERNAL' : 'EXTERNAL';
+                core.info(`[${username}] HTTP ${status} permission='${data.permission}' role='${data.role_name}' => ${verdict}`);
+              } catch (e) {
+                if (e.status === 404) {
+                  core.info(`[${username}] HTTP 404 not a collaborator => EXTERNAL`);
+                } else if (e.status === 403) {
+                  core.setFailed(`[${username}] HTTP 403 => built-in GITHUB_TOKEN CANNOT call this endpoint (would need a PAT/App token).`);
+                } else {
+                  core.setFailed(`[${username}] HTTP ${e.status}: ${e.message}`);
+                }
+              }
+            }
