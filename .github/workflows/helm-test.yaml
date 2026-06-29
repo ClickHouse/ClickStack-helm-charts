@@ -37,6 +37,29 @@ jobs:
           helm repo add open-telemetry https://open-telemetry.github.io/opentelemetry-helm-charts
           helm dependency build charts/clickstack
 
+      - name: Validate appVersion matches collector image tag
+        run: |
+          set -euo pipefail
+          APP_VERSION=$(awk '$1 == "appVersion:" { print $2 }' charts/clickstack/Chart.yaml)
+          COLLECTOR_TAG=$(awk '
+            $1 == "repository:" && $2 == "docker.clickhouse.com/clickhouse/clickstack-otel-collector" { in_image = 1; next }
+            in_image && $1 == "tag:" {
+              gsub(/"/, "", $2)
+              print $2
+              exit
+            }
+          ' charts/clickstack/values.yaml)
+
+          if [ -z "$APP_VERSION" ] || [ -z "$COLLECTOR_TAG" ]; then
+            echo "Could not read appVersion or otel-collector image tag"
+            exit 1
+          fi
+
+          if [ "$APP_VERSION" != "$COLLECTOR_TAG" ]; then
+            echo "appVersion ($APP_VERSION) does not match otel-collector.image.tag ($COLLECTOR_TAG)"
+            exit 1
+          fi
+
       - name: Validate example values render
         run: |
           helm template clickstack-example charts/clickstack \

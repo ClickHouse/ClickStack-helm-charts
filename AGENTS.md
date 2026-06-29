@@ -153,7 +153,7 @@ tests:
 | Helm Chart Tests | `helm-test.yaml` | push/PR to main | Unit tests + example validation |
 | Integration Test | `chart-test.yml` | push/PR/nightly | Kind-based integration suites |
 | Release | `release.yml` | after tests pass on main | Changeset version + chart release |
-| Update App Version | `update-app-version.yml` | workflow_dispatch | Bump `appVersion` in Chart.yaml |
+| Update App Version | `update-app-version.yml` | workflow_dispatch | Bump `appVersion` in Chart.yaml and align `otel-collector.image.tag` in values.yaml |
 
 ## Key File Locations
 

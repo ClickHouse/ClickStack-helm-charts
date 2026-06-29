@@ -22,12 +22,26 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Update appVersion in Chart.yaml
+        env:
+          TAG: ${{ github.event.inputs.tag }}
         run: |
-          sed -i "s/^appVersion: .*/appVersion: ${{ github.event.inputs.tag }}/" charts/clickstack/Chart.yaml
+          set -euo pipefail
+          sed -i "s/^appVersion: .*/appVersion: $TAG/" charts/clickstack/Chart.yaml
 
       - name: Update otel-collector image tag in values.yaml
+        env:
+          TAG: ${{ github.event.inputs.tag }}
         run: |
-          sed -i '/clickstack-otel-collector/{n;s/tag: "[^"]*"/tag: "${{ github.event.inputs.tag }}"/}' charts/clickstack/values.yaml
+          set -euo pipefail
+          sed -i '/clickstack-otel-collector/{n;s/tag: "[^"]*"/tag: "'"$TAG"'"/}' charts/clickstack/values.yaml
+          awk -v tag="$TAG" '
+            /repository: docker\.clickhouse\.com\/clickhouse\/clickstack-otel-collector/ { in_image = 1; next }
+            in_image && /^[[:space:]]*tag:/ {
+              if ($0 ~ "tag: \"" tag "\"") found = 1
+              in_image = 0
+            }
+            END { exit found ? 0 : 1 }
+          ' charts/clickstack/values.yaml
 
       - name: Create changeset
         run: |
