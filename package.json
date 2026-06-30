@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@changesets/cli": "^2.29.4",
-    "js-yaml": "^4.1.1"
+    "js-yaml": "^4.2.0"
   },
   "packageManager": "yarn@4.9.2"
 }
