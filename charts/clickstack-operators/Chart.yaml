@@ -13,6 +13,6 @@ dependencies:
     repository: https://mongodb.github.io/helm-charts
     alias: mongodb-operator
   - name: clickhouse-operator-helm
-    version: "~0.0.2"
+    version: "~0.0.6"
     repository: oci://ghcr.io/clickhouse
     alias: clickhouse-operator
