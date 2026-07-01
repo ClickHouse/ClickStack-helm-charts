@@ -64,6 +64,9 @@ docs: install-helm-docs
 	./scripts/helmdocs.sh
 
 docs-check: docs
-	@git diff --exit-code -- charts/clickstack/README.md charts/clickstack-operators/README.md
+	@git diff --exit-code -- charts/clickstack/README.md charts/clickstack-operators/README.md; \
+		rc=$$?; \
+		git checkout -- charts/clickstack/README.md charts/clickstack-operators/README.md; \
+		exit $$rc
 
 ci: test coverage docs-check

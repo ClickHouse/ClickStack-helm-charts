@@ -27,6 +27,27 @@ while IFS= read -r path; do
   esac
 done <<< "${staged}"
 
+if [[ "${chart_changes}" != true && "${docs_changes}" != true ]]; then
+  exit 0
+fi
+
+# Validate the staged snapshot, not the working tree: stash unstaged/untracked
+# changes (keeping the index applied) so make runs against exactly what's being
+# committed. Restore the tree afterwards no matter how we exit.
+stashed=false
+if ! git diff --quiet || [[ -n "$(git ls-files --others --exclude-standard)" ]]; then
+  git stash push --keep-index --include-untracked --quiet
+  stashed=true
+fi
+
+restore() {
+  rc=$?
+  git checkout -- . >/dev/null 2>&1 || true          # drop anything make regenerated
+  [[ "${stashed}" == true ]] && git stash pop --quiet >/dev/null 2>&1 || true
+  exit "${rc}"
+}
+trap restore EXIT
+
 if [[ "${chart_changes}" == true ]]; then
   make test
 fi
