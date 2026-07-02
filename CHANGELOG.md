@@ -1,5 +1,13 @@
 # helm-charts
 
+## 3.0.1
+
+### Patch Changes
+
+- ca8c0dc: fix: align otel-collector image tag with chart appVersion
+- 3786bbe: chore: update appVersion to 2.28.0
+- 7ffc1ad: chore: update appVersion to 2.29.0
+
 ## 3.0.0
 
 ### Major Changes
