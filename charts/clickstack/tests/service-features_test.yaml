@@ -1,0 +1,17 @@
+suite: Test HyperDX Service Features
+templates:
+  - hyperdx/service.yaml
+values:
+  - values/service-features.yaml
+tests:
+  - it: should render load balancer service with api port
+    asserts:
+      - equal:
+          path: spec.type
+          value: LoadBalancer
+      - equal:
+          path: metadata.annotations["service.beta.kubernetes.io/aws-load-balancer-type"]
+          value: nlb
+      - equal:
+          path: spec.ports[1].name
+          value: api

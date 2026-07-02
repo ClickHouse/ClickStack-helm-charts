@@ -1,0 +1,7 @@
+hyperdx:
+  deployment:
+    livenessProbe:
+      enabled: false
+    readinessProbe:
+      enabled: false
+    resources: {}

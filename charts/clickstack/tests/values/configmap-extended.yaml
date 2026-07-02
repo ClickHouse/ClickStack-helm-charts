@@ -1,0 +1,5 @@
+hyperdx:
+  config:
+    CUSTOM_TPL_VALUE: '{{ include "clickstack.name" . }}'
+    CUSTOM_STATIC_VALUE: static-value
+    NESTED_TPL: '{{ .Release.Name }}-{{ .Values.hyperdx.ports.app }}'

@@ -1,0 +1,32 @@
+# {{ template "chart.name" . }}
+
+{{ template "chart.versionBadge" . }}
+![Build Status](https://github.com/ClickHouse/ClickStack-helm-charts/actions/workflows/helm-test.yaml/badge.svg)
+
+{{ template "chart.description" . }}
+
+{{ template "chart.homepageLine" . }}
+
+{{ template "chart.sourcesSection" . }}
+
+## Prerequisites
+
+Install the [clickstack-operators](../clickstack-operators) chart first so MongoDB and ClickHouse CRDs are available.
+
+## Quick Start
+
+```bash
+helm repo add clickstack https://clickhouse.github.io/ClickStack-helm-charts
+helm repo update
+helm install my-clickstack clickstack/clickstack
+```
+
+See the [ClickStack Helm documentation](https://clickhouse.com/docs/use-cases/observability/clickstack/deployment/helm) for cloud-specific guides, ingress setup, and troubleshooting.
+
+{{ template "chart.requirementsSection" . }}
+
+Documented values below. Undocumented keys (operator CRD passthrough fields, subchart defaults) are omitted — see the linked operator and subchart docs above.
+
+{{ template "chart.valuesSection" . }}
+
+{{ template "helm-docs.versionFooter" . }}

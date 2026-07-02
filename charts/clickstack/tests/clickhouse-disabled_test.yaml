@@ -1,0 +1,10 @@
+suite: Test ClickHouse Cluster Disabled
+templates:
+  - clickhouse/cluster.yaml
+values:
+  - values/components-disabled.yaml
+tests:
+  - it: should not render clickhouse cluster when disabled
+    asserts:
+      - hasDocuments:
+          count: 0

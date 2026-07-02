@@ -3,47 +3,59 @@ name: Helm Chart Tests
 on:
   push:
     branches: [ main ]
-    paths:
+    paths: &paths
       - 'charts/**'
+      - 'examples/**'
+      - 'Makefile'
+      - 'scripts/**'
+      - '.githooks/**'
+      - '.github/workflows/helm-test.yaml'
   pull_request:
     branches: [ main ]
+    paths: *paths
+
+permissions:
+  contents: read
 
 jobs:
   helm-unittest:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y unzip git curl
+        uses: actions/checkout@v4
 
       - name: Set up Helm
-        uses: azure/setup-helm@v3
+        uses: azure/setup-helm@v4
         with:
           version: v3.12.0
 
-      - name: Install helm-unittest plugin
-        run: |
-          helm plugin install https://github.com/helm-unittest/helm-unittest.git --version v1.0.3 ${{ runner.debug && '--debug' || ''}}
+      - name: Install tools, run unit tests, verify docs
+        run: make ci-setup test docs-check
+
+  helmcov:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.12.0
 
       - name: Build chart dependencies
-        run: |
-          helm repo add mongodb https://mongodb.github.io/helm-charts
-          helm repo add open-telemetry https://open-telemetry.github.io/opentelemetry-helm-charts
-          helm dependency build charts/clickstack
+        run: make chart-deps
 
-      - name: Validate example values render
-        run: |
-          helm template clickstack-example charts/clickstack \
-            -f examples/alb-ingress/values.yaml >/dev/null
-          helm template clickstack-example charts/clickstack \
-            -f examples/api-only/values.yaml >/dev/null
+      - name: Load pinned helmcov version and threshold
+        run: grep -E '^(HELMCOV_VERSION|COVERAGE_THRESHOLD)=' scripts/tool-versions.env >> "$GITHUB_ENV"
 
-      - name: Run helm-unittest
-        run: |
-          helm unittest charts/clickstack
+      - name: Run helmcov
+        uses: jordan-simonovski/helmcov@6346c80e742f697b55b2cb9fe6b9af72a71960ce  # v1
+        with:
+          chart: charts/clickstack
+          tests: charts/clickstack/tests
+          threshold: ${{ env.COVERAGE_THRESHOLD }}
+          version: ${{ env.HELMCOV_VERSION }}

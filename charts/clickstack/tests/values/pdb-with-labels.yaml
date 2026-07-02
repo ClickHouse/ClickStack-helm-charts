@@ -1,0 +1,6 @@
+hyperdx:
+  podDisruptionBudget:
+    enabled: true
+  deployment:
+    labels:
+      team: platform

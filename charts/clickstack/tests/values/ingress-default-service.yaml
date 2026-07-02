@@ -1,0 +1,24 @@
+hyperdx:
+  ingress:
+    enabled: true
+    spec:
+      rules:
+        - host: test.example.com
+          http:
+            paths:
+              - path: /
+                pathType: Prefix
+                backend:
+                  service:
+                    name: test
+                    port:
+                      number: 80
+    additionalIngresses:
+      - name: default-service
+        ingressClassName: nginx
+        hosts:
+          - host: default.example.com
+            paths:
+              - path: /
+                pathType: Prefix
+                port: 8080

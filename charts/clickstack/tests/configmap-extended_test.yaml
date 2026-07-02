@@ -1,0 +1,17 @@
+suite: Test ClickStack ConfigMap Extended
+templates:
+  - hyperdx/configmap.yaml
+values:
+  - values/configmap-extended.yaml
+tests:
+  - it: should render extended config keys with tpl values
+    asserts:
+      - equal:
+          path: data.CUSTOM_STATIC_VALUE
+          value: static-value
+      - equal:
+          path: data.CUSTOM_TPL_VALUE
+          value: clickstack
+      - equal:
+          path: data.NESTED_TPL
+          value: RELEASE-NAME-3000

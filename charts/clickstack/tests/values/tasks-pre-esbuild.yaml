@@ -1,0 +1,6 @@
+hyperdx:
+  tasks:
+    enabled: true
+  deployment:
+    image:
+      tag: "2.6.0"

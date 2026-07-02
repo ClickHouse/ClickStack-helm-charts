@@ -1,0 +1,14 @@
+suite: Test Additional Ingress Coverage
+templates:
+  - hyperdx/ingress.yaml
+values:
+  - values/ingress-additional.yaml
+tests:
+  - it: should render additional ingress resources
+    asserts:
+      - hasDocuments:
+          count: 2
+      - equal:
+          path: spec.tls[0].secretName
+          value: otel-collector-tls
+        documentIndex: 1

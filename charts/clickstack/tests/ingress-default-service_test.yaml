@@ -1,0 +1,14 @@
+suite: Test Ingress Default Service Name
+templates:
+  - hyperdx/ingress.yaml
+values:
+  - values/ingress-default-service.yaml
+tests:
+  - it: should use release fullname when path name is omitted
+    asserts:
+      - hasDocuments:
+          count: 2
+      - matchRegex:
+          path: spec.rules[0].http.paths[0].backend.service.name
+          pattern: RELEASE-NAME-clickstack$
+        documentIndex: 1

@@ -1,0 +1,13 @@
+suite: Test Additional Manifests Multi
+templates:
+  - additional-manifests.yaml
+values:
+  - values/additional-manifests-multi.yaml
+tests:
+  - it: should render multiple additional manifests
+    asserts:
+      - hasDocuments:
+          count: 2
+      - isKind:
+          of: ServiceAccount
+        documentIndex: 0

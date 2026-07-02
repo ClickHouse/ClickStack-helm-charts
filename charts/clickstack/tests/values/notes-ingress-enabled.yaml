@@ -1,0 +1,15 @@
+hyperdx:
+  ingress:
+    enabled: true
+    spec:
+      rules:
+        - host: hyperdx.example.com
+          http:
+            paths:
+              - path: /
+                pathType: Prefix
+                backend:
+                  service:
+                    name: test
+                    port:
+                      number: 3000

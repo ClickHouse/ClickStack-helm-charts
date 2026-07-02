@@ -1,0 +1,12 @@
+suite: Test Deployment Probes Disabled
+templates:
+  - hyperdx/deployment.yaml
+values:
+  - values/deployment-probes-disabled.yaml
+tests:
+  - it: should omit probes when disabled
+    asserts:
+      - isNull:
+          path: spec.template.spec.containers[0].livenessProbe
+      - isNull:
+          path: spec.template.spec.containers[0].readinessProbe

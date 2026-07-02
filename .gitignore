@@ -13,3 +13,11 @@ node_modules
 !.yarn/versions
 
 charts/*/charts/*.tgz
+
+# helmcov
+coverage.out
+coverage.xml
+
+# local tooling
+.tools/
+.helmcov-work/

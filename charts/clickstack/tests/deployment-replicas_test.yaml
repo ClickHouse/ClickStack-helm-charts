@@ -1,0 +1,11 @@
+suite: Test Deployment Replicas When Autoscaling Disabled
+templates:
+  - hyperdx/deployment.yaml
+values:
+  - values/deployment-replicas.yaml
+tests:
+  - it: should render replicas when autoscaling is disabled
+    asserts:
+      - equal:
+          path: spec.replicas
+          value: 3

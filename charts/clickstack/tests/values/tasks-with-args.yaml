@@ -1,0 +1,10 @@
+hyperdx:
+  tasks:
+    enabled: true
+    checkAlerts:
+      additionalArgs:
+        concurrency: 4
+        sourceTimeoutMs: 90000
+  deployment:
+    image:
+      tag: "2.8.0"

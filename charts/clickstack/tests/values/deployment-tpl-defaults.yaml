@@ -1,0 +1,29 @@
+# Minimal fixture for deployment-tpl-defaults_test.yaml: exercises tpl
+# interpolation of the connection host and one log source table name only.
+# It is intentionally NOT a copy of the values.yaml defaults.
+hyperdx:
+  deployment:
+    useExistingConfigSecret: false
+    defaultConnections: |
+      [
+        {
+          "name": "Local ClickHouse",
+          "host": "http://{{ include "clickstack.clickhouse.svc" . }}:8123",
+          "port": 8123,
+          "username": "app",
+          "password": "{{ .Values.hyperdx.secrets.CLICKHOUSE_APP_PASSWORD }}"
+        }
+      ]
+    defaultSources: |
+      [
+        {
+          "from": {
+            "databaseName": "default",
+            "tableName": "otel_logs"
+          },
+          "kind": "log",
+          "timestampValueExpression": "Timestamp",
+          "name": "Logs",
+          "connection": "Local ClickHouse"
+        }
+      ]

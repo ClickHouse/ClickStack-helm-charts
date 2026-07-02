@@ -1,0 +1,10 @@
+suite: Test Chart Notes
+templates:
+  - NOTES.txt
+tests:
+  - it: should render post-install notes with port-forward guidance
+    asserts:
+      - matchRegexRaw:
+          pattern: ClickStack has been installed
+      - matchRegexRaw:
+          pattern: kubectl port-forward

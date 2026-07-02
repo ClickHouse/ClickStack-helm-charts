@@ -1,0 +1,5 @@
+# helm-unittest / helmcov — dev-only, not needed at install time
+tests/
+
+# helm-docs source template (README.md is the published doc)
+README.md.gotmpl
