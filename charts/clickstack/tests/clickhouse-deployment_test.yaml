@@ -166,11 +166,3 @@ tests:
           path: spec.settings.extraUsersConfig.users.app
       - isNotNull:
           path: spec.settings.extraUsersConfig.users.otelcollector
-
-  - it: should disable operator databaseSync so the default DB stays Atomic
-    templates:
-      - clickhouse/cluster.yaml
-    asserts:
-      - equal:
-          path: spec.settings.enableDatabaseSync
-          value: false

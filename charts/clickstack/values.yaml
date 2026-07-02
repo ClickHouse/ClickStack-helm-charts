@@ -345,9 +345,6 @@ clickhouse:
           requests:
             storage: 10Gi
       settings:
-        # Keep the `default` database Atomic; the Replicated engine the operator
-        # selects when this is true drops seeded tables on Keeper desync.
-        enableDatabaseSync: false
         extraUsersConfig:
           users:
             app:
