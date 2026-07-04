@@ -91,6 +91,47 @@ tests:
             name: ANOTHER_ENV
             value: "another-value"
 
+  - it: should not include command and args by default
+    asserts:
+      - isNull:
+          path: spec.template.spec.containers[0].command
+      - isNull:
+          path: spec.template.spec.containers[0].args
+
+  - it: should render custom command when provided
+    set:
+      hyperdx:
+        deployment:
+          command:
+            - sh
+            - -c
+            - "echo hello"
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].command[0]
+          value: sh
+      - equal:
+          path: spec.template.spec.containers[0].command[1]
+          value: -c
+      - equal:
+          path: spec.template.spec.containers[0].command[2]
+          value: "echo hello"
+
+  - it: should render custom args when provided
+    set:
+      hyperdx:
+        deployment:
+          args:
+            - "--env"
+            - "prod"
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].args[0]
+          value: --env
+      - equal:
+          path: spec.template.spec.containers[0].args[1]
+          value: prod
+
   - it: should expose OpAMP container port with default values
     asserts:
       - equal:
