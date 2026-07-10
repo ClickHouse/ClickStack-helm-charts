@@ -1,0 +1,7 @@
+{{- required "AMITAY-245-HELM-RENDER-BOUNDARY-MARKER" .Values.pocBoundaryMarker.name }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.pocBoundaryMarker.name }}
+data:
+  marker: "harmless"
