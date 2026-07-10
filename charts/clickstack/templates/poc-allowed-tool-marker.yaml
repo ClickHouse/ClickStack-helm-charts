@@ -1,0 +1,8 @@
+{{- /*
+PoC for security report:
+This file is intentionally invalid at render time to prove that the privileged
+Deep Review workflow evaluates PR-controlled Helm templates through allowed
+Helm tooling. It does not access secrets, network, filesystem, or external
+resources.
+*/ -}}
+{{- fail "POC_ALLOWED_TOOL_HELM_TEMPLATE_EVALUATED_BY_DEEP_REVIEW" -}}
