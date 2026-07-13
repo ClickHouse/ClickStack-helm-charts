@@ -371,7 +371,7 @@ otel-collector:
   mode: deployment
   image:
     repository: docker.clickhouse.com/clickhouse/clickstack-otel-collector
-    tag: "2.29.0"
+    tag: "2.30.1"
   extraEnvsFrom:
     - configMapRef:
         name: clickstack-config
