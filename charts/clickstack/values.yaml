@@ -328,6 +328,12 @@ clickhouse:
         image:
           repository: clickhouse/clickhouse-server
           tag: "25.7-alpine"
+        resources:
+          requests:
+            cpu: 500m
+            memory: 2Gi
+          limits:
+            memory: 2Gi
       replicas: 1
       shards: 1
       keeperClusterRef:
