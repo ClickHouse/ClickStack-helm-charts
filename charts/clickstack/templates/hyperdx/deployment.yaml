@@ -1,3 +1,4 @@
+{{- include "clickstack.hyperdx.validateDashboards" . -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -45,8 +46,8 @@ spec:
       {{- if .Values.hyperdx.deployment.priorityClassName }}
       priorityClassName: {{ .Values.hyperdx.deployment.priorityClassName | quote }}
       {{- end }}
-      {{- if or .Values.hyperdx.serviceAccount.create .Values.hyperdx.serviceAccount.name }}
-      serviceAccountName: {{ .Values.hyperdx.serviceAccount.name | default (include "clickstack.hyperdx.fullname" .) }}
+      {{- if or (eq (include "clickstack.hyperdx.createServiceAccount" .) "true") .Values.hyperdx.serviceAccount.name }}
+      serviceAccountName: {{ include "clickstack.hyperdx.serviceAccountName" . }}
       {{- end }}
       {{- if .Values.global.imagePullSecrets }}
       imagePullSecrets:
@@ -64,9 +65,15 @@ spec:
         {{- toYaml . | nindent 8 }}
         {{- end }}
       {{- end }}
-      {{- with .Values.hyperdx.deployment.volumes }}
+      {{- if or .Values.hyperdx.deployment.volumes .Values.hyperdx.dashboards.enabled }}
       volumes:
+        {{- with .Values.hyperdx.deployment.volumes }}
         {{- toYaml . | nindent 8 }}
+        {{- end }}
+        {{- if .Values.hyperdx.dashboards.enabled }}
+        - name: dashboards
+          emptyDir: {}
+        {{- end }}
       {{- end }}
       containers:
         - name: app
@@ -103,9 +110,18 @@ spec:
             timeoutSeconds: {{ .Values.hyperdx.deployment.readinessProbe.timeoutSeconds }}
             failureThreshold: {{ .Values.hyperdx.deployment.readinessProbe.failureThreshold }}
           {{- end }}
-          {{- with .Values.hyperdx.deployment.volumeMounts }}
+          {{- if or .Values.hyperdx.deployment.volumeMounts .Values.hyperdx.dashboards.enabled }}
           volumeMounts:
+            {{- with .Values.hyperdx.deployment.volumeMounts }}
             {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- if .Values.hyperdx.dashboards.enabled }}
+            # read-only: the HyperDX provisioner only reads .json files here, never writes
+            # (hyperdxio/hyperdx#1962); the watcher sidecar owns writes to the shared volume.
+            - name: dashboards
+              mountPath: /dashboards
+              readOnly: true
+            {{- end }}
           {{- end }}
           envFrom:
             - configMapRef:
@@ -138,6 +154,47 @@ spec:
               value: {{ tpl .Values.hyperdx.deployment.defaultSources . | quote }}
             {{- end }}
             {{- end }}
+            {{- if .Values.hyperdx.dashboards.enabled }}
+            - name: DASHBOARD_PROVISIONER_DIR
+              value: "/dashboards"
+            # Provision discovered dashboards for all HyperDX teams: the watcher has no
+            # team context, so per-team provisioning isn't expressible from a ConfigMap.
+            - name: DASHBOARD_PROVISIONER_ALL_TEAMS
+              value: "true"
+            {{- end }}
             {{- with .Values.hyperdx.deployment.env }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
+        {{- if .Values.hyperdx.dashboards.enabled }}
+        - name: dashboard-watcher
+          image: {{ .Values.hyperdx.dashboards.sidecarImage | quote }}
+          {{- with .Values.hyperdx.dashboards.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          env:
+            - name: LABEL
+              value: {{ include "clickstack.hyperdx.dashboardLabelKey" . | quote }}
+            - name: LABEL_VALUE
+              value: {{ include "clickstack.hyperdx.dashboardLabelValue" . | quote }}
+            - name: FOLDER
+              value: "/dashboards"
+            - name: RESOURCE
+              value: "configmap"
+            # Continuously watch for ConfigMap changes (also the image default) so
+            # dashboards added after startup are picked up, not just at boot.
+            - name: METHOD
+              value: "WATCH"
+            {{- if eq (include "clickstack.hyperdx.dashboardsClusterWide" .) "true" }}
+            - name: NAMESPACE
+              value: "ALL"
+            {{- else }}
+            - name: NAMESPACE
+              value: {{ include "clickstack.hyperdx.effectiveNamespaces" . | quote }}
+            {{- end }}
+            - name: UNIQUE_FILENAMES
+              value: "true"
+          volumeMounts:
+            - name: dashboards
+              mountPath: /dashboards
+        {{- end }}

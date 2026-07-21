@@ -15,6 +15,56 @@ hyperdx:
     app: 3000
     opamp: 4320
 
+  # ── Dashboard provisioning ────────────────────────────────
+  # Discovers and upserts dashboard JSON into MongoDB (matched by name, never deletes)
+  #
+  # Two ways to provide dashboards:
+  # 1. Inline: set configMaps below with dashboard JSON
+  # 2. External: ConfigMaps labeled "hyperdx.io/dashboard: true" are discovered by a
+  #    k8s-sidecar watcher (ideal for application charts managing their own dashboards)
+  dashboards:
+    enabled: false
+
+    # ── Discovery scope ──────────────────────────────────────
+    # Namespaces the watcher discovers labeled ConfigMaps in:
+    #   []           only the release namespace (a namespaced Role; no cluster-wide access)
+    #   [ns-a, ns-b] those namespaces plus the release namespace. A cluster-scoped ClusterRole
+    #                rule-template is created, but access stays namespace-scoped — it is bound
+    #                only via a RoleBinding in each namespace, never a ClusterRoleBinding.
+    #   [ALL]        every namespace cluster-wide (creates a ClusterRole + ClusterRoleBinding)
+    # "ALL" is case-sensitive and is exclusive — it cannot be combined with named namespaces.
+    # Each listed namespace must already exist at install time: a RoleBinding into a missing
+    # namespace is rejected by the API server and fails the whole (atomic) helm install/upgrade.
+    # TRUST: within any watched namespace the watcher can read ALL ConfigMaps (the label only
+    # filters which are provisioned, not which are readable), and it shares the HyperDX pod's
+    # ServiceAccount, so that read grant (cluster-wide under [ALL]) also accrues to the app
+    # container. Discovery is also a write path — anyone able to create a labeled ConfigMap in a
+    # watched namespace can upsert dashboards into the shared HyperDX. Prefer [ALL] only on
+    # single-tenant clusters; a wider scope is a wider blast radius.
+    namespaces: []
+    rbac:
+      # Create the Role/ClusterRole and binding(s) the watcher needs. Set to false to
+      # grant access out-of-band (e.g. a RoleBinding applied by each namespace owner).
+      create: true
+
+    # Image for the k8s-sidecar that watches for labeled ConfigMaps
+    sidecarImage: "kiwigrid/k8s-sidecar:2.5.0"
+    # Inline dashboard definitions - key is filename, value is exported dashboard JSON
+    configMaps: {}
+    # Example:
+    # configMaps:
+    #   k8s-overview.json: |
+    #     { "name": "Kubernetes Overview", "tiles": [...] }
+    # Sidecar is a lightweight ConfigMap watcher; bump (esp. memory) for very large
+    # dashboard sets or wide `namespaces: [ALL]` discovery to avoid OOMKill.
+    resources:
+      limits:
+        cpu: 50m
+        memory: 64Mi
+      requests:
+        cpu: 10m
+        memory: 32Mi
+
   # ── K8s ConfigMap (clickstack-config) ────────────────────
   # Shared non-sensitive environment variables. Used by HyperDX and OTEL collector via envFrom.
   # All values support Helm template expressions (rendered via tpl).

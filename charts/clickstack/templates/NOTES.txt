@@ -34,5 +34,13 @@ Application Access:
   directly to the internet without proper authentication and encryption.
 {{- end }}
 
+{{- if and .Values.hyperdx.dashboards.enabled (not .Values.hyperdx.dashboards.rbac.create) }}
+
+WARNING: hyperdx.dashboards.rbac.create is false. The dashboard watcher needs
+read access (list/get/watch) to ConfigMaps in its discovery scope. Grant it
+out-of-band (e.g. a Role/RoleBinding bound to the HyperDX ServiceAccount), or the
+watcher will hit 403 errors and CrashLoop.
+{{- end }}
+
 To verify the deployment status, run:
-  kubectl get pods -l "app.kubernetes.io/name={{ include "clickstack.name" . }}" 
+  kubectl get pods -l "app.kubernetes.io/name={{ include "clickstack.name" . }}"
