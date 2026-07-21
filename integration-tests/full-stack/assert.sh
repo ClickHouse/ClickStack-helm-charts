@@ -12,7 +12,7 @@ echo "Waiting for services to initialize..."
 sleep 30
 
 echo "Waiting for all pods to be ready..."
-kubectl wait --for=condition=Ready pods --all --timeout=600s || true
+kubectl wait --for=condition=Ready pods --all --field-selector=status.phase!=Succeeded --timeout=600s || true
 
 echo "Pod status:"
 kubectl get pods -o wide
@@ -24,7 +24,7 @@ echo "Checking ClickHouseCluster CR..."
 kubectl get clickhousecluster -o wide || true
 
 echo "Waiting for all pods to be ready (final check)..."
-kubectl wait --for=condition=Ready pods --all --timeout=600s
+kubectl wait --for=condition=Ready pods --all --field-selector=status.phase!=Succeeded --timeout=600s
 
 echo "Final pod status:"
 kubectl get pods -o wide

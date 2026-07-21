@@ -328,6 +328,12 @@ clickhouse:
         image:
           repository: clickhouse/clickhouse-server
           tag: "25.7-alpine"
+        resources:
+          requests:
+            cpu: 500m
+            memory: 2Gi
+          limits:
+            memory: 2Gi
       replicas: 1
       shards: 1
       keeperClusterRef:
@@ -371,7 +377,7 @@ otel-collector:
   mode: deployment
   image:
     repository: docker.clickhouse.com/clickhouse/clickstack-otel-collector
-    tag: "2.28.0"
+    tag: "2.30.1"
   extraEnvsFrom:
     - configMapRef:
         name: clickstack-config

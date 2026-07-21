@@ -68,6 +68,20 @@ tests:
           path: spec.dataVolumeClaimSpec.resources.requests.storage
           value: 10Gi
 
+  - it: should set explicit container resources so the operator default does not OOMKill ClickHouse
+    templates:
+      - clickhouse/cluster.yaml
+    asserts:
+      - equal:
+          path: spec.containerTemplate.resources.requests.memory
+          value: 2Gi
+      - equal:
+          path: spec.containerTemplate.resources.limits.memory
+          value: 2Gi
+      - equal:
+          path: spec.containerTemplate.resources.requests.cpu
+          value: 500m
+
   - it: should resolve keeperClusterRef template expression
     templates:
       - clickhouse/cluster.yaml
