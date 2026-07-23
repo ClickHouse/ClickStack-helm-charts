@@ -1,0 +1,55 @@
+# ClickStack with a custom OTEL Collector configuration
+#
+# This example extends the built-in collector configuration with a custom
+# config layer via global.otelCollector.customConfig. The chart renders the
+# value into the `clickstack-otel-custom-config` ConfigMap, mounts it at
+# /etc/otelcol-contrib/custom/custom.config.yaml, and sets the
+# CUSTOM_OTELCOL_CONFIG_FILE environment variable so the collector merges it
+# on top of its built-in config. This works in both OpAMP supervisor mode
+# (the default) and standalone mode. Collector pods restart automatically
+# when the config changes.
+#
+# The OTel confmap merges maps leaf-by-leaf. To override a built-in
+# processor (e.g. memory_limiter), define a new one under a different name
+# and re-declare the pipeline `processors:` lists to reference it.
+#
+# Usage:
+#   helm install my-clickstack clickstack/clickstack -f values.yaml
+
+global:
+  otelCollector:
+    customConfig: |
+      receivers:
+        # Collect host metrics from the collector's node
+        hostmetrics:
+          collection_interval: 5s
+          scrapers:
+            cpu:
+            load:
+            memory:
+
+      processors:
+        # Example: swap the built-in memory_limiter (sized for a ~2 GiB
+        # container) for a percentage-based one that scales with the pod's
+        # memory allocation.
+        memory_limiter/custom:
+          check_interval: 5s
+          limit_percentage: 75
+          spike_limit_percentage: 25
+
+      service:
+        pipelines:
+          # New pipeline feeding host metrics into ClickHouse
+          metrics/hostmetrics:
+            receivers: [hostmetrics]
+            processors: [memory_limiter, batch]
+            exporters: [clickhouse]
+          # Re-declare built-in pipelines to use the custom memory limiter
+          traces:
+            processors: [memory_limiter/custom, batch]
+          metrics:
+            processors: [memory_limiter/custom, batch]
+          logs/out-default:
+            processors: [memory_limiter/custom, transform, batch]
+          logs/out-rrweb:
+            processors: [memory_limiter/custom, batch]

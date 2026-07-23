@@ -43,6 +43,8 @@ jobs:
             -f examples/alb-ingress/values.yaml >/dev/null
           helm template clickstack-example charts/clickstack \
             -f examples/api-only/values.yaml >/dev/null
+          helm template clickstack-example charts/clickstack \
+            -f examples/otel-custom-config/values.yaml >/dev/null
 
       - name: Run helm-unittest
         run: |

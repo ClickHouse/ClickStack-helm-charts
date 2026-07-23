@@ -8,6 +8,36 @@ global:
   #   - name: docker-hub-secret
   imagePullSecrets: []
 
+  otelCollector:
+    # Custom OTEL Collector configuration, merged on top of the collector's
+    # built-in config (works in both OpAMP supervisor and standalone mode).
+    # Provide the configuration as a multi-line YAML string. When set, it is
+    # rendered into the `clickstack-otel-custom-config` ConfigMap, mounted at
+    # /etc/otelcol-contrib/custom/custom.config.yaml, and the
+    # CUSTOM_OTELCOL_CONFIG_FILE environment variable points the collector
+    # to it. Changing the value automatically restarts the collector pods.
+    #
+    # NOTE: the OTel confmap merges maps leaf-by-leaf. To override a built-in
+    # processor (e.g. memory_limiter), define a new one under a different name
+    # and re-declare the pipeline `processors:` lists to reference it.
+    #
+    # Example:
+    # customConfig: |
+    #   receivers:
+    #     hostmetrics:
+    #       collection_interval: 5s
+    #       scrapers:
+    #         cpu:
+    #         load:
+    #         memory:
+    #   service:
+    #     pipelines:
+    #       metrics/hostmetrics:
+    #         receivers: [hostmetrics]
+    #         processors: [memory_limiter, batch]
+    #         exporters: [clickhouse]
+    customConfig: ""
+
 hyperdx:
   # Ports shared across Deployment, Service, ConfigMap, and Ingress
   ports:
@@ -383,6 +413,25 @@ otel-collector:
         name: clickstack-config
     - secretRef:
         name: clickstack-secret
+  # Roll collector pods when global.otelCollector.customConfig changes.
+  # Merges with any user-provided podAnnotations.
+  podAnnotations:
+    checksum/custom-config: '{{ .Values.global.otelCollector.customConfig | default "" | sha256sum }}'
+  # Mount for the optional custom config ConfigMap rendered from
+  # global.otelCollector.customConfig. The volume is marked optional so it is
+  # a no-op when no custom config is set.
+  # NOTE: if you override extraVolumes/extraVolumeMounts yourself, Helm
+  # replaces these lists entirely -- re-include the entries below to keep
+  # global.otelCollector.customConfig working.
+  extraVolumes:
+    - name: custom-config
+      configMap:
+        name: clickstack-otel-custom-config
+        optional: true
+  extraVolumeMounts:
+    - name: custom-config
+      mountPath: /etc/otelcol-contrib/custom
+      readOnly: true
   ports:
     otlp:
       enabled: true

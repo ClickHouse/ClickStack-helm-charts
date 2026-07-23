@@ -8,3 +8,6 @@ data:
   {{- range $k, $v := .Values.hyperdx.config }}
   {{ $k }}: {{ tpl (toString $v) $ | quote }}
   {{- end }}
+  {{- if and .Values.global.otelCollector.customConfig (not (hasKey .Values.hyperdx.config "CUSTOM_OTELCOL_CONFIG_FILE")) }}
+  CUSTOM_OTELCOL_CONFIG_FILE: "/etc/otelcol-contrib/custom/custom.config.yaml"
+  {{- end }}
