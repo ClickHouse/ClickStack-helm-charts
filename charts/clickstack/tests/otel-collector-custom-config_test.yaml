@@ -1,19 +1,136 @@
-suite: Test ClickStack ConfigMap Rendering
+suite: Test OTEL Collector Custom Config
 templates:
+  - otel-collector/custom-config.yaml
   - hyperdx/configmap.yaml
-
+  # configmap.yaml must be listed alongside deployment.yaml because the
+  # subchart deployment includes it for its own checksum annotation
+  - charts/otel-collector/templates/deployment.yaml
+  - charts/otel-collector/templates/configmap.yaml
 tests:
-  - it: should render ConfigMap with all expected keys
+  - it: should not render the custom config ConfigMap by default
+    template: otel-collector/custom-config.yaml
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should render the custom config ConfigMap when customConfig is set
+    template: otel-collector/custom-config.yaml
+    set:
+      global:
+        otelCollector:
+          customConfig: |
+            receivers:
+              hostmetrics:
+                collection_interval: 5s
+                scrapers:
+                  cpu:
+            service:
+              pipelines:
+                metrics/hostmetrics:
+                  receivers: [hostmetrics]
+                  processors: [memory_limiter, batch]
+                  exporters: [clickhouse]
     asserts:
       - hasDocuments:
           count: 1
       - isKind:
           of: ConfigMap
-      - isNotNull:
-          path: data.CLICKHOUSE_ENDPOINT
-      - isNotNull:
-          path: data.OPAMP_SERVER_URL
-      - isNotNull:
-          path: data.MONGO_URI
-      - isNotNull:
-          path: data.FRONTEND_URL
+      - equal:
+          path: metadata.name
+          value: clickstack-otel-custom-config
+      - equal:
+          path: metadata.labels["app.kubernetes.io/component"]
+          value: otel-collector
+      - matchRegex:
+          path: data["custom.config.yaml"]
+          pattern: "receivers:\n  hostmetrics:\n    collection_interval: 5s"
+      - matchRegex:
+          path: data["custom.config.yaml"]
+          pattern: "metrics/hostmetrics:"
+
+  - it: should not render the custom config ConfigMap when otel-collector is disabled
+    template: otel-collector/custom-config.yaml
+    set:
+      otel-collector:
+        enabled: false
+      global:
+        otelCollector:
+          customConfig: |
+            receivers:
+              hostmetrics:
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should not set CUSTOM_OTELCOL_CONFIG_FILE in clickstack-config by default
+    template: hyperdx/configmap.yaml
+    asserts:
+      - notExists:
+          path: data.CUSTOM_OTELCOL_CONFIG_FILE
+
+  - it: should set CUSTOM_OTELCOL_CONFIG_FILE in clickstack-config when customConfig is set
+    template: hyperdx/configmap.yaml
+    set:
+      global:
+        otelCollector:
+          customConfig: |
+            receivers:
+              hostmetrics:
+    asserts:
+      - equal:
+          path: data.CUSTOM_OTELCOL_CONFIG_FILE
+          value: "/etc/otelcol-contrib/custom/custom.config.yaml"
+
+  - it: should let hyperdx.config override CUSTOM_OTELCOL_CONFIG_FILE
+    template: hyperdx/configmap.yaml
+    set:
+      global:
+        otelCollector:
+          customConfig: |
+            receivers:
+              hostmetrics:
+      hyperdx:
+        config:
+          CUSTOM_OTELCOL_CONFIG_FILE: "/custom/path/config.yaml"
+    asserts:
+      - equal:
+          path: data.CUSTOM_OTELCOL_CONFIG_FILE
+          value: "/custom/path/config.yaml"
+
+  - it: should mount the optional custom config volume on the collector deployment
+    template: charts/otel-collector/templates/deployment.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: custom-config
+            configMap:
+              name: clickstack-otel-custom-config
+              optional: true
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: custom-config
+            mountPath: /etc/otelcol-contrib/custom
+            readOnly: true
+
+  - it: should carry a stable custom-config checksum annotation by default
+    template: charts/otel-collector/templates/deployment.yaml
+    asserts:
+      # sha256 of the default empty customConfig
+      - equal:
+          path: spec.template.metadata.annotations["checksum/custom-config"]
+          value: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+
+  - it: should change the custom-config checksum annotation when customConfig is set
+    template: charts/otel-collector/templates/deployment.yaml
+    set:
+      global:
+        otelCollector:
+          customConfig: |
+            receivers:
+              hostmetrics:
+    asserts:
+      - notEqual:
+          path: spec.template.metadata.annotations["checksum/custom-config"]
+          value: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
