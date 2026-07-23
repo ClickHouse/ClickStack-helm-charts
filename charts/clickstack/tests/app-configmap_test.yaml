@@ -57,3 +57,23 @@ tests:
       - matchRegex:
           path: data.OTEL_EXPORTER_OTLP_ENDPOINT
           pattern: "http://.*-otel-collector:4318"
+
+  - it: should render the default ClickHouse table TTL
+    asserts:
+      - equal:
+          path: data.HYPERDX_OTEL_EXPORTER_TABLES_TTL
+          value: "720h"
+
+  - it: should render per-signal TTL and reconcile overrides from config
+    set:
+      hyperdx:
+        config:
+          HYPERDX_OTEL_EXPORTER_LOGS_TTL: "180d"
+          HYPERDX_OTEL_EXPORTER_RECONCILE_TABLE_TTL: "true"
+    asserts:
+      - equal:
+          path: data.HYPERDX_OTEL_EXPORTER_LOGS_TTL
+          value: "180d"
+      - equal:
+          path: data.HYPERDX_OTEL_EXPORTER_RECONCILE_TABLE_TTL
+          value: "true"
