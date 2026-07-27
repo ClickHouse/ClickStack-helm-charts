@@ -10,6 +10,34 @@ entries:
           url: https://github.com/hyperdxio/hyperdx
     apiVersion: v2
     appVersion: 2.30.1
+    created: "2026-07-27T15:35:19.691418493Z"
+    dependencies:
+    - alias: otel-collector
+      condition: otel-collector.enabled
+      name: opentelemetry-collector
+      repository: https://open-telemetry.github.io/opentelemetry-helm-charts
+      version: ~0.146.0
+    description: A Helm chart for ClickStack - Full-stack observability with ClickHouse,
+      OpenTelemetry, and HyperDX
+    digest: 69b7579338e1e30e7a69f7c6740ca6ac569fffd39139f0f854c148a53554cdb7
+    home: https://clickhouse.com/docs/use-cases/observability/clickstack
+    name: clickstack
+    sources:
+    - https://github.com/hyperdxio/hyperdx
+    - https://github.com/hyperdxio/helm-charts
+    type: application
+    urls:
+    - https://github.com/ClickHouse/ClickStack-helm-charts/releases/download/clickstack-3.1.0/clickstack-3.1.0.tgz
+    version: 3.1.0
+  - annotations:
+      artifacthub.io/license: MIT
+      artifacthub.io/links: |
+        - name: Chart Source
+          url: https://github.com/hyperdxio/helm-charts
+        - name: Upstream Project
+          url: https://github.com/hyperdxio/hyperdx
+    apiVersion: v2
+    appVersion: 2.30.1
     created: "2026-07-20T21:59:20.091327788Z"
     dependencies:
     - alias: otel-collector
@@ -572,4 +600,4 @@ entries:
     urls:
     - https://github.com/hyperdxio/helm-charts/releases/download/hdx-oss-v2-0.1.0/hdx-oss-v2-0.1.0.tgz
     version: 0.1.0
-generated: "2026-07-20T21:59:20.268220655Z"
+generated: "2026-07-27T15:35:19.691499495Z"
