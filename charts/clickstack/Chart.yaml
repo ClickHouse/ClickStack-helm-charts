@@ -15,7 +15,7 @@ annotations:
     - name: Upstream Project
       url: https://github.com/hyperdxio/hyperdx
 type: application
-version: 3.0.2
+version: 3.1.0
 appVersion: 2.30.1
 dependencies:
   - name: opentelemetry-collector
