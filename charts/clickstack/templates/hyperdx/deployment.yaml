@@ -2,6 +2,10 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "clickstack.hyperdx.fullname" . }}
+  {{- with .Values.hyperdx.deployment.deploymentAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
   labels:
     {{- include "clickstack.labels" . | nindent 4 }}
     app: {{ include "clickstack.fullname" . }}

@@ -107,6 +107,9 @@ hyperdx:
     tolerations: []
     topologySpreadConstraints: []
     priorityClassName: ""
+    # Annotations applied to the HyperDX Deployment metadata.
+    deploymentAnnotations: {}
+    # Annotations applied to the HyperDX pod template metadata.
     annotations: {}
     labels: {}
     env: []

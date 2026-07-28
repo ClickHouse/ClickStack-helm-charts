@@ -6,6 +6,8 @@ tests:
     asserts:
       - isKind:
           of: Deployment
+      - isNull:
+          path: metadata.annotations
       - equal:
           path: spec.replicas
           value: 1
@@ -42,7 +44,7 @@ tests:
           path: spec.replicas
           value: 3
 
-  - it: should add custom annotations when provided
+  - it: should add custom pod annotations when provided
     set:
       hyperdx:
         deployment:
@@ -55,6 +57,24 @@ tests:
           content:
             prometheus.io/scrape: "true"
             prometheus.io/port: "3000"
+
+  - it: should keep deployment and pod annotations separate
+    set:
+      hyperdx:
+        deployment:
+          deploymentAnnotations:
+            example.com/configuration: deployment
+          annotations:
+            example.com/configuration: pod
+    asserts:
+      - isSubset:
+          path: metadata.annotations
+          content:
+            example.com/configuration: deployment
+      - isSubset:
+          path: spec.template.metadata.annotations
+          content:
+            example.com/configuration: pod
             
   - it: should add custom labels when provided
     set:
