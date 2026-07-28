@@ -111,7 +111,8 @@ hyperdx:
     deploymentAnnotations: {}
     # Annotations applied to the HyperDX pod template metadata.
     podAnnotations: {}
-    # Deprecated: use podAnnotations. Retained for backward compatibility.
+    # Deprecated: use podAnnotations. Retained for backward compatibility;
+    # podAnnotations takes precedence when both maps contain the same key.
     annotations: {}
     labels: {}
     env: []
