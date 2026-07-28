@@ -44,7 +44,7 @@ tests:
           path: spec.replicas
           value: 3
 
-  - it: should add custom pod annotations when provided
+  - it: should preserve the deprecated annotations alias for pod annotations
     set:
       hyperdx:
         deployment:
@@ -58,13 +58,25 @@ tests:
             prometheus.io/scrape: "true"
             prometheus.io/port: "3000"
 
+  - it: should add custom pod annotations when podAnnotations is provided
+    set:
+      hyperdx:
+        deployment:
+          podAnnotations:
+            example.com/pod: "enabled"
+    asserts:
+      - isSubset:
+          path: spec.template.metadata.annotations
+          content:
+            example.com/pod: "enabled"
+
   - it: should keep deployment and pod annotations separate
     set:
       hyperdx:
         deployment:
           deploymentAnnotations:
             example.com/configuration: deployment
-          annotations:
+          podAnnotations:
             example.com/configuration: pod
     asserts:
       - isSubset:
@@ -75,6 +87,22 @@ tests:
           path: spec.template.metadata.annotations
           content:
             example.com/configuration: pod
+
+  - it: should prefer podAnnotations over the deprecated annotations alias
+    set:
+      hyperdx:
+        deployment:
+          annotations:
+            example.com/configuration: legacy
+            example.com/legacy: preserved
+          podAnnotations:
+            example.com/configuration: explicit
+    asserts:
+      - isSubset:
+          path: spec.template.metadata.annotations
+          content:
+            example.com/configuration: explicit
+            example.com/legacy: preserved
             
   - it: should add custom labels when provided
     set:

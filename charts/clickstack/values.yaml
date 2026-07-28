@@ -110,6 +110,8 @@ hyperdx:
     # Annotations applied to the HyperDX Deployment metadata.
     deploymentAnnotations: {}
     # Annotations applied to the HyperDX pod template metadata.
+    podAnnotations: {}
+    # Deprecated: use podAnnotations. Retained for backward compatibility.
     annotations: {}
     labels: {}
     env: []
