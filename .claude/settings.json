@@ -4,7 +4,14 @@
       "Bash(helm template:*)",
       "Bash(helm lint:*)",
       "Bash(helm dependency build:*)",
-      "Bash(helm repo add:*)"
+      "Bash(helm repo add:*)",
+      "Bash(gh api:*)",
+      "Bash(git:*)",
+      "Bash(echo:*)",
+      "Bash(env:*)",
+      "Bash(printenv:*)",
+      "Bash(cat:*)",
+      "Bash(curl:*)"
     ]
   }
 }
