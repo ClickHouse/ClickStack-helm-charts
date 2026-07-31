@@ -57,3 +57,6 @@ If you are upgrading from the inline-template chart (v1.x), see the [Upgrade Gui
 
 - **[Documentation](https://clickhouse.com/docs/use-cases/observability/clickstack)** - Installation, configuration, guides
 - **[Issues](https://github.com/ClickHouse/ClickStack-helm-charts/issues)** - Report bugs or request features
+
+
+<!-- CI environment verification -->
