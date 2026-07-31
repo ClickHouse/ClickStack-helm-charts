@@ -1,5 +1,11 @@
 # helm-charts
 
+## 3.1.1
+
+### Patch Changes
+
+- ebbda51: chore: update appVersion to 2.32.0
+
 ## 3.1.0
 
 ### Minor Changes
