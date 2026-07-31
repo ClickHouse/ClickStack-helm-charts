@@ -31,7 +31,7 @@ spec:
       annotations:
       {{- if $podAnnotations }}
         {{- with $podAnnotations }}
-        {{- toYaml . | nindent 8 }} 
+        {{- toYaml . | nindent 8 }}
         {{- end -}}
       {{- end }}
     spec:
