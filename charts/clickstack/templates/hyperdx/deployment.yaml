@@ -53,6 +53,10 @@ spec:
       {{- if or .Values.hyperdx.serviceAccount.create .Values.hyperdx.serviceAccount.name }}
       serviceAccountName: {{ .Values.hyperdx.serviceAccount.name | default (include "clickstack.hyperdx.fullname" .) }}
       {{- end }}
+      {{- with .Values.hyperdx.deployment.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       {{- if .Values.global.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml .Values.global.imagePullSecrets | nindent 8 }}
@@ -63,6 +67,10 @@ spec:
         - name: wait-for-mongodb
           image: {{ .Values.hyperdx.deployment.waitForMongodb.image }}
           imagePullPolicy: {{ .Values.hyperdx.deployment.waitForMongodb.pullPolicy }}
+          {{- with .Values.hyperdx.deployment.containerSecurityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           command: ['sh', '-c', 'until nc -z {{ include "clickstack.mongodb.svc" . }} 27017; do echo waiting for mongodb; sleep 2; done;']
         {{- end }}
         {{- with .Values.hyperdx.deployment.initContainers }}
@@ -77,6 +85,10 @@ spec:
         - name: app
           image: "{{ .Values.hyperdx.deployment.image.repository }}:{{ .Values.hyperdx.deployment.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.hyperdx.deployment.image.pullPolicy }}
+          {{- with .Values.hyperdx.deployment.containerSecurityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           ports:
             - name: app-port
               containerPort: {{ .Values.hyperdx.ports.app }}
