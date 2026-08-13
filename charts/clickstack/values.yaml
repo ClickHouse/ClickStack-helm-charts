@@ -123,6 +123,10 @@ hyperdx:
     volumes: []
     # Additional volume mounts to apply to the HyperDX container.
     volumeMounts: []
+    # Pod-level security context for HyperDX workloads.
+    podSecurityContext: {}
+    # Container-level security context for managed HyperDX containers.
+    containerSecurityContext: {}
     waitForMongodb:
       image: "busybox@sha256:1fcf5df59121b92d61e066df1788e8df0cc35623f5d62d9679a41e163b6a0cdb"
       pullPolicy: IfNotPresent

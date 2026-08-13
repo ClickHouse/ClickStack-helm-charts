@@ -33,6 +33,12 @@ tests:
           content:
             secretRef:
               name: clickstack-secret
+      - isNull:
+          path: spec.template.spec.securityContext
+      - isNull:
+          path: spec.template.spec.initContainers[0].securityContext
+      - isNull:
+          path: spec.template.spec.containers[0].securityContext
 
   - it: should set custom replicas when provided
     set:
@@ -43,6 +49,41 @@ tests:
       - equal:
           path: spec.replicas
           value: 3
+
+  - it: should configure pod and managed container security contexts
+    set:
+      hyperdx:
+        deployment:
+          podSecurityContext:
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+          containerSecurityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+    asserts:
+      - equal:
+          path: spec.template.spec.securityContext
+          value:
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+      - equal:
+          path: spec.template.spec.initContainers[0].securityContext
+          value:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+      - equal:
+          path: spec.template.spec.containers[0].securityContext
+          value:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
 
   - it: should preserve the deprecated annotations alias for pod annotations
     set:
