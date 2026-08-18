@@ -1,0 +1,12 @@
+{{- if and (index .Values "otel-collector" "enabled") .Values.global.otelCollector.customConfig }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: clickstack-otel-custom-config
+  labels:
+    {{- include "clickstack.labels" . | nindent 4 }}
+    app.kubernetes.io/component: otel-collector
+data:
+  custom.config.yaml: |
+    {{- .Values.global.otelCollector.customConfig | nindent 4 }}
+{{- end }}

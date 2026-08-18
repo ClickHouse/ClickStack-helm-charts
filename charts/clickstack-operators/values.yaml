@@ -9,8 +9,8 @@ mongodb-operator:
 # See https://clickhouse.com/docs/clickhouse-operator/overview for all options
 clickhouse-operator:
   webhook:
-    enable: false
+    enabled: false
   certManager:
-    enable: false
+    enabled: false
   crd:
-    enable: true
+    enabled: true
