@@ -103,7 +103,7 @@ spec:
           {{- if .Values.hyperdx.deployment.livenessProbe.enabled }}
           livenessProbe:
             httpGet:
-              path: /health
+              path: {{ .Values.hyperdx.deployment.livenessProbe.path | default "/health" }}
               port: {{ .Values.hyperdx.ports.api }}
             initialDelaySeconds: {{ .Values.hyperdx.deployment.livenessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.hyperdx.deployment.livenessProbe.periodSeconds }}
@@ -113,7 +113,7 @@ spec:
           {{- if .Values.hyperdx.deployment.readinessProbe.enabled }}
           readinessProbe:
             httpGet:
-              path: /health
+              path: {{ .Values.hyperdx.deployment.readinessProbe.path | default "/ready" }}
               port: {{ .Values.hyperdx.ports.api }}
             initialDelaySeconds: {{ .Values.hyperdx.deployment.readinessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.hyperdx.deployment.readinessProbe.periodSeconds }}

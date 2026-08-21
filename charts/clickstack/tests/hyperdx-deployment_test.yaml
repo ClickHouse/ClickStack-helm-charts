@@ -388,7 +388,7 @@ tests:
           path: spec.template.spec.containers[0].readinessProbe
           content:
             httpGet:
-              path: /health
+              path: /ready
               port: 8000
             initialDelaySeconds: 1
             periodSeconds: 10
@@ -452,12 +452,31 @@ tests:
           path: spec.template.spec.containers[0].readinessProbe
           content:
             httpGet:
-              path: /health
+              path: /ready
               port: 8000
             initialDelaySeconds: 5
             periodSeconds: 20
             timeoutSeconds: 3
             failureThreshold: 2
+
+  - it: should use custom probe paths when provided
+    set:
+      hyperdx:
+        deployment:
+          livenessProbe:
+            enabled: true
+            path: /livez
+          readinessProbe:
+            # e.g. image tags < 2.36.0 that predate the /ready endpoint
+            enabled: true
+            path: /health
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].livenessProbe.httpGet.path
+          value: /livez
+      - equal:
+          path: spec.template.spec.containers[0].readinessProbe.httpGet.path
+          value: /health
 
   - it: should use custom apiPort in probes when provided
     set:

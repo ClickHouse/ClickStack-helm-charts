@@ -93,12 +93,21 @@ hyperdx:
     resources: {}
     livenessProbe:
       enabled: true
+      # Liveness only checks the process is serving HTTP — it deliberately
+      # checks no external dependencies, since restarting the pod does not
+      # fix a dependency outage.
+      path: /health
       initialDelaySeconds: 10
       periodSeconds: 30
       timeoutSeconds: 5
       failureThreshold: 3
     readinessProbe:
       enabled: true
+      # Mongo-aware readiness: /ready returns 503 until the API's MongoDB
+      # connection is established, so unready pods are removed from Service
+      # endpoints. Requires HyperDX >= 2.36.0 — set to /health when pinning
+      # an older image.tag.
+      path: /ready
       initialDelaySeconds: 1
       periodSeconds: 10
       timeoutSeconds: 5
