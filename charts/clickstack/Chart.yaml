@@ -16,7 +16,7 @@ annotations:
       url: https://github.com/hyperdxio/hyperdx
 type: application
 version: 3.2.0
-appVersion: 2.35.0
+appVersion: 2.36.0
 dependencies:
   - name: opentelemetry-collector
     version: ~0.146.0
