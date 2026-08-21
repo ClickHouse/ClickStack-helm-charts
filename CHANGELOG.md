@@ -1,5 +1,17 @@
 # helm-charts
 
+## 3.2.0
+
+### Minor Changes
+
+- 1719eee: Add optional pod and container security contexts for the HyperDX Deployment, wait-for-mongodb init container, and check-alerts CronJob.
+- 343163d: Add explicit `hyperdx.deployment.deploymentAnnotations` and `hyperdx.deployment.podAnnotations` values while preserving `hyperdx.deployment.annotations` as a deprecated pod annotation alias. When both pod annotation values contain the same key, `podAnnotations` takes precedence.
+
+### Patch Changes
+
+- 092f92e: chore: update appVersion to 2.34.0
+- a61b0e0: chore: update appVersion to 2.35.0
+
 ## 3.1.1
 
 ### Patch Changes
