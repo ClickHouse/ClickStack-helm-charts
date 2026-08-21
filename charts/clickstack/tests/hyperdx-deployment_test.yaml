@@ -467,7 +467,6 @@ tests:
             enabled: true
             path: /livez
           readinessProbe:
-            # e.g. image tags < 2.36.0 that predate the /ready endpoint
             enabled: true
             path: /health
     asserts:
