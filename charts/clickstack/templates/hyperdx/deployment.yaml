@@ -1,7 +1,12 @@
+{{- $podAnnotations := mergeOverwrite (dict) (default (dict) .Values.hyperdx.deployment.annotations) (default (dict) .Values.hyperdx.deployment.podAnnotations) -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "clickstack.hyperdx.fullname" . }}
+  {{- with .Values.hyperdx.deployment.deploymentAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
   labels:
     {{- include "clickstack.labels" . | nindent 4 }}
     app: {{ include "clickstack.fullname" . }}
@@ -24,9 +29,9 @@ spec:
         {{- include "clickstack.selectorLabels" . | nindent 8 }}
         app: {{ include "clickstack.fullname" . }}
       annotations:
-      {{- if .Values.hyperdx.deployment.annotations }}
-        {{- with .Values.hyperdx.deployment.annotations }}
-        {{- toYaml . | nindent 8 }} 
+      {{- if $podAnnotations }}
+        {{- with $podAnnotations }}
+        {{- toYaml . | nindent 8 }}
         {{- end -}}
       {{- end }}
     spec:
@@ -48,6 +53,10 @@ spec:
       {{- if or .Values.hyperdx.serviceAccount.create .Values.hyperdx.serviceAccount.name }}
       serviceAccountName: {{ .Values.hyperdx.serviceAccount.name | default (include "clickstack.hyperdx.fullname" .) }}
       {{- end }}
+      {{- with .Values.hyperdx.deployment.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       {{- if .Values.global.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml .Values.global.imagePullSecrets | nindent 8 }}
@@ -58,6 +67,10 @@ spec:
         - name: wait-for-mongodb
           image: {{ .Values.hyperdx.deployment.waitForMongodb.image }}
           imagePullPolicy: {{ .Values.hyperdx.deployment.waitForMongodb.pullPolicy }}
+          {{- with .Values.hyperdx.deployment.containerSecurityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           command: ['sh', '-c', 'until nc -z {{ include "clickstack.mongodb.svc" . }} 27017; do echo waiting for mongodb; sleep 2; done;']
         {{- end }}
         {{- with .Values.hyperdx.deployment.initContainers }}
@@ -72,6 +85,10 @@ spec:
         - name: app
           image: "{{ .Values.hyperdx.deployment.image.repository }}:{{ .Values.hyperdx.deployment.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.hyperdx.deployment.image.pullPolicy }}
+          {{- with .Values.hyperdx.deployment.containerSecurityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           ports:
             - name: app-port
               containerPort: {{ .Values.hyperdx.ports.app }}
@@ -86,7 +103,7 @@ spec:
           {{- if .Values.hyperdx.deployment.livenessProbe.enabled }}
           livenessProbe:
             httpGet:
-              path: /health
+              path: {{ .Values.hyperdx.deployment.livenessProbe.path | default "/health" }}
               port: {{ .Values.hyperdx.ports.api }}
             initialDelaySeconds: {{ .Values.hyperdx.deployment.livenessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.hyperdx.deployment.livenessProbe.periodSeconds }}
@@ -96,7 +113,7 @@ spec:
           {{- if .Values.hyperdx.deployment.readinessProbe.enabled }}
           readinessProbe:
             httpGet:
-              path: /health
+              path: {{ .Values.hyperdx.deployment.readinessProbe.path | default "/ready" }}
               port: {{ .Values.hyperdx.ports.api }}
             initialDelaySeconds: {{ .Values.hyperdx.deployment.readinessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.hyperdx.deployment.readinessProbe.periodSeconds }}

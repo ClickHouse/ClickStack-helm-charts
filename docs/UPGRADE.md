@@ -362,6 +362,29 @@ otel-collector:
 
 See the [OpenTelemetry Collector Helm chart](https://github.com/open-telemetry/opentelemetry-helm-charts/tree/main/charts/opentelemetry-collector) for all available subchart values.
 
+To provide a custom collector configuration (previously `otel.customConfig`), use `global.otelCollector.customConfig`. The chart renders it into a ConfigMap, mounts it at `/etc/otelcol-contrib/custom/custom.config.yaml`, and sets `CUSTOM_OTELCOL_CONFIG_FILE` so the collector merges it on top of its built-in config:
+
+```yaml
+global:
+  otelCollector:
+    customConfig: |
+      receivers:
+        hostmetrics:
+          collection_interval: 5s
+          scrapers:
+            cpu:
+            load:
+            memory:
+      service:
+        pipelines:
+          metrics/hostmetrics:
+            receivers: [hostmetrics]
+            processors: [memory_limiter, batch]
+            exporters: [clickhouse]
+```
+
+Note: the subchart's native `config:`/`alternateConfig:` values are **not** honored by the ClickStack collector image -- its entrypoint runs the collector (or OpAMP supervisor) with its own baked-in config files and ignores the chart-generated `relay.yaml`. Use `global.otelCollector.customConfig` instead.
+
 ## Unchanged Values
 
 The following sections are **not affected** by this migration:

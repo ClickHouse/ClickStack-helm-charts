@@ -1,5 +1,70 @@
 # helm-charts
 
+## 3.2.0
+
+### Minor Changes
+
+- 1719eee: Add optional pod and container security contexts for the HyperDX Deployment, wait-for-mongodb init container, and check-alerts CronJob.
+- 343163d: Add explicit `hyperdx.deployment.deploymentAnnotations` and `hyperdx.deployment.podAnnotations` values while preserving `hyperdx.deployment.annotations` as a deprecated pod annotation alias. When both pod annotation values contain the same key, `podAnnotations` takes precedence.
+
+### Patch Changes
+
+- 092f92e: chore: update appVersion to 2.34.0
+- a61b0e0: chore: update appVersion to 2.35.0
+
+## 3.1.1
+
+### Patch Changes
+
+- ebbda51: chore: update appVersion to 2.32.0
+
+## 3.1.0
+
+### Minor Changes
+
+- aacd0a3: feat: restore inline custom OTEL collector config support (HDX-4879)
+
+  Adds `global.otelCollector.customConfig` to the clickstack chart, restoring
+  the `otel.customConfig` capability that was lost in the v3 migration to the
+  official OpenTelemetry Collector subchart. When set, the config is rendered
+  into the `clickstack-otel-custom-config` ConfigMap, mounted at
+  `/etc/otelcol-contrib/custom/custom.config.yaml`, and exposed to the
+  collector via the `CUSTOM_OTELCOL_CONFIG_FILE` environment variable so it is
+  merged on top of the built-in configuration in both OpAMP supervisor and
+  standalone mode. Collector pods restart automatically when the config
+  changes via a `checksum/custom-config` pod annotation.
+
+## 3.0.2
+
+### Patch Changes
+
+- efc978a: chore(deps): bump clickhouse-operator-helm to v0.0.7
+
+  Also bumps the clickstack-operators chart to 1.1.0 so the updated
+  dependency is published. Operator v0.0.7 no longer drops a non-empty
+  Atomic `default` database during Replicated conversion
+  (clickhouse-operator#255), which is why the earlier
+  `enableDatabaseSync: false` workaround is not needed.
+
+- efc978a: fix(clickhouse): set explicit container resources for the ClickHouse server
+
+  The clickhouse-operator applies a small default resource block (512Mi memory,
+  request == limit as of operator v0.0.6) when none is provided. That is too low
+  for the full ClickStack schema (many materialized views) and caused the
+  ClickHouse server to OOMKill (exit 137) and crash-loop under ingestion plus
+  background merges. The chart now sets explicit `containerTemplate.resources`
+  (2Gi memory, 500m CPU request) which can be overridden per environment.
+
+- dd5bd6f: chore: update appVersion to 2.30.1
+
+## 3.0.1
+
+### Patch Changes
+
+- ca8c0dc: fix: align otel-collector image tag with chart appVersion
+- 3786bbe: chore: update appVersion to 2.28.0
+- 7ffc1ad: chore: update appVersion to 2.29.0
+
 ## 3.0.0
 
 ### Major Changes

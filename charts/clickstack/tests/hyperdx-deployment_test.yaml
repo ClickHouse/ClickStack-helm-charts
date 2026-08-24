@@ -6,6 +6,8 @@ tests:
     asserts:
       - isKind:
           of: Deployment
+      - isNull:
+          path: metadata.annotations
       - equal:
           path: spec.replicas
           value: 1
@@ -31,6 +33,12 @@ tests:
           content:
             secretRef:
               name: clickstack-secret
+      - isNull:
+          path: spec.template.spec.securityContext
+      - isNull:
+          path: spec.template.spec.initContainers[0].securityContext
+      - isNull:
+          path: spec.template.spec.containers[0].securityContext
 
   - it: should set custom replicas when provided
     set:
@@ -42,7 +50,42 @@ tests:
           path: spec.replicas
           value: 3
 
-  - it: should add custom annotations when provided
+  - it: should configure pod and managed container security contexts
+    set:
+      hyperdx:
+        deployment:
+          podSecurityContext:
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+          containerSecurityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+    asserts:
+      - equal:
+          path: spec.template.spec.securityContext
+          value:
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+      - equal:
+          path: spec.template.spec.initContainers[0].securityContext
+          value:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+      - equal:
+          path: spec.template.spec.containers[0].securityContext
+          value:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+
+  - it: should preserve the deprecated annotations alias for pod annotations
     set:
       hyperdx:
         deployment:
@@ -55,6 +98,52 @@ tests:
           content:
             prometheus.io/scrape: "true"
             prometheus.io/port: "3000"
+
+  - it: should add custom pod annotations when podAnnotations is provided
+    set:
+      hyperdx:
+        deployment:
+          podAnnotations:
+            example.com/pod: "enabled"
+    asserts:
+      - isSubset:
+          path: spec.template.metadata.annotations
+          content:
+            example.com/pod: "enabled"
+
+  - it: should keep deployment and pod annotations separate
+    set:
+      hyperdx:
+        deployment:
+          deploymentAnnotations:
+            example.com/configuration: deployment
+          podAnnotations:
+            example.com/configuration: pod
+    asserts:
+      - isSubset:
+          path: metadata.annotations
+          content:
+            example.com/configuration: deployment
+      - isSubset:
+          path: spec.template.metadata.annotations
+          content:
+            example.com/configuration: pod
+
+  - it: should prefer podAnnotations over the deprecated annotations alias
+    set:
+      hyperdx:
+        deployment:
+          annotations:
+            example.com/configuration: legacy
+            example.com/legacy: preserved
+          podAnnotations:
+            example.com/configuration: explicit
+    asserts:
+      - isSubset:
+          path: spec.template.metadata.annotations
+          content:
+            example.com/configuration: explicit
+            example.com/legacy: preserved
             
   - it: should add custom labels when provided
     set:
@@ -299,7 +388,7 @@ tests:
           path: spec.template.spec.containers[0].readinessProbe
           content:
             httpGet:
-              path: /health
+              path: /ready
               port: 8000
             initialDelaySeconds: 1
             periodSeconds: 10
@@ -363,12 +452,30 @@ tests:
           path: spec.template.spec.containers[0].readinessProbe
           content:
             httpGet:
-              path: /health
+              path: /ready
               port: 8000
             initialDelaySeconds: 5
             periodSeconds: 20
             timeoutSeconds: 3
             failureThreshold: 2
+
+  - it: should use custom probe paths when provided
+    set:
+      hyperdx:
+        deployment:
+          livenessProbe:
+            enabled: true
+            path: /livez
+          readinessProbe:
+            enabled: true
+            path: /health
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].livenessProbe.httpGet.path
+          value: /livez
+      - equal:
+          path: spec.template.spec.containers[0].readinessProbe.httpGet.path
+          value: /health
 
   - it: should use custom apiPort in probes when provided
     set:
