@@ -1,5 +1,24 @@
 # helm-charts
 
+## 3.3.0
+
+### Minor Changes
+
+- 359d747: feat(clickstack): surface ClickHouse table TTL as configurable values
+
+  Defaults and documents `HYPERDX_OTEL_EXPORTER_TABLES_TTL` (720h) in `hyperdx.config`, and documents the per-signal overrides (`HYPERDX_OTEL_EXPORTER_LOGS_TTL` / `_TRACES_TTL` / `_METRICS_TTL` / `_SESSIONS_TTL`) plus `HYPERDX_OTEL_EXPORTER_RECONCILE_TABLE_TTL`. Operators can now set ClickHouse data retention per signal — e.g. keep logs and traces for 6 months for compliance while metrics stay short — without hand-crafting collector env vars. The per-signal overrides and reconcile need collector image 2.36.0 or newer, which is the chart's current default.
+
+- 0ab5316: Point the HyperDX readiness probe at the new Mongo-aware `/ready` endpoint and make both probe paths configurable.
+
+  `/ready` (added in HyperDX 2.36.0, see hyperdxio/hyperdx#2968) returns 503 until the API's MongoDB connection is established, so pods that cannot serve Mongo-backed requests are removed from Service endpoints instead of staying Ready indefinitely (hyperdxio/hyperdx#2966). The liveness probe stays on `/health`, which remains a pure process-liveness check.
+
+  New values: `hyperdx.deployment.livenessProbe.path` (default `/health`) and `hyperdx.deployment.readinessProbe.path` (default `/ready`). If you pin `hyperdx.deployment.image.tag` to a version older than 2.36.0, set `readinessProbe.path: /health` — those images do not serve `/ready`.
+
+### Patch Changes
+
+- d00e133: ci: attach the matching CHANGELOG.md section to each GitHub release. The release workflow now extracts the released version's changelog section into `charts/clickstack/RELEASE_NOTES.md` and passes it to chart-releaser via `release-notes-file`, instead of publishing releases with only the chart description as the body.
+- 49f2c5a: chore: update appVersion to 2.36.0
+
 ## 3.2.0
 
 ### Minor Changes
