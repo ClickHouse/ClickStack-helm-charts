@@ -71,6 +71,10 @@ spec:
           securityContext:
             {{- toYaml . | nindent 12 }}
           {{- end }}
+          {{- with .Values.hyperdx.deployment.waitForMongodb.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           command: ['sh', '-c', 'until nc -z {{ include "clickstack.mongodb.svc" . }} 27017; do echo waiting for mongodb; sleep 2; done;']
         {{- end }}
         {{- with .Values.hyperdx.deployment.initContainers }}

@@ -132,6 +132,16 @@ hyperdx:
     waitForMongodb:
       image: "busybox@sha256:1fcf5df59121b92d61e066df1788e8df0cc35623f5d62d9679a41e163b6a0cdb"
       pullPolicy: IfNotPresent
+      # Resources for the wait-for-mongodb init container. Useful in clusters
+      # that enforce namespace resource quotas.
+      resources: {}
+        # Example:
+        # requests:
+        #   memory: "100Mi"
+        #   cpu: "100m"
+        # limits:
+        #   memory: "200Mi"
+        #   cpu: "500m"
     # Default connections and sources (ENABLED BY DEFAULT)
     # Set to empty string to disable: defaultConnections: "" or defaultSources: ""
     # To use an existing secret, set useExistingConfigSecret: true
@@ -322,6 +332,16 @@ mongodb:
   # Full MongoDBCommunity CRD spec -- rendered verbatim into the CR.
   # See https://github.com/mongodb/mongodb-kubernetes/tree/master/docs/mongodbcommunity
   # for all available fields. Add persistence, nodeSelector, tolerations, etc. here.
+  # Container resources can be set via the operator's statefulset override, e.g.:
+  #   statefulSet:
+  #     spec:
+  #       template:
+  #         spec:
+  #           containers:
+  #             - name: mongod
+  #               resources:
+  #                 requests: { memory: "512Mi", cpu: "500m" }
+  #                 limits: { memory: "2Gi", cpu: "2" }
   spec:
     members: 1
     type: ReplicaSet

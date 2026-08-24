@@ -241,6 +241,42 @@ tests:
           path: spec.template.spec.initContainers[0].imagePullPolicy
           value: Always
 
+  - it: should not set resources on the wait-for-mongodb initContainer by default
+    set:
+      mongodb:
+        enabled: true
+    asserts:
+      - isNull:
+          path: spec.template.spec.initContainers[0].resources
+
+  - it: should render resources on the wait-for-mongodb initContainer when set
+    set:
+      mongodb:
+        enabled: true
+      hyperdx:
+        deployment:
+          waitForMongodb:
+            resources:
+              requests:
+                memory: 100Mi
+                cpu: 100m
+              limits:
+                memory: 200Mi
+                cpu: 500m
+    asserts:
+      - equal:
+          path: spec.template.spec.initContainers[0].resources.requests.memory
+          value: 100Mi
+      - equal:
+          path: spec.template.spec.initContainers[0].resources.requests.cpu
+          value: 100m
+      - equal:
+          path: spec.template.spec.initContainers[0].resources.limits.memory
+          value: 200Mi
+      - equal:
+          path: spec.template.spec.initContainers[0].resources.limits.cpu
+          value: 500m
+
   - it: should not include initContainers when mongodb is disabled and no user init containers are provided
     set:
       mongodb:
