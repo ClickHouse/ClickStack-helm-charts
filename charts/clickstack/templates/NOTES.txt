@@ -35,4 +35,7 @@ Application Access:
 {{- end }}
 
 To verify the deployment status, run:
-  kubectl get pods -l "app.kubernetes.io/name={{ include "clickstack.name" . }}" 
+  kubectl get pods -l "app.kubernetes.io/name={{ include "clickstack.name" . }}"
+
+Production hardening (Ingress controller pinning, NetworkPolicy, resource limits):
+  https://github.com/ClickHouse/ClickStack-helm-charts/blob/main/docs/SECURITY-HARDENING.md
