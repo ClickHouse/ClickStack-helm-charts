@@ -1,0 +1,16 @@
+{{- $dashboards := default (dict) .Values.hyperdx.dashboards -}}
+{{- if and $dashboards.enabled $dashboards.configMaps }}
+{{- /*
+  Inline dashboard ConfigMap; labeled for discovery by the dashboard provisioner
+  alongside any external dashboard ConfigMaps from application charts.
+*/ -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "clickstack.fullname" . }}-dashboards
+  labels:
+    {{- include "clickstack.labels" . | nindent 4 }}
+    {{ include "clickstack.hyperdx.dashboardLabelKey" . }}: {{ include "clickstack.hyperdx.dashboardLabelValue" . | quote }}
+data:
+  {{- $dashboards.configMaps | toYaml | nindent 2 }}
+{{- end }}
