@@ -1,0 +1,129 @@
+suite: Test HyperDX Rollout Checksums
+templates:
+  - hyperdx/deployment.yaml
+  - hyperdx/configmap.yaml
+  - hyperdx/secret.yaml
+# Pin chart metadata so release version bumps do not invalidate content-change assertions.
+chart:
+  version: 3.3.0
+  appVersion: 2.36.0
+tests:
+  - it: should render deterministic checksums for chart-managed configuration
+    template: hyperdx/deployment.yaml
+    asserts:
+      - equal:
+          path: spec.template.metadata.annotations["checksum/clickstack-config"]
+          value: 0587572216112d61fd7d298001d71ed852194038be79415116a447e260753058
+      - equal:
+          path: spec.template.metadata.annotations["checksum/clickstack-secret"]
+          value: 7d047b36293876f9242bce55bbd3ce9a255e51a425934a7cea4f2ab04f86895d
+
+  - it: should change only the ConfigMap checksum when config content changes
+    template: hyperdx/deployment.yaml
+    set:
+      hyperdx:
+        config:
+          FRONTEND_URL: https://changed.example
+    asserts:
+      - equal:
+          path: spec.template.metadata.annotations["checksum/clickstack-config"]
+          value: 8149416c5dff3a76c98e11c8f1fef4ab3a6eca7cd68e79d6a1bd956c196499a3
+      - equal:
+          path: spec.template.metadata.annotations["checksum/clickstack-secret"]
+          value: 7d047b36293876f9242bce55bbd3ce9a255e51a425934a7cea4f2ab04f86895d
+
+  - it: should change only the Secret checksum when independent secret content changes
+    template: hyperdx/deployment.yaml
+    set:
+      hyperdx:
+        secrets:
+          HYPERDX_API_KEY: changed
+    asserts:
+      - equal:
+          path: spec.template.metadata.annotations["checksum/clickstack-config"]
+          value: 0587572216112d61fd7d298001d71ed852194038be79415116a447e260753058
+      - equal:
+          path: spec.template.metadata.annotations["checksum/clickstack-secret"]
+          value: a94315e89cfbbe97c9d0f11a48fa845d1f324473ee64666032c9151ffb3a4349
+
+  - it: should omit the Secret checksum when using external secrets
+    template: hyperdx/deployment.yaml
+    set:
+      mongodb:
+        enabled: false
+      clickhouse:
+        enabled: false
+      otel-collector:
+        enabled: false
+      hyperdx:
+        secrets: null
+        config:
+          MONGO_URI: mongodb://external
+        deployment:
+          env:
+            - name: HYPERDX_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: external-hyperdx
+                  key: api-key
+    asserts:
+      - matchRegex:
+          path: spec.template.metadata.annotations["checksum/clickstack-config"]
+          pattern: ^[a-f0-9]{64}$
+      - notExists:
+          path: spec.template.metadata.annotations["checksum/clickstack-secret"]
+      - notExists:
+          path: spec.template.spec.containers[0].envFrom[1]
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: HYPERDX_API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: external-hyperdx
+                key: api-key
+
+  - it: should preserve user annotations while reserving generated checksum keys
+    template: hyperdx/deployment.yaml
+    set:
+      hyperdx:
+        deployment:
+          annotations:
+            example.com/legacy: preserved
+          podAnnotations:
+            example.com/pod: preserved
+            checksum/clickstack-config: caller-value
+            checksum/clickstack-secret: caller-value
+    asserts:
+      - equal:
+          path: spec.template.metadata.annotations["example.com/legacy"]
+          value: preserved
+      - equal:
+          path: spec.template.metadata.annotations["example.com/pod"]
+          value: preserved
+      - equal:
+          path: spec.template.metadata.annotations["checksum/clickstack-config"]
+          value: 0587572216112d61fd7d298001d71ed852194038be79415116a447e260753058
+      - equal:
+          path: spec.template.metadata.annotations["checksum/clickstack-secret"]
+          value: 7d047b36293876f9242bce55bbd3ce9a255e51a425934a7cea4f2ab04f86895d
+      - notEqual:
+          path: spec.template.metadata.annotations["checksum/clickstack-config"]
+          value: caller-value
+      - notEqual:
+          path: spec.template.metadata.annotations["checksum/clickstack-secret"]
+          value: caller-value
+
+  - it: should keep checksums stable when unrelated values change
+    template: hyperdx/deployment.yaml
+    set:
+      hyperdx:
+        deployment:
+          replicas: 3
+    asserts:
+      - equal:
+          path: spec.template.metadata.annotations["checksum/clickstack-config"]
+          value: 0587572216112d61fd7d298001d71ed852194038be79415116a447e260753058
+      - equal:
+          path: spec.template.metadata.annotations["checksum/clickstack-secret"]
+          value: 7d047b36293876f9242bce55bbd3ce9a255e51a425934a7cea4f2ab04f86895d

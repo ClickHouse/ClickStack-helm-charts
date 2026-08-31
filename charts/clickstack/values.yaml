@@ -100,6 +100,7 @@ hyperdx:
   # Shared non-sensitive environment variables. Used by HyperDX and OTEL collector via envFrom.
   # All values support Helm template expressions (rendered via tpl).
   # Override any entry with a plain string to point at an external service.
+  # Changes to the rendered ConfigMap automatically roll the HyperDX Deployment.
   config:
     APP_PORT: "3000"
     API_PORT: "8000"
@@ -140,6 +141,9 @@ hyperdx:
   # managing secrets externally via deployment.env valueFrom entries. Requires
   # mongodb, clickhouse, and otel-collector to all be disabled. Users must
   # provide all required environment variables through their own secret management.
+  # Changes to this chart-managed Secret automatically roll the HyperDX Deployment.
+  # External Secret changes require an explicit rollout because Helm cannot hash
+  # resources that are not rendered by this chart.
   secrets:
     HYPERDX_API_KEY: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
     CLICKHOUSE_PASSWORD: "otelcollectorpass"
@@ -175,6 +179,8 @@ hyperdx:
     # Annotations applied to the HyperDX Deployment metadata.
     deploymentAnnotations: {}
     # Annotations applied to the HyperDX pod template metadata.
+    # checksum/clickstack-config and checksum/clickstack-secret are reserved for
+    # chart-generated rollout checksums and cannot be overridden.
     podAnnotations: {}
     # Deprecated: use podAnnotations. Retained for backward compatibility;
     # podAnnotations takes precedence when both maps contain the same key.
