@@ -10,9 +10,9 @@ on:
 
 jobs:
   version-script-smoke:
-    # The update-chart-versions.js script otherwise only runs post-merge in
-    # release.yml; exercise it at PR time so dependency bumps (e.g. js-yaml)
-    # can't break chart releases silently.
+    # The release scripts (update-chart-versions.js, extract-release-notes.js)
+    # otherwise only run post-merge in release.yml; exercise them at PR time so
+    # dependency bumps (e.g. js-yaml) can't break chart releases silently.
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -46,6 +46,12 @@ jobs:
             console.log(`Chart.yaml round-trip OK (version ${chart.version})`);
           '
           git checkout -- charts/*/Chart.yaml
+
+      - name: Run extract-release-notes script
+        run: |
+          node scripts/extract-release-notes.js
+          # Discard the generated release notes file, if any.
+          rm -f charts/clickstack/RELEASE_NOTES.md
 
   helm-unittest:
     runs-on: ubuntu-latest
