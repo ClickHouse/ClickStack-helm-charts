@@ -1,4 +1,8 @@
 {{- $podAnnotations := mergeOverwrite (dict) (default (dict) .Values.hyperdx.deployment.annotations) (default (dict) .Values.hyperdx.deployment.podAnnotations) -}}
+{{- $_ := set $podAnnotations "checksum/clickstack-config" (include "clickstack.hyperdx.configmap" . | sha256sum) -}}
+{{- if ne .Values.hyperdx.secrets nil -}}
+{{- $_ := set $podAnnotations "checksum/clickstack-secret" (include "clickstack.hyperdx.secret" . | sha256sum) -}}
+{{- end -}}
 {{- $dashboards := default (dict) .Values.hyperdx.dashboards -}}
 {{- include "clickstack.hyperdx.validateDashboards" . -}}
 apiVersion: apps/v1
