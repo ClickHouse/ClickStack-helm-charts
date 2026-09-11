@@ -228,3 +228,41 @@ ClickHouse headless service name. The operator creates a headless service named 
 {{- define "clickstack.clickhouse.svc" -}}
 {{- printf "%s-clickhouse-headless" (include "clickstack.clickhouse.fullname" .) -}}
 {{- end }}
+
+{{/*
+Render the chart-managed HyperDX ConfigMap from one canonical template so the
+manifest and the Deployment rollout checksum cannot drift.
+*/}}
+{{- define "clickstack.hyperdx.configmap" -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: clickstack-config
+  labels:
+    {{- include "clickstack.labels" . | nindent 4 }}
+data:
+  {{- range $k, $v := .Values.hyperdx.config }}
+  {{ $k }}: {{ tpl (toString $v) $ | quote }}
+  {{- end }}
+  {{- if and .Values.global.otelCollector.customConfig (not (hasKey .Values.hyperdx.config "CUSTOM_OTELCOL_CONFIG_FILE")) }}
+  CUSTOM_OTELCOL_CONFIG_FILE: "/etc/otelcol-contrib/custom/custom.config.yaml"
+  {{- end }}
+{{- end }}
+
+{{/*
+Render the chart-managed HyperDX Secret from one canonical template so the
+manifest and the Deployment rollout checksum cannot drift.
+*/}}
+{{- define "clickstack.hyperdx.secret" -}}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: clickstack-secret
+  labels:
+    {{- include "clickstack.labels" . | nindent 4 }}
+type: Opaque
+stringData:
+  {{- range $k, $v := .Values.hyperdx.secrets }}
+  {{ $k }}: {{ tpl (toString $v) $ | quote }}
+  {{- end }}
+{{- end }}
