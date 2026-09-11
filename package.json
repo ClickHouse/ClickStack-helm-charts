@@ -15,5 +15,11 @@
     "@changesets/cli": "^2.29.4",
     "js-yaml": "^5.4.1"
   },
-  "packageManager": "yarn@4.9.2"
+  "packageManager": "yarn@4.9.2",
+  "resolutions": {
+    "tmp@^0.0.33": "^0.2.6"
+  },
+  "resolutionsNotes": {
+    "tmp@^0.0.33": "GHSA-52f5-9888-hmc6 (`<0.2.6`, path traversal via an unsanitized prefix/postfix) and GHSA-898m-9v49-8vgq (`<=0.2.3`). `external-editor` (via @changesets/cli) declares `tmp@^0.0.33`, and a caret on a `0.0.x` version is semver-equivalent to `=0.0.33`, so `yarn up -R` cannot move it -- it needs this override. 0.2.6 is the minimum that clears both advisories; the scanner's suggested 0.2.4 only clears the second. external-editor calls `tmp.tmpNameSync()` and nothing else, which 0.2.x still exports. Reachable only through `yarn changeset`'s interactive editor prompt, never at chart render or release time. Drop once external-editor widens its range."
+  }
 }
