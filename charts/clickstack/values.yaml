@@ -462,10 +462,27 @@ clickhouse:
               profile: default
               grants:
                 - query: "GRANT SELECT,INSERT,CREATE,SHOW ON default.*"
+        # The operator defaults to level trace with 50 x 1000M log files, written
+        # to the data volume. That fills the 10Gi default volume within days.
+        logger:
+          level: information
+          size: 100M
+          count: 10
         extraConfig:
           max_connections: 4096
           keep_alive_timeout: 64
           max_concurrent_queries: 100
+          # System log tables also live on the data volume and have no TTL by default.
+          query_log:
+            ttl: event_date + INTERVAL 7 DAY DELETE
+          part_log:
+            ttl: event_date + INTERVAL 7 DAY DELETE
+          text_log:
+            ttl: event_date + INTERVAL 7 DAY DELETE
+          metric_log:
+            ttl: event_date + INTERVAL 7 DAY DELETE
+          asynchronous_metric_log:
+            ttl: event_date + INTERVAL 7 DAY DELETE
 
 # Additional Kubernetes manifests to deploy alongside the chart.
 # Each entry is a complete Kubernetes object. Values are rendered through
