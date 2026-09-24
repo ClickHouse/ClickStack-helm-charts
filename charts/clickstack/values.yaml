@@ -180,6 +180,8 @@ hyperdx:
     # podAnnotations takes precedence when both maps contain the same key.
     annotations: {}
     labels: {}
+    # Labels applied to the HyperDX pod template metadata.
+    podLabels: {}
     env: []
     # Additional init containers to run before the HyperDX container starts.
     # Useful for fetching certificates, warming caches, or other startup tasks.
