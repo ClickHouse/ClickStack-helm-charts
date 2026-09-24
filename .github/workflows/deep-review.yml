@@ -60,7 +60,8 @@ jobs:
       # so remapping the alias is what lifts them. Must stay at JOB level -- the
       # action's own composite `env:` block shadows the caller's step env.
       # `[1m]` because the mid-tier already runs a 1M window today. Not
-      # remapping HAIKU: its only user here is CLI internals.
+      # remapping HAIKU: its only user here is CLI internals. Also feeds the
+      # review step's --model, so this is the one place to bump the model.
       ANTHROPIC_DEFAULT_SONNET_MODEL: claude-opus-4-8[1m]
     permissions:
       contents: read
@@ -189,14 +190,16 @@ jobs:
           set -e
           MB=$(git merge-base HEAD "${{ steps.pr.outputs.base_sha }}")
           LOCAL=$(git diff --name-only "$MB" | sort -u)
-          REMOTE=$(gh pr view "${{ steps.pr.outputs.number }}" \
-            --repo "${{ github.repository }}" \
-            --json files --jq '.files[].path' | sort -u)
+          # `gh pr view --json files` stops at 100 files, so page through the
+          # REST files endpoint instead.
+          REMOTE=$(gh api --paginate \
+            "repos/${{ github.repository }}/pulls/${{ steps.pr.outputs.number }}/files" \
+            --jq '.[].filename' | sort -u)
           if [ "$LOCAL" != "$REMOTE" ]; then
             echo "::error::Local diff file list does not match the PR's file list. The review base is likely wrong."
             echo "--- local (from merge-base $MB) ---"
             echo "$LOCAL"
-            echo "--- remote (from gh pr view) ---"
+            echo "--- remote (from the PR files API) ---"
             echo "$REMOTE"
             echo "--- diff ---"
             diff <(echo "$LOCAL") <(echo "$REMOTE") || true
@@ -341,8 +344,28 @@ jobs:
               body = body.slice(0, TOTAL_LIMIT) + `\n\n[...truncated_${fence}]`;
             }
 
+            // The checkout is the PR head, which a fork controls. If the PR
+            // ships `.deep-review` (e.g. as a symlink), writing through it
+            // from this privileged step would overwrite files outside the
+            // scratch dir. Refuse unless the path is absent, then create it
+            // here: a non-recursive mkdir and an exclusive-create write never
+            // follow an existing entry. lstat, not existsSync, so a dangling
+            // symlink still counts as present.
             const dir = path.join(process.env.GITHUB_WORKSPACE, '.deep-review');
-            fs.mkdirSync(dir, { recursive: true });
+            let present = true;
+            try {
+              fs.lstatSync(dir);
+            } catch (e) {
+              if (e.code !== 'ENOENT') throw e;
+              present = false;
+            }
+            if (present) {
+              core.setFailed(
+                '.deep-review already exists in the PR checkout. Refusing to ' +
+                'write prior review comments through a PR-controlled path.');
+              return;
+            }
+            fs.mkdirSync(dir);
             fs.writeFileSync(
               path.join(dir, 'prior-comments.md'),
               count === 0
@@ -356,7 +379,7 @@ jobs:
                     fence,
                     '',
                   ].join('\n'),
-              'utf8',
+              { encoding: 'utf8', flag: 'wx' },
             );
 
             // Hide the scratch dir from the skill's Stage 1 `git status` /
@@ -661,10 +684,11 @@ jobs:
           #
           # --model covers the orchestrator and the three personas the plugin
           # exempts from its mid-tier override; without it they follow whatever
-          # CLAUDE_CLI_VERSION defaults to. Pair with the job env's
-          # ANTHROPIC_DEFAULT_SONNET_MODEL, which covers the rest.
+          # CLAUDE_CLI_VERSION defaults to. It reads the job env's
+          # ANTHROPIC_DEFAULT_SONNET_MODEL, which covers the rest, so both
+          # tiers stay on one model.
           claude_args: |
-            --model "claude-opus-4-8[1m]"
+            --model "${{ env.ANTHROPIC_DEFAULT_SONNET_MODEL }}"
             --setting-sources user
             --strict-mcp-config
             --allowedTools "Bash(git diff:*),Bash(git log:*),Bash(git blame:*),Bash(git show:*),Bash(git merge-base:*),Bash(git rev-parse:*),Bash(git ls-files:*),Bash(git cat-file:*),Bash(git status:*),Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr list:*),Bash(gh issue view:*),Bash(gh issue list:*),Bash(gh search:*)"
