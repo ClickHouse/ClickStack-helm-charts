@@ -158,7 +158,39 @@ tests:
           content:
             environment: production
             team: platform
-            
+
+  - it: should add custom pod labels when podLabels is provided
+    set:
+      hyperdx:
+        deployment:
+          podLabels:
+            environment: production
+            team: platform
+    asserts:
+      - isSubset:
+          path: spec.template.metadata.labels
+          content:
+            environment: production
+            team: platform
+
+  - it: should keep deployment and pod labels separate
+    set:
+      hyperdx:
+        deployment:
+          labels:
+            example.com/scope: deployment
+          podLabels:
+            example.com/scope: pod
+    asserts:
+      - isSubset:
+          path: metadata.labels
+          content:
+            example.com/scope: deployment
+      - isSubset:
+          path: spec.template.metadata.labels
+          content:
+            example.com/scope: pod
+
   - it: should add custom environment variables when provided
     set:
       hyperdx:

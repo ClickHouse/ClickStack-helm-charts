@@ -30,6 +30,9 @@ spec:
       labels:
         {{- include "clickstack.selectorLabels" . | nindent 8 }}
         app: {{ include "clickstack.fullname" . }}
+        {{- with .Values.hyperdx.deployment.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
       annotations:
       {{- if $podAnnotations }}
         {{- with $podAnnotations }}
