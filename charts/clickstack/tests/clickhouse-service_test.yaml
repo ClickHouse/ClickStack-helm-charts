@@ -20,7 +20,7 @@ tests:
           value: 10
       - equal:
           path: spec.settings.extraConfig.text_log.ttl
-          value: event_date + INTERVAL 7 DAY DELETE
+          value: event_date + INTERVAL 30 DAY DELETE
       - equal:
           path: spec.settings.extraConfig.metric_log.ttl
-          value: event_date + INTERVAL 7 DAY DELETE
+          value: event_date + INTERVAL 30 DAY DELETE
