@@ -1,5 +1,41 @@
 # helm-charts
 
+## 3.4.0
+
+### Minor Changes
+
+- b39c38a: fix(clickstack): bound ClickHouse server log and system log table growth on the data volume
+
+  The ClickHouse operator defaults to `logger.level: trace` with 50 x 1000M rotated log files, and enables `query_log`, `part_log`, `text_log`, `metric_log` and `asynchronous_metric_log` without a TTL. Both are written to the ClickHouse data volume, so the chart's 10Gi default fills up within days of light use, after which the OTel collector drops every batch. The chart now sets `clickhouse.cluster.spec.settings.logger` to `information` / `100M` / 10 files and adds a 7 day TTL to those five system tables via `extraConfig`. Override either block in your values to keep more history.
+
+  On upgrade, ClickHouse recreates each system table whose TTL changed and keeps the old rows in `system.<table>_0`; drop those once you no longer need them.
+
+- 1592f4f: feat: add dashboard provisioning via a k8s-sidecar that discovers ConfigMaps labeled `hyperdx.io/dashboard: "true"`. Discovery is scoped to the release namespace by default (a namespaced Role, no cluster-wide access); set `hyperdx.dashboards.namespaces` to also watch specific namespaces, or `hyperdx.dashboards.namespaces: [ALL]` for cluster-wide discovery. Requires hyperdxio/hyperdx#1962 (file-based dashboard provisioner).
+
+### Patch Changes
+
+- 8899b96: Bump `js-yaml` from ^4.2.0 to ^5.4.1 for the release tooling (`update-chart-versions.js`, `extract-release-notes.js`). No chart changes. Both scripts continue to work via the v5 CJS build; a new `version-script-smoke` CI job now exercises them at PR time so future dependency bumps cannot break releases silently. Also restores consistency between `package.json` and `yarn.lock`, which had drifted on main.
+- f84b6bd: Clear all 7 dependency advisories in the release tooling. No chart changes.
+
+  `js-yaml` 3.14.1 → 3.15.2: a second copy pulled in transitively via
+  `@changesets/cli` → `read` → `parse`, carrying 3 highs and 2 moderates
+  (quadratic CPU in merge-key/`!!omap` handling, prototype pollution in `<<`).
+  The direct `js-yaml@^5.4.1` dependency was already fine; this is the older copy
+  the range already allowed to move.
+
+  `tmp` 0.0.33 → 0.2.7 via a `resolutions` override, clearing a high path
+  traversal (`<0.2.6`) and a low symlink issue. `external-editor` declares
+  `tmp@^0.0.33`, and a caret on a `0.0.x` version is semver-equivalent to
+  `=0.0.33`, so this cannot be re-resolved without the override. It calls only
+  `tmp.tmpNameSync()`, which 0.2.x still exports.
+
+  Both are reachable only through the release/changeset tooling, never at chart
+  render time.
+
+- 573b600: chore: update appVersion to 2.38.0
+- bcf87e8: chore: update appVersion to 2.39.1
+- 5210ba5: feat: allow setting podLabels on hyperdx Pods
+
 ## 3.3.0
 
 ### Minor Changes
