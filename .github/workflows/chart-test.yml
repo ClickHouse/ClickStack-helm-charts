@@ -32,7 +32,7 @@ jobs:
           echo "Discovered suites: $SUITES"
 
   integration-test:
-    name: integration-test (${{ matrix.suite }}${{ matrix.mode == 'upgrade' && ', upgrade' || '' }})
+    name: integration-test (${{ matrix.suite }}${{ matrix.mode != 'install' && format(', {0}', matrix.mode) || '' }})
     needs: discover
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -41,7 +41,8 @@ jobs:
       matrix:
         suite: ${{ fromJson(needs.discover.outputs.suites) }}
         # PRs also upgrade from the base branch, to catch changes that only break existing releases.
-        mode: ${{ github.event_name == 'pull_request' && fromJson('["install","upgrade"]') || fromJson('["install"]') }}
+        # upgrade-template applies the upgrade with helm template | kubectl apply, as Argo CD does.
+        mode: ${{ github.event_name == 'pull_request' && fromJson('["install","upgrade","upgrade-template"]') || fromJson('["install"]') }}
     env:
       SUITE: ${{ matrix.suite }}
     steps:
@@ -51,7 +52,7 @@ jobs:
           persist-credentials: false
 
       - name: Checkout base branch
-        if: matrix.mode == 'upgrade'
+        if: matrix.mode != 'install'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.event.pull_request.base.sha }}
@@ -90,7 +91,8 @@ jobs:
 
       - name: Run integration test suite
         env:
-          UPGRADE_FROM: ${{ matrix.mode == 'upgrade' && format('{0}/.upgrade-base', github.workspace) || '' }}
+          UPGRADE_FROM: ${{ matrix.mode != 'install' && format('{0}/.upgrade-base', github.workspace) || '' }}
+          UPGRADE_METHOD: ${{ matrix.mode == 'upgrade-template' && 'template' || 'helm' }}
         run: |
           chmod +x integration-tests/run-suite.sh
           integration-tests/run-suite.sh "$SUITE"

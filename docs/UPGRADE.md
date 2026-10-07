@@ -2,6 +2,39 @@
 
 Each section lists what changes when you upgrade to that chart version and anything you have to do first, newest first. A version that isn't listed needs nothing beyond `helm upgrade`. The full list of changes is in [CHANGELOG.md](../CHANGELOG.md).
 
+## Unreleased
+
+- Fresh installs with the bundled ClickHouse write ClickStack tables to a dedicated, Replicated `otel` database. `helm upgrade` keeps existing installs on their current database and engines. If you render without cluster access (ArgoCD, `helm template`), read [Dedicated `otel` database](#dedicated-otel-database) before upgrading.
+
+### Dedicated `otel` database
+
+Fresh installs with the bundled ClickHouse (`clickhouse.enabled: true`) write ClickStack tables to a dedicated `otel` database, which the collector creates as Replicated with `Replicated*` tables. The replicated seed needs collector image `2.47.0` or newer. With an older image `otel` is created with plain engines and stays that way. External ClickHouse (`clickhouse.enabled: false`) keeps `default` with plain engines.
+
+On fresh installs, HyperDX sources, dashboards and alerts use `otel` automatically. A few things outside them still default to `default`:
+
+- Raw SQL with unqualified table names (SQL tiles, the MCP SQL tool) resolves to the `default` database. Qualify tables, for example `otel.otel_logs`.
+- Custom `grants:` for the `app` or `otelcollector` users replace the chart's grants. Include `otel.*`, with `CREATE` for `otelcollector`.
+- External tools and custom `defaultSources` that query `default.otel_*` should use `otel`.
+
+`helm upgrade` keeps the existing database and engines automatically: the chart reads `HYPERDX_OTEL_EXPORTER_CLICKHOUSE_DATABASE` and `HYPERDX_OTEL_EXPORTER_CLICKHOUSE_REPLICATED` from the existing `clickstack-config` ConfigMap. There is nothing to do.
+
+Existing installs with data in `default` show `SchemaInSync=False` on the ClickHouseCluster permanently, because the operator does not convert a populated `default` to Replicated. This predates the `otel` database and is expected.
+
+Tools that render without cluster access (ArgoCD, `helm template | kubectl apply`) cannot see the existing ConfigMap and render `otel`. With collector image `2.47.0` or newer this is still safe for data: `HYPERDX_OTEL_EXPORTER_CLICKHOUSE_FALLBACK_DATABASE` defaults to `default` for the bundled ClickHouse, so a collector that finds no `otel` database but ClickStack tables in `default` keeps writing to `default`. HyperDX teams created after such an upgrade still get default sources on `otel`. To keep everything consistent, pin the old values:
+
+```yaml
+clickstack:
+  config:
+    HYPERDX_OTEL_EXPORTER_CLICKHOUSE_DATABASE: "default"
+    HYPERDX_OTEL_EXPORTER_CLICKHOUSE_REPLICATED: "false"
+```
+
+To deliberately move an existing install to `otel`, set `HYPERDX_OTEL_EXPORTER_CLICKHOUSE_FALLBACK_DATABASE: ""` and point the HyperDX sources at `otel`. Data already in `default` stays there and can be added as extra sources.
+
+The collector reads `clickstack-config` only at startup. `helm upgrade` rolls its pods on every upgrade, but renders without a release revision (ArgoCD, `helm template`) do not. After changing any of these keys there, run `kubectl rollout restart deployment/<release>-otel-collector`.
+
+Older collector images have no fallback. There, an unpinned render sends new data to `otel` while HyperDX sources created earlier still read `default`, because HyperDX only creates default sources for a team that has none. Nothing is lost. Later `helm upgrade`s keep `otel`, since the chart reads it back from the ConfigMap. The simplest fix is to keep `otel` and point the HyperDX sources at it; older data stays in `default` and can be added as extra sources. Pinning back to `default` also drops the `otel.*` grants, so data written in between stays in `otel` and is unreadable unless you add grants and sources for it.
+
 ## 3.8.0
 
 - The top-level `hyperdx` values key is now `clickstack`. Values files and `--set hyperdx.*` flags still work and print a deprecation warning in the install notes; move them under `clickstack` before a future chart version removes `hyperdx`. Where both keys set the same value, `hyperdx` wins. Rendered resources don't change. `--reuse-values` keeps the release's stored `hyperdx` values, which then override anything you move under `clickstack`, so do the upgrade that moves them with `-f <your values file>` instead.

@@ -10,7 +10,12 @@ TIMEOUT=${TIMEOUT:-300}
 CLICKHOUSE_SERVICE=${CLICKHOUSE_SERVICE:-$RELEASE_NAME-$CHART_NAME-clickhouse-clickhouse-headless}
 CLICKHOUSE_SECRET_NAME=${CLICKHOUSE_SECRET_NAME:-clickstack-secret}
 CLICKHOUSE_HTTP_USER=${CLICKHOUSE_HTTP_USER:-app}
-CLICKHOUSE_DATABASE=${CLICKHOUSE_DATABASE:-default}
+# Defaults to the database the chart configured for the collector.
+CLICKHOUSE_DATABASE=${CLICKHOUSE_DATABASE:-$(kubectl get configmap clickstack-config -n "$NAMESPACE" \
+    -o jsonpath='{.data.HYPERDX_OTEL_EXPORTER_CLICKHOUSE_DATABASE}' 2>/dev/null || true)}
+CLICKHOUSE_DATABASE=${CLICKHOUSE_DATABASE:-otel}
+# Set to "true" to also check that the database uses the Replicated engine and its MergeTree tables are Replicated*.
+CLICKHOUSE_EXPECT_REPLICATED=${CLICKHOUSE_EXPECT_REPLICATED:-false}
 CLICKHOUSE_TRACE_TABLE=${CLICKHOUSE_TRACE_TABLE:-otel_traces}
 CLICKHOUSE_LOG_TABLE=${CLICKHOUSE_LOG_TABLE:-otel_logs}
 INGESTION_POLL_INTERVAL=${INGESTION_POLL_INTERVAL:-5}
@@ -206,6 +211,28 @@ wait_for_table_count_increase() {
     done
 }
 
+check_replicated_engines() {
+    local engine=""
+    local plain_tables=""
+
+    engine=$(run_clickhouse_query "SELECT engine FROM system.databases WHERE name = '${CLICKHOUSE_DATABASE}';")
+    engine=$(echo "$engine" | tr -d '[:space:]')
+    if [ "$engine" != "Replicated" ]; then
+        echo "ERROR: Database ${CLICKHOUSE_DATABASE} has engine '${engine}', expected Replicated"
+        return 1
+    fi
+    echo "Database ${CLICKHOUSE_DATABASE}: OK (engine Replicated)"
+
+    plain_tables=$(run_clickhouse_query "SELECT name || ' (' || engine || ')' FROM system.tables \
+WHERE database = '${CLICKHOUSE_DATABASE}' AND engine LIKE '%MergeTree' AND engine NOT LIKE 'Replicated%' ORDER BY name;")
+    if [ -n "$plain_tables" ]; then
+        echo "ERROR: MergeTree tables in ${CLICKHOUSE_DATABASE} without a Replicated engine:"
+        echo "$plain_tables"
+        return 1
+    fi
+    echo "Tables in ${CLICKHOUSE_DATABASE}: OK (all MergeTree tables are Replicated)"
+}
+
 send_telemetrygen_signal() {
     local signal=$1
     local count_flag=$2
@@ -308,6 +335,11 @@ echo "Waiting for traces/logs to land in ClickHouse..."
 wait_for_table_count_increase "$CLICKHOUSE_TRACE_TABLE" "$trace_baseline" "$TIMEOUT"
 wait_for_table_count_increase "$CLICKHOUSE_LOG_TABLE" "$log_baseline" "$TIMEOUT"
 
+if [ "$CLICKHOUSE_EXPECT_REPLICATED" = "true" ]; then
+    echo "Verifying Replicated engines in ${CLICKHOUSE_DATABASE}..."
+    check_replicated_engines
+fi
+
 stop_port_forward "$otlp_http_pf_pid"
 stop_port_forward "$clickhouse_pf_pid"
 
@@ -335,5 +367,8 @@ echo "- OTEL Collector metrics accessible"
 echo "- OTEL Collector Deployment available"
 echo "- ClickHouseCluster reconciled (Ready)"
 echo "- MongoDBCommunity reconciled (Running)"
-echo "- OTEL traces and logs persisted to ClickHouse"
+echo "- OTEL traces and logs persisted to ClickHouse (${CLICKHOUSE_DATABASE})"
+if [ "$CLICKHOUSE_EXPECT_REPLICATED" = "true" ]; then
+    echo "- ${CLICKHOUSE_DATABASE} and its MergeTree tables use Replicated engines"
+fi
 echo "- App registers user and displays logs via default connection"
