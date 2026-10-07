@@ -109,7 +109,12 @@ hyperdx:
     OTEL_SERVICE_NAME: "hdx-oss-api"
     USAGE_STATS_ENABLED: "true"
     OPAMP_PORT: "4320"
-    HYPERDX_OTEL_EXPORTER_CLICKHOUSE_DATABASE: "default"
+    # Database for ClickStack tables. Fresh installs with the bundled ClickHouse use "otel",
+    # upgrades keep the database from the existing clickstack-config ConfigMap, and an external
+    # ClickHouse uses "default". A plain string override wins and also updates the bundled
+    # ClickHouse user grants and the default sources created for new teams. Sources of
+    # existing HyperDX teams are not changed.
+    HYPERDX_OTEL_EXPORTER_CLICKHOUSE_DATABASE: '{{ include "clickstack.clickhouse.defaultDatabase" . }}'
     CLICKHOUSE_USER: "otelcollector"
     RUN_SCHEDULED_TASKS_EXTERNALLY: "false"
     # ClickHouse table retention (TTL). Go-duration string; "d" suffix allowed (e.g. "180d").
@@ -124,6 +129,18 @@ hyperdx:
     # Apply TTL changes to tables that already exist, not just newly created ones (default false):
     #   HYPERDX_OTEL_EXPORTER_RECONCILE_TABLE_TTL: "true"
     # Per-signal TTLs and reconcile need collector image 2.36.0 or newer.
+    # Create the database with the Replicated engine and seed Replicated* tables. Only takes
+    # effect for a database the seed creates: an existing non-Replicated database keeps plain
+    # engines. Same defaults as the database above: "true" for fresh installs with the bundled
+    # ClickHouse, the existing value on upgrades, "false" for an external ClickHouse.
+    # Needs collector image 2.41.0 or newer.
+    HYPERDX_OTEL_EXPORTER_CLICKHOUSE_REPLICATED: '{{ include "clickstack.clickhouse.defaultReplicated" . }}'
+    # If the database above does not exist yet and this one already has ClickStack tables, the
+    # collector keeps writing here instead of creating it. Keeps existing installs on "default"
+    # when rendered without cluster access (ArgoCD, helm template). "default" for the bundled
+    # ClickHouse, empty (off) otherwise. Set "" to move an existing install to the database above.
+    # Needs collector image 2.41.0 or newer.
+    HYPERDX_OTEL_EXPORTER_CLICKHOUSE_FALLBACK_DATABASE: '{{ include "clickstack.clickhouse.defaultFallbackDatabase" . }}'
     # Service endpoint defaults -- override to use external instances
     FRONTEND_URL: "http://localhost:3000"
     MONGO_URI: 'mongodb://hyperdx:{{ .Values.hyperdx.secrets.MONGODB_PASSWORD }}@{{ include "clickstack.mongodb.svc" . }}:27017/hyperdx?authSource=hyperdx'
@@ -218,7 +235,7 @@ hyperdx:
       [
         {
           "from": {
-            "databaseName": "default",
+            "databaseName": "{{ include "clickstack.clickhouse.database" . }}",
             "tableName": "otel_logs"
           },
           "kind": "log",
@@ -241,7 +258,7 @@ hyperdx:
         },
         {
           "from": {
-            "databaseName": "default",
+            "databaseName": "{{ include "clickstack.clickhouse.database" . }}",
             "tableName": "otel_traces"
           },
           "kind": "trace",
@@ -270,7 +287,7 @@ hyperdx:
         },
         {
           "from": {
-            "databaseName": "default",
+            "databaseName": "{{ include "clickstack.clickhouse.database" . }}",
             "tableName": ""
           },
           "kind": "metric",
@@ -291,7 +308,7 @@ hyperdx:
         },
         {
           "from": {
-            "databaseName": "default",
+            "databaseName": "{{ include "clickstack.clickhouse.database" . }}",
             "tableName": "hyperdx_sessions"
           },
           "kind": "session",
@@ -452,18 +469,20 @@ clickhouse:
           requests:
             storage: 10Gi
       settings:
+        # Grants cover default.* (data written before the dedicated database) and
+        # the configured HYPERDX_OTEL_EXPORTER_CLICKHOUSE_DATABASE.
         extraUsersConfig:
           users:
             app:
               password: '{{ .Values.hyperdx.secrets.CLICKHOUSE_APP_PASSWORD }}'
               profile: default
               grants:
-                - query: "GRANT SHOW ON *.*, SELECT ON system.*, SELECT ON default.*"
+                - query: 'GRANT SHOW ON *.*, SELECT ON system.*, {{ include "clickstack.clickhouse.databaseGrants" (dict "privileges" "SELECT" "context" .) }}'
             otelcollector:
               password: '{{ .Values.hyperdx.secrets.CLICKHOUSE_PASSWORD }}'
               profile: default
               grants:
-                - query: "GRANT SELECT,INSERT,CREATE,SHOW ON default.*"
+                - query: 'GRANT {{ include "clickstack.clickhouse.databaseGrants" (dict "privileges" "SELECT,INSERT,CREATE,SHOW" "context" .) }}'
         # The operator defaults to level trace with 50 x 1000M log files, written
         # to the data volume. That fills the 10Gi default volume within days.
         logger:
