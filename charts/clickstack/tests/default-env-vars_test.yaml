@@ -107,6 +107,26 @@ tests:
           content:
             name: DEFAULT_CONNECTIONS
 
+  - it: should set span events and links on the default trace source
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].env[?(@.name == "DEFAULT_SOURCES")].value
+          pattern: '"kind": "trace",[^}]*"spanEventsValueExpression": "Events"'
+      - matchRegex:
+          path: spec.template.spec.containers[0].env[?(@.name == "DEFAULT_SOURCES")].value
+          pattern: '"kind": "trace",[^}]*"spanLinksValueExpression": "Links"'
+
+  # metricTables keys must match MetricsDataType values; unknown keys
+  # (e.g. camelCase "exponentialHistogram") are silently dropped by HyperDX.
+  - it: should register all OTel metric tables on the default metric source
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].env[?(@.name == "DEFAULT_SOURCES")].value
+          pattern: '"summary": "otel_metrics_summary"'
+      - matchRegex:
+          path: spec.template.spec.containers[0].env[?(@.name == "DEFAULT_SOURCES")].value
+          pattern: '"exponential histogram": "otel_metrics_exponential_histogram"'
+
   - it: should not include DEFAULT_SOURCES when set to empty string
     set:
       hyperdx:
