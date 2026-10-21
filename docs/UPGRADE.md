@@ -403,3 +403,32 @@ For an **in-place upgrade** of an existing release, be aware that:
 4. **PVCs from the old chart are not automatically reused** by the operator-managed StatefulSets
 
 We recommend performing a fresh install alongside the existing deployment and migrating data, rather than an in-place upgrade.
+
+## Dedicated `otel` Database
+
+Fresh installs with the bundled ClickHouse (`clickhouse.enabled: true`) write ClickStack tables to a dedicated `otel` database, which the collector creates as Replicated with `Replicated*` tables. The replicated seed needs collector image `2.41.0` or newer. With an older image `otel` is created with plain engines and stays that way. External ClickHouse (`clickhouse.enabled: false`) keeps `default` with plain engines.
+
+On fresh installs, HyperDX sources, dashboards and alerts use `otel` automatically. A few things outside them still default to `default`:
+
+- Raw SQL with unqualified table names (SQL tiles, the MCP SQL tool) resolves to the `default` database. Qualify tables, for example `otel.otel_logs`.
+- Custom `grants:` for the `app` or `otelcollector` users replace the chart's grants. Include `otel.*`, with `CREATE` for `otelcollector`.
+- External tools and custom `defaultSources` that query `default.otel_*` should use `otel`.
+
+`helm upgrade` keeps the existing database and engines automatically: the chart reads `HYPERDX_OTEL_EXPORTER_CLICKHOUSE_DATABASE` and `HYPERDX_OTEL_EXPORTER_CLICKHOUSE_REPLICATED` from the existing `clickstack-config` ConfigMap. There is nothing to do.
+
+Existing installs with data in `default` show `SchemaInSync=False` on the ClickHouseCluster permanently, because the operator does not convert a populated `default` to Replicated. This predates the `otel` database and is expected.
+
+Tools that render without cluster access (ArgoCD, `helm template | kubectl apply`) cannot see the existing ConfigMap and render `otel`. With collector image `2.41.0` or newer this is still safe for data: `HYPERDX_OTEL_EXPORTER_CLICKHOUSE_FALLBACK_DATABASE` defaults to `default` for the bundled ClickHouse, so a collector that finds no `otel` database but ClickStack tables in `default` keeps writing to `default`. HyperDX teams created after such an upgrade still get default sources on `otel`. To keep everything consistent, pin the old values:
+
+```yaml
+hyperdx:
+  config:
+    HYPERDX_OTEL_EXPORTER_CLICKHOUSE_DATABASE: "default"
+    HYPERDX_OTEL_EXPORTER_CLICKHOUSE_REPLICATED: "false"
+```
+
+To deliberately move an existing install to `otel`, set `HYPERDX_OTEL_EXPORTER_CLICKHOUSE_FALLBACK_DATABASE: ""` and point the HyperDX sources at `otel`. Data already in `default` stays there and can be added as extra sources.
+
+The collector reads `clickstack-config` only at startup, and its pods do not roll when just these values change. After changing any of these keys without an image bump, run `kubectl rollout restart deployment/<release>-otel-collector`.
+
+Older collector images have no fallback. There, an unpinned render sends new data to `otel` while HyperDX sources created earlier still read `default`, because HyperDX only creates default sources for a team that has none. Nothing is lost. Later `helm upgrade`s keep `otel`, since the chart reads it back from the ConfigMap. The simplest fix is to keep `otel` and point the HyperDX sources at it; older data stays in `default` and can be added as extra sources. Pinning back to `default` also drops the `otel.*` grants, so data written in between stays in `otel` and is unreadable unless you add grants and sources for it.
