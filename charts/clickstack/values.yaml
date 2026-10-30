@@ -236,7 +236,6 @@ hyperdx:
           "spanIdExpression": "SpanId",
           "connection": "Local ClickHouse",
           "traceSourceId": "Traces",
-          "sessionSourceId": "Sessions",
           "metricSourceId": "Metrics"
         },
         {
@@ -250,7 +249,6 @@ hyperdx:
           "displayedTimestampValueExpression": "Timestamp",
           "implicitColumnExpression": "SpanName",
           "serviceNameExpression": "ServiceName",
-          "bodyExpression": "SpanName",
           "eventAttributesExpression": "SpanAttributes",
           "resourceAttributesExpression": "ResourceAttributes",
           "defaultTableSelectExpression": "Timestamp,ServiceName,StatusCode,round(Duration/1e6),SpanName",
@@ -263,6 +261,8 @@ hyperdx:
           "spanKindExpression": "SpanKind",
           "statusCodeExpression": "StatusCode",
           "statusMessageExpression": "StatusMessage",
+          "spanEventsValueExpression": "Events",
+          "spanLinksValueExpression": "Links",
           "connection": "Local ClickHouse",
           "logSourceId": "Logs",
           "sessionSourceId": "Sessions",
@@ -281,13 +281,11 @@ hyperdx:
             "gauge": "otel_metrics_gauge",
             "histogram": "otel_metrics_histogram",
             "sum": "otel_metrics_sum",
-            "_id": "682586a8b1f81924e628e808",
-            "id": "682586a8b1f81924e628e808"
+            "summary": "otel_metrics_summary",
+            "exponential histogram": "otel_metrics_exponential_histogram"
           },
           "connection": "Local ClickHouse",
-          "logSourceId": "Logs",
-          "traceSourceId": "Traces",
-          "sessionSourceId": "Sessions"
+          "logSourceId": "Logs"
         },
         {
           "from": {
@@ -297,20 +295,9 @@ hyperdx:
           "kind": "session",
           "timestampValueExpression": "TimestampTime",
           "name": "Sessions",
-          "displayedTimestampValueExpression": "Timestamp",
-          "implicitColumnExpression": "Body",
-          "serviceNameExpression": "ServiceName",
-          "bodyExpression": "Body",
-          "eventAttributesExpression": "LogAttributes",
           "resourceAttributesExpression": "ResourceAttributes",
-          "defaultTableSelectExpression": "Timestamp,ServiceName,SeverityText,Body",
-          "severityTextExpression": "SeverityText",
-          "traceIdExpression": "TraceId",
-          "spanIdExpression": "SpanId",
           "connection": "Local ClickHouse",
-          "logSourceId": "Logs",
-          "traceSourceId": "Traces",
-          "metricSourceId": "Metrics"
+          "traceSourceId": "Traces"
         }
       ]
 
@@ -420,6 +407,10 @@ clickhouse:
   # See https://clickhouse.com/docs/clickhouse-operator/guides/introduction
   keeper:
     spec:
+      containerTemplate:
+        image:
+          repository: clickhouse/clickhouse-keeper
+          tag: "26.8.36.3-alpine"
       replicas: 1
       dataVolumeClaimSpec:
         accessModes:
@@ -434,7 +425,7 @@ clickhouse:
       containerTemplate:
         image:
           repository: clickhouse/clickhouse-server
-          tag: "25.7-alpine"
+          tag: "26.8.36.3-alpine"
         resources:
           requests:
             cpu: 500m
