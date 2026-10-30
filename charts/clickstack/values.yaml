@@ -407,6 +407,10 @@ clickhouse:
   # See https://clickhouse.com/docs/clickhouse-operator/guides/introduction
   keeper:
     spec:
+      containerTemplate:
+        image:
+          repository: clickhouse/clickhouse-keeper
+          tag: "26.8.36.3-alpine"
       replicas: 1
       dataVolumeClaimSpec:
         accessModes:
@@ -421,7 +425,7 @@ clickhouse:
       containerTemplate:
         image:
           repository: clickhouse/clickhouse-server
-          tag: "25.7-alpine"
+          tag: "26.8.36.3-alpine"
         resources:
           requests:
             cpu: 500m
