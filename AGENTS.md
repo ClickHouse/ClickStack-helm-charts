@@ -94,11 +94,11 @@ make coverage
 VERBOSE=1 make coverage
 
 # Gate on minimum line coverage once baseline is known
-COVERAGE_THRESHOLD=28 make coverage
+COVERAGE_THRESHOLD=30 make coverage
 ```
 
 Downloads the helmcov release pinned in `scripts/tool-versions.env` into `.tools/`
-and runs it with a **28% line coverage threshold**. Outputs `coverage.out` (Go
+and runs it with a **30% line coverage threshold**. Outputs `coverage.out` (Go
 coverprofile) and `coverage.xml` (Cobertura).
 
 CI runs the [helmcov GitHub Action](https://github.com/ClickHouse/helmcov)
