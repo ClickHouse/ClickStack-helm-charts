@@ -1,0 +1,13 @@
+suite: Test Check Alerts CronJob Enabled
+templates:
+  - hyperdx/cronjob-check-alerts.yaml
+values:
+  - values/tasks-enabled.yaml
+tests:
+  - it: should render cronjob when tasks are enabled
+    asserts:
+      - isKind:
+          of: CronJob
+      - equal:
+          path: spec.jobTemplate.spec.template.spec.containers[0].command[2]
+          value: check-alerts

@@ -1,0 +1,8 @@
+mongodb:
+  enabled: false
+hyperdx:
+  deployment:
+    initContainers:
+      - name: custom-init
+        image: busybox:1.36
+        command: ["sh", "-c", "echo init"]

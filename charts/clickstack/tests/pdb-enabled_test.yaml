@@ -1,0 +1,13 @@
+suite: Test HyperDX PodDisruptionBudget Enabled
+templates:
+  - hyperdx/pdb.yaml
+values:
+  - values/pdb-enabled.yaml
+tests:
+  - it: should render PDB when enabled
+    asserts:
+      - isKind:
+          of: PodDisruptionBudget
+      - equal:
+          path: spec.minAvailable
+          value: 1

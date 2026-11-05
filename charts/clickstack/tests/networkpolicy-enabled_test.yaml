@@ -1,0 +1,13 @@
+suite: Test NetworkPolicy Enabled
+templates:
+  - hyperdx/networkpolicy.yaml
+values:
+  - values/networkpolicy-enabled.yaml
+tests:
+  - it: should render network policy when enabled
+    asserts:
+      - isKind:
+          of: NetworkPolicy
+      - contains:
+          path: spec.policyTypes
+          content: Ingress

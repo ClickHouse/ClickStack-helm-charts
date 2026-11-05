@@ -1,0 +1,15 @@
+suite: Test Deployment Without MongoDB Init
+templates:
+  - hyperdx/deployment.yaml
+values:
+  - values/deployment-no-mongodb.yaml
+tests:
+  - it: should render custom init container without mongodb wait
+    asserts:
+      - equal:
+          path: spec.template.spec.initContainers[0].name
+          value: custom-init
+      - notContains:
+          path: spec.template.spec.initContainers
+          content:
+            name: wait-for-mongodb

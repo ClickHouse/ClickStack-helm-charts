@@ -1,0 +1,30 @@
+hyperdx:
+  ingress:
+    enabled: true
+    spec:
+      rules:
+        - host: hyperdx.example.com
+          http:
+            paths:
+              - path: /
+                pathType: Prefix
+                backend:
+                  service:
+                    name: test
+                    port:
+                      number: 3000
+    additionalIngresses:
+      - name: otel-collector
+        annotations:
+          testProperty: "true"
+        ingressClassName: nginx
+        hosts:
+          - host: collector.example.com
+            paths:
+              - path: /
+                pathType: Prefix
+                port: 4318
+        tls:
+          - secretName: otel-collector-tls
+            hosts:
+              - collector.example.com

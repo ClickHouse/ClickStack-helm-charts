@@ -1,0 +1,10 @@
+hyperdx:
+  networkPolicy:
+    enabled: true
+    spec:
+      podSelector:
+        matchLabels:
+          app.kubernetes.io/name: clickstack
+      policyTypes:
+        - Ingress
+        - Egress

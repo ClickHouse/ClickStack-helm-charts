@@ -1,0 +1,24 @@
+# {{ template "chart.name" . }}
+
+{{ template "chart.versionBadge" . }}
+![Build Status](https://github.com/ClickHouse/ClickStack-helm-charts/actions/workflows/helm-test.yaml/badge.svg)
+
+{{ template "chart.description" . }}
+
+{{ template "chart.homepageLine" . }}
+
+## Quick Start
+
+```bash
+helm repo add clickstack https://clickhouse.github.io/ClickStack-helm-charts
+helm repo update
+helm install clickstack-operators clickstack/clickstack-operators
+```
+
+After the operators are ready, install the [clickstack](../clickstack) chart.
+
+{{ template "chart.requirementsSection" . }}
+
+{{ template "chart.valuesSection" . }}
+
+{{ template "helm-docs.versionFooter" . }}

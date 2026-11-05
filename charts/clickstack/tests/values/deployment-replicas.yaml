@@ -1,0 +1,5 @@
+hyperdx:
+  autoscaling:
+    enabled: false
+  deployment:
+    replicas: 3
