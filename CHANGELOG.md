@@ -1,5 +1,139 @@
 # helm-charts
 
+## 3.5.0
+
+### Minor Changes
+
+- ead1ee7: fix: bump the default ClickHouse server image to `26.8.36.3-alpine` (from `25.7-alpine`) for a security fix, and pin ClickHouse Keeper to `clickhouse/clickhouse-keeper:26.8.36.3-alpine` instead of the operator's `latest` default
+
+### Patch Changes
+
+- e2c4be5: feat: update the default HyperDX sources to match the current source schema (only applies to new installs; existing sources are not modified)
+
+  - Traces: set `spanEventsValueExpression: "Events"` and `spanLinksValueExpression: "Links"` so span events (including exceptions) and span links are shown
+  - Metrics: register the `summary` and `exponential histogram` metric tables
+  - Remove fields HyperDX ignores for each source kind (e.g. log-style fields on the Sessions source, stray `_id`/`id` keys in `metricTables`)
+
+## 3.4.0
+
+### Minor Changes
+
+- b39c38a: fix(clickstack): bound ClickHouse server log and system log table growth on the data volume
+
+  The ClickHouse operator defaults to `logger.level: trace` with 50 x 1000M rotated log files, and enables `query_log`, `part_log`, `text_log`, `metric_log` and `asynchronous_metric_log` without a TTL. Both are written to the ClickHouse data volume, so the chart's 10Gi default fills up within days of light use, after which the OTel collector drops every batch. The chart now sets `clickhouse.cluster.spec.settings.logger` to `information` / `100M` / 10 files and adds a 7 day TTL to those five system tables via `extraConfig`. Override either block in your values to keep more history.
+
+  On upgrade, ClickHouse recreates each system table whose TTL changed and keeps the old rows in `system.<table>_0`; drop those once you no longer need them.
+
+- 1592f4f: feat: add dashboard provisioning via a k8s-sidecar that discovers ConfigMaps labeled `hyperdx.io/dashboard: "true"`. Discovery is scoped to the release namespace by default (a namespaced Role, no cluster-wide access); set `hyperdx.dashboards.namespaces` to also watch specific namespaces, or `hyperdx.dashboards.namespaces: [ALL]` for cluster-wide discovery. Requires hyperdxio/hyperdx#1962 (file-based dashboard provisioner).
+
+### Patch Changes
+
+- 8899b96: Bump `js-yaml` from ^4.2.0 to ^5.4.1 for the release tooling (`update-chart-versions.js`, `extract-release-notes.js`). No chart changes. Both scripts continue to work via the v5 CJS build; a new `version-script-smoke` CI job now exercises them at PR time so future dependency bumps cannot break releases silently. Also restores consistency between `package.json` and `yarn.lock`, which had drifted on main.
+- f84b6bd: Clear all 7 dependency advisories in the release tooling. No chart changes.
+
+  `js-yaml` 3.14.1 → 3.15.2: a second copy pulled in transitively via
+  `@changesets/cli` → `read` → `parse`, carrying 3 highs and 2 moderates
+  (quadratic CPU in merge-key/`!!omap` handling, prototype pollution in `<<`).
+  The direct `js-yaml@^5.4.1` dependency was already fine; this is the older copy
+  the range already allowed to move.
+
+  `tmp` 0.0.33 → 0.2.7 via a `resolutions` override, clearing a high path
+  traversal (`<0.2.6`) and a low symlink issue. `external-editor` declares
+  `tmp@^0.0.33`, and a caret on a `0.0.x` version is semver-equivalent to
+  `=0.0.33`, so this cannot be re-resolved without the override. It calls only
+  `tmp.tmpNameSync()`, which 0.2.x still exports.
+
+  Both are reachable only through the release/changeset tooling, never at chart
+  render time.
+
+- 573b600: chore: update appVersion to 2.38.0
+- bcf87e8: chore: update appVersion to 2.39.1
+- 5210ba5: feat: allow setting podLabels on hyperdx Pods
+
+## 3.3.0
+
+### Minor Changes
+
+- 359d747: feat(clickstack): surface ClickHouse table TTL as configurable values
+
+  Defaults and documents `HYPERDX_OTEL_EXPORTER_TABLES_TTL` (720h) in `hyperdx.config`, and documents the per-signal overrides (`HYPERDX_OTEL_EXPORTER_LOGS_TTL` / `_TRACES_TTL` / `_METRICS_TTL` / `_SESSIONS_TTL`) plus `HYPERDX_OTEL_EXPORTER_RECONCILE_TABLE_TTL`. Operators can now set ClickHouse data retention per signal — e.g. keep logs and traces for 6 months for compliance while metrics stay short — without hand-crafting collector env vars. The per-signal overrides and reconcile need collector image 2.36.0 or newer, which is the chart's current default.
+
+- 0ab5316: Point the HyperDX readiness probe at the new Mongo-aware `/ready` endpoint and make both probe paths configurable.
+
+  `/ready` (added in HyperDX 2.36.0, see hyperdxio/hyperdx#2968) returns 503 until the API's MongoDB connection is established, so pods that cannot serve Mongo-backed requests are removed from Service endpoints instead of staying Ready indefinitely (hyperdxio/hyperdx#2966). The liveness probe stays on `/health`, which remains a pure process-liveness check.
+
+  New values: `hyperdx.deployment.livenessProbe.path` (default `/health`) and `hyperdx.deployment.readinessProbe.path` (default `/ready`). If you pin `hyperdx.deployment.image.tag` to a version older than 2.36.0, set `readinessProbe.path: /health` — those images do not serve `/ready`.
+
+### Patch Changes
+
+- d00e133: ci: attach the matching CHANGELOG.md section to each GitHub release. The release workflow now extracts the released version's changelog section into `charts/clickstack/RELEASE_NOTES.md` and passes it to chart-releaser via `release-notes-file`, instead of publishing releases with only the chart description as the body.
+- 49f2c5a: chore: update appVersion to 2.36.0
+
+## 3.2.0
+
+### Minor Changes
+
+- 1719eee: Add optional pod and container security contexts for the HyperDX Deployment, wait-for-mongodb init container, and check-alerts CronJob.
+- 343163d: Add explicit `hyperdx.deployment.deploymentAnnotations` and `hyperdx.deployment.podAnnotations` values while preserving `hyperdx.deployment.annotations` as a deprecated pod annotation alias. When both pod annotation values contain the same key, `podAnnotations` takes precedence.
+
+### Patch Changes
+
+- 092f92e: chore: update appVersion to 2.34.0
+- a61b0e0: chore: update appVersion to 2.35.0
+
+## 3.1.1
+
+### Patch Changes
+
+- ebbda51: chore: update appVersion to 2.32.0
+
+## 3.1.0
+
+### Minor Changes
+
+- aacd0a3: feat: restore inline custom OTEL collector config support (HDX-4879)
+
+  Adds `global.otelCollector.customConfig` to the clickstack chart, restoring
+  the `otel.customConfig` capability that was lost in the v3 migration to the
+  official OpenTelemetry Collector subchart. When set, the config is rendered
+  into the `clickstack-otel-custom-config` ConfigMap, mounted at
+  `/etc/otelcol-contrib/custom/custom.config.yaml`, and exposed to the
+  collector via the `CUSTOM_OTELCOL_CONFIG_FILE` environment variable so it is
+  merged on top of the built-in configuration in both OpAMP supervisor and
+  standalone mode. Collector pods restart automatically when the config
+  changes via a `checksum/custom-config` pod annotation.
+
+## 3.0.2
+
+### Patch Changes
+
+- efc978a: chore(deps): bump clickhouse-operator-helm to v0.0.7
+
+  Also bumps the clickstack-operators chart to 1.1.0 so the updated
+  dependency is published. Operator v0.0.7 no longer drops a non-empty
+  Atomic `default` database during Replicated conversion
+  (clickhouse-operator#255), which is why the earlier
+  `enableDatabaseSync: false` workaround is not needed.
+
+- efc978a: fix(clickhouse): set explicit container resources for the ClickHouse server
+
+  The clickhouse-operator applies a small default resource block (512Mi memory,
+  request == limit as of operator v0.0.6) when none is provided. That is too low
+  for the full ClickStack schema (many materialized views) and caused the
+  ClickHouse server to OOMKill (exit 137) and crash-loop under ingestion plus
+  background merges. The chart now sets explicit `containerTemplate.resources`
+  (2Gi memory, 500m CPU request) which can be overridden per environment.
+
+- dd5bd6f: chore: update appVersion to 2.30.1
+
+## 3.0.1
+
+### Patch Changes
+
+- ca8c0dc: fix: align otel-collector image tag with chart appVersion
+- 3786bbe: chore: update appVersion to 2.28.0
+- 7ffc1ad: chore: update appVersion to 2.29.0
+
 ## 3.0.0
 
 ### Major Changes

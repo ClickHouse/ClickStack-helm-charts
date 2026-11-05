@@ -1,6 +1,6 @@
 # clickstack-operators
 
-![Version: 1.0.0](https://img.shields.io/badge/Version-1.0.0-informational?style=flat)
+![Version: 1.1.0](https://img.shields.io/badge/Version-1.1.0-informational?style=flat)
 ![Build Status](https://github.com/ClickHouse/ClickStack-helm-charts/actions/workflows/helm-test.yaml/badge.svg)
 
 Operator dependencies for ClickStack. Install this chart before installing clickstack/clickstack to ensure CRDs are registered.
@@ -22,16 +22,16 @@ After the operators are ready, install the [clickstack](../clickstack) chart.
 | Repository | Name | Version |
 |------------|------|---------|
 | https://mongodb.github.io/helm-charts | mongodb-operator(mongodb-kubernetes) | ~1.7.0 |
-| oci://ghcr.io/clickhouse | clickhouse-operator(clickhouse-operator-helm) | ~0.0.2 |
+| oci://ghcr.io/clickhouse | clickhouse-operator(clickhouse-operator-helm) | ~0.0.7 |
 
 ## Values
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| clickhouse-operator | object | `{"certManager":{"enable":false},"crd":{"enable":true},"webhook":{"enable":false}}` | ClickHouse Operator subchart. See https://clickhouse.com/docs/clickhouse-operator/overview |
-| clickhouse-operator.certManager.enable | bool | `false` | Install cert-manager resources for the operator webhook. |
-| clickhouse-operator.crd.enable | bool | `true` | Install ClickHouse operator CRDs with this chart. |
-| clickhouse-operator.webhook.enable | bool | `false` | Enable the operator admission webhook (requires cert-manager when true). |
+| clickhouse-operator | object | `{"certManager":{"enabled":false},"crd":{"enabled":true},"webhook":{"enabled":false}}` | ClickHouse Operator subchart. See https://clickhouse.com/docs/clickhouse-operator/overview |
+| clickhouse-operator.certManager.enabled | bool | `false` | Install cert-manager resources for the operator webhook. |
+| clickhouse-operator.crd.enabled | bool | `true` | Install ClickHouse operator CRDs with this chart. |
+| clickhouse-operator.webhook.enabled | bool | `false` | Enable the operator admission webhook (requires cert-manager when true). |
 | mongodb-operator | object | `{"operator":{"watchedResources":["mongodbcommunity"]}}` | MongoDB Kubernetes Operator subchart. See https://github.com/mongodb/mongodb-kubernetes |
 
 ----------------------------------------------

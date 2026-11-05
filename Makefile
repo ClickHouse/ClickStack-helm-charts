@@ -56,8 +56,7 @@ install-helm-unittest:
 	fi
 
 validate: chart-deps
-	helm template clickstack-example $(CHART) -f examples/alb-ingress/values.yaml >/dev/null
-	helm template clickstack-example $(CHART) -f examples/api-only/values.yaml >/dev/null
+	@for f in examples/*/values.yaml; do echo "Validating $$f"; helm template clickstack-example $(CHART) -f "$$f" >/dev/null || exit 1; done
 
 test: chart-deps validate
 	helm unittest $(CHART)

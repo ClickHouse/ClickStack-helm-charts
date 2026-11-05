@@ -5,12 +5,89 @@ global:
   # -- Image pull secrets for private registries. Helps avoid Docker Hub rate limits.
   imagePullSecrets: []
 
+  otelCollector:
+    # Custom OTEL Collector configuration, merged on top of the collector's
+    # built-in config (works in both OpAMP supervisor and standalone mode).
+    # Provide the configuration as a multi-line YAML string. When set, it is
+    # rendered into the `clickstack-otel-custom-config` ConfigMap, mounted at
+    # /etc/otelcol-contrib/custom/custom.config.yaml, and the
+    # CUSTOM_OTELCOL_CONFIG_FILE environment variable points the collector
+    # to it. Changing the value automatically restarts the collector pods.
+    #
+    # NOTE: the OTel confmap merges maps leaf-by-leaf. To override a built-in
+    # processor (e.g. memory_limiter), define a new one under a different name
+    # and re-declare the pipeline `processors:` lists to reference it.
+    #
+    # Example:
+    # customConfig: |
+    #   receivers:
+    #     hostmetrics:
+    #       collection_interval: 5s
+    #       scrapers:
+    #         cpu:
+    #         load:
+    #         memory:
+    #   service:
+    #     pipelines:
+    #       metrics/hostmetrics:
+    #         receivers: [hostmetrics]
+    #         processors: [memory_limiter, batch]
+    #         exporters: [clickhouse]
+    customConfig: ""
+
 hyperdx:
   # -- Ports shared across Deployment, Service, ConfigMap, and Ingress.
   ports:
     api: 8000
     app: 3000
     opamp: 4320
+
+  # -- Dashboard provisioning: upserts dashboard JSON into MongoDB (matched by name, never deletes).
+  # Provide dashboards inline via configMaps, or label ConfigMaps hyperdx.io/dashboard: "true"
+  # for a k8s-sidecar watcher to discover.
+  dashboards:
+    enabled: false
+
+    # ── Discovery scope ──────────────────────────────────────
+    # Namespaces the watcher discovers labeled ConfigMaps in:
+    #   []           only the release namespace (a namespaced Role; no cluster-wide access)
+    #   [ns-a, ns-b] those namespaces plus the release namespace. A cluster-scoped ClusterRole
+    #                rule-template is created, but access stays namespace-scoped — it is bound
+    #                only via a RoleBinding in each namespace, never a ClusterRoleBinding.
+    #   [ALL]        every namespace cluster-wide (creates a ClusterRole + ClusterRoleBinding)
+    # "ALL" is case-sensitive and is exclusive — it cannot be combined with named namespaces.
+    # Each listed namespace must already exist at install time: a RoleBinding into a missing
+    # namespace is rejected by the API server and fails the whole (atomic) helm install/upgrade.
+    # TRUST: within any watched namespace the watcher can read ALL ConfigMaps (the label only
+    # filters which are provisioned, not which are readable), and it shares the HyperDX pod's
+    # ServiceAccount, so that read grant (cluster-wide under [ALL]) also accrues to the app
+    # container. Discovery is also a write path — anyone able to create a labeled ConfigMap in a
+    # watched namespace can upsert dashboards into the shared HyperDX. Prefer [ALL] only on
+    # single-tenant clusters; a wider scope is a wider blast radius.
+    namespaces: []
+    rbac:
+      # Create the Role/ClusterRole and binding(s) the watcher needs. Set to false to
+      # grant access out-of-band (e.g. a RoleBinding applied by each namespace owner).
+      create: true
+
+    # Image for the k8s-sidecar that watches for labeled ConfigMaps
+    sidecarImage: "kiwigrid/k8s-sidecar:2.10.1"
+    sidecarPullPolicy: IfNotPresent
+    # Inline dashboard definitions - key is filename, value is exported dashboard JSON
+    configMaps: {}
+    # Example:
+    # configMaps:
+    #   k8s-overview.json: |
+    #     { "name": "Kubernetes Overview", "tiles": [...] }
+    # Sidecar is a lightweight ConfigMap watcher; bump (esp. memory) for very large
+    # dashboard sets or wide `namespaces: [ALL]` discovery to avoid OOMKill.
+    resources:
+      limits:
+        cpu: 50m
+        memory: 64Mi
+      requests:
+        cpu: 10m
+        memory: 32Mi
 
   # -- Shared non-sensitive environment variables (clickstack-config ConfigMap).
   # Used by HyperDX and OTEL collector via envFrom. Values support tpl expressions.
@@ -27,6 +104,18 @@ hyperdx:
     HYPERDX_OTEL_EXPORTER_CLICKHOUSE_DATABASE: "default"
     CLICKHOUSE_USER: "otelcollector"
     RUN_SCHEDULED_TASKS_EXTERNALLY: "false"
+    # ClickHouse table retention (TTL). Go-duration string; "d" suffix allowed (e.g. "180d").
+    # This global default applies to every signal.
+    HYPERDX_OTEL_EXPORTER_TABLES_TTL: "720h"
+    # Per-signal overrides (each falls back to HYPERDX_OTEL_EXPORTER_TABLES_TTL when unset),
+    # e.g. keep logs & traces longer for compliance while metrics stay short:
+    #   HYPERDX_OTEL_EXPORTER_LOGS_TTL: "180d"
+    #   HYPERDX_OTEL_EXPORTER_TRACES_TTL: "180d"
+    #   HYPERDX_OTEL_EXPORTER_METRICS_TTL: "30d"
+    #   HYPERDX_OTEL_EXPORTER_SESSIONS_TTL: "30d"
+    # Apply TTL changes to tables that already exist, not just newly created ones (default false):
+    #   HYPERDX_OTEL_EXPORTER_RECONCILE_TABLE_TTL: "true"
+    # Per-signal TTLs and reconcile need collector image 2.36.0 or newer.
     # Service endpoint defaults -- override to use external instances
     FRONTEND_URL: "http://localhost:3000"
     MONGO_URI: 'mongodb://hyperdx:{{ .Values.hyperdx.secrets.MONGODB_PASSWORD }}@{{ include "clickstack.mongodb.svc" . }}:27017/hyperdx?authSource=hyperdx'
@@ -58,12 +147,14 @@ hyperdx:
     resources: {}
     livenessProbe:
       enabled: true
+      path: /health
       initialDelaySeconds: 10
       periodSeconds: 30
       timeoutSeconds: 5
       failureThreshold: 3
     readinessProbe:
       enabled: true
+      path: /ready
       initialDelaySeconds: 1
       periodSeconds: 10
       timeoutSeconds: 5
@@ -72,8 +163,16 @@ hyperdx:
     tolerations: []
     topologySpreadConstraints: []
     priorityClassName: ""
+    # Annotations applied to the HyperDX Deployment metadata.
+    deploymentAnnotations: {}
+    # Annotations applied to the HyperDX pod template metadata.
+    podAnnotations: {}
+    # Deprecated: use podAnnotations. Retained for backward compatibility;
+    # podAnnotations takes precedence when both maps contain the same key.
     annotations: {}
     labels: {}
+    # Labels applied to the HyperDX pod template metadata.
+    podLabels: {}
     env: []
     # -- Additional init containers to run before the HyperDX container starts.
     initContainers: []
@@ -81,6 +180,10 @@ hyperdx:
     volumes: []
     # -- Additional volume mounts for the HyperDX container.
     volumeMounts: []
+    # Pod-level security context for HyperDX workloads.
+    podSecurityContext: {}
+    # Container-level security context for managed HyperDX containers.
+    containerSecurityContext: {}
     waitForMongodb:
       image: "busybox@sha256:1fcf5df59121b92d61e066df1788e8df0cc35623f5d62d9679a41e163b6a0cdb"
       pullPolicy: IfNotPresent
@@ -122,7 +225,6 @@ hyperdx:
           "spanIdExpression": "SpanId",
           "connection": "Local ClickHouse",
           "traceSourceId": "Traces",
-          "sessionSourceId": "Sessions",
           "metricSourceId": "Metrics"
         },
         {
@@ -136,7 +238,6 @@ hyperdx:
           "displayedTimestampValueExpression": "Timestamp",
           "implicitColumnExpression": "SpanName",
           "serviceNameExpression": "ServiceName",
-          "bodyExpression": "SpanName",
           "eventAttributesExpression": "SpanAttributes",
           "resourceAttributesExpression": "ResourceAttributes",
           "defaultTableSelectExpression": "Timestamp,ServiceName,StatusCode,round(Duration/1e6),SpanName",
@@ -149,6 +250,8 @@ hyperdx:
           "spanKindExpression": "SpanKind",
           "statusCodeExpression": "StatusCode",
           "statusMessageExpression": "StatusMessage",
+          "spanEventsValueExpression": "Events",
+          "spanLinksValueExpression": "Links",
           "connection": "Local ClickHouse",
           "logSourceId": "Logs",
           "sessionSourceId": "Sessions",
@@ -167,13 +270,11 @@ hyperdx:
             "gauge": "otel_metrics_gauge",
             "histogram": "otel_metrics_histogram",
             "sum": "otel_metrics_sum",
-            "_id": "682586a8b1f81924e628e808",
-            "id": "682586a8b1f81924e628e808"
+            "summary": "otel_metrics_summary",
+            "exponential histogram": "otel_metrics_exponential_histogram"
           },
           "connection": "Local ClickHouse",
-          "logSourceId": "Logs",
-          "traceSourceId": "Traces",
-          "sessionSourceId": "Sessions"
+          "logSourceId": "Logs"
         },
         {
           "from": {
@@ -183,20 +284,9 @@ hyperdx:
           "kind": "session",
           "timestampValueExpression": "TimestampTime",
           "name": "Sessions",
-          "displayedTimestampValueExpression": "Timestamp",
-          "implicitColumnExpression": "Body",
-          "serviceNameExpression": "ServiceName",
-          "bodyExpression": "Body",
-          "eventAttributesExpression": "LogAttributes",
           "resourceAttributesExpression": "ResourceAttributes",
-          "defaultTableSelectExpression": "Timestamp,ServiceName,SeverityText,Body",
-          "severityTextExpression": "SeverityText",
-          "traceIdExpression": "TraceId",
-          "spanIdExpression": "SpanId",
           "connection": "Local ClickHouse",
-          "logSourceId": "Logs",
-          "traceSourceId": "Traces",
-          "metricSourceId": "Metrics"
+          "traceSourceId": "Traces"
         }
       ]
 
@@ -290,6 +380,10 @@ clickhouse:
   # -- KeeperCluster CRD spec (rendered verbatim). See ClickHouse Operator docs.
   keeper:
     spec:
+      containerTemplate:
+        image:
+          repository: clickhouse/clickhouse-keeper
+          tag: "26.8.36.3-alpine"
       replicas: 1
       dataVolumeClaimSpec:
         accessModes:
@@ -303,7 +397,13 @@ clickhouse:
       containerTemplate:
         image:
           repository: clickhouse/clickhouse-server
-          tag: "25.7-alpine"
+          tag: "26.8.36.3-alpine"
+        resources:
+          requests:
+            cpu: 500m
+            memory: 2Gi
+          limits:
+            memory: 2Gi
       replicas: 1
       shards: 1
       keeperClusterRef:
@@ -327,10 +427,27 @@ clickhouse:
               profile: default
               grants:
                 - query: "GRANT SELECT,INSERT,CREATE,SHOW ON default.*"
+        # The operator defaults to level trace with 50 x 1000M log files, written
+        # to the data volume. That fills the 10Gi default volume within days.
+        logger:
+          level: information
+          size: 100M
+          count: 10
         extraConfig:
           max_connections: 4096
           keep_alive_timeout: 64
           max_concurrent_queries: 100
+          # System log tables also live on the data volume and have no TTL by default.
+          query_log:
+            ttl: event_date + INTERVAL 7 DAY DELETE
+          part_log:
+            ttl: event_date + INTERVAL 7 DAY DELETE
+          text_log:
+            ttl: event_date + INTERVAL 7 DAY DELETE
+          metric_log:
+            ttl: event_date + INTERVAL 7 DAY DELETE
+          asynchronous_metric_log:
+            ttl: event_date + INTERVAL 7 DAY DELETE
 
 # -- Additional Kubernetes manifests deployed alongside the chart (supports tpl).
 # See docs/ADDITIONAL-MANIFESTS.md for examples.
@@ -343,12 +460,31 @@ otel-collector:
   mode: deployment
   image:
     repository: docker.clickhouse.com/clickhouse/clickstack-otel-collector
-    tag: "2.29.0"
+    tag: "2.39.1"
   extraEnvsFrom:
     - configMapRef:
         name: clickstack-config
     - secretRef:
         name: clickstack-secret
+  # Roll collector pods when global.otelCollector.customConfig changes.
+  # Merges with any user-provided podAnnotations.
+  podAnnotations:
+    checksum/custom-config: '{{ .Values.global.otelCollector.customConfig | default "" | sha256sum }}'
+  # Mount for the optional custom config ConfigMap rendered from
+  # global.otelCollector.customConfig. The volume is marked optional so it is
+  # a no-op when no custom config is set.
+  # NOTE: if you override extraVolumes/extraVolumeMounts yourself, Helm
+  # replaces these lists entirely -- re-include the entries below to keep
+  # global.otelCollector.customConfig working.
+  extraVolumes:
+    - name: custom-config
+      configMap:
+        name: clickstack-otel-custom-config
+        optional: true
+  extraVolumeMounts:
+    - name: custom-config
+      mountPath: /etc/otelcol-contrib/custom
+      readOnly: true
   ports:
     otlp:
       enabled: true

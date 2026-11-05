@@ -8,10 +8,10 @@ mongodb-operator:
 clickhouse-operator:
   webhook:
     # -- Enable the operator admission webhook (requires cert-manager when true).
-    enable: false
+    enabled: false
   certManager:
     # -- Install cert-manager resources for the operator webhook.
-    enable: false
+    enabled: false
   crd:
     # -- Install ClickHouse operator CRDs with this chart.
-    enable: true
+    enabled: true

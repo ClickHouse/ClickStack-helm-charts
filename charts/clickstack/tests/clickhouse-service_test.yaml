@@ -9,3 +9,18 @@ tests:
           of: ClickHouseCluster
       - isNotNull:
           path: spec.settings.extraConfig
+
+  - it: should bound server log and system log table growth on the data volume
+    asserts:
+      - equal:
+          path: spec.settings.logger.level
+          value: information
+      - equal:
+          path: spec.settings.logger.count
+          value: 10
+      - equal:
+          path: spec.settings.extraConfig.text_log.ttl
+          value: event_date + INTERVAL 7 DAY DELETE
+      - equal:
+          path: spec.settings.extraConfig.metric_log.ttl
+          value: event_date + INTERVAL 7 DAY DELETE
