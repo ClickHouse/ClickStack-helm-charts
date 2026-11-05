@@ -64,7 +64,7 @@ jobs:
         if: steps.changesets.outputs.hasChangesets == 'false'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          OCI_REPO: oci://ghcr.io/clickhouse/clickstack-helm-charts
+          OCI_REPO: oci://ghcr.io/clickhouse/charts
         run: |
           echo "$GH_TOKEN" | helm registry login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
           pkgs=$(mktemp -d)
