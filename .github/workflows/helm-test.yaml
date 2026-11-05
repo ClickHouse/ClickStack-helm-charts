@@ -93,13 +93,14 @@ jobs:
       - name: Build chart dependencies
         run: make chart-deps
 
-      - name: Load pinned helmcov version and threshold
-        run: grep -E '^(HELMCOV_VERSION|COVERAGE_THRESHOLD)=' scripts/tool-versions.env >> "$GITHUB_ENV"
+      - name: Load pinned helmcov version and thresholds
+        run: grep -E '^(HELMCOV_VERSION|COVERAGE_THRESHOLD|BRANCH_COVERAGE_THRESHOLD)=' scripts/tool-versions.env >> "$GITHUB_ENV"
 
       - name: Run helmcov
-        uses: ClickHouse/helmcov@d02813f68ec78694085be6ae403c981e35dd9467  # v0.5.2
+        uses: ClickHouse/helmcov@f99c69183ad2528bf62828d6a02fb0d5f0da13ea  # v0.7.0
         with:
           chart: charts/clickstack
           tests: charts/clickstack/tests
           threshold: ${{ env.COVERAGE_THRESHOLD }}
+          branch-threshold: ${{ env.BRANCH_COVERAGE_THRESHOLD }}
           version: ${{ env.HELMCOV_VERSION }}

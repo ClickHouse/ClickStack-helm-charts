@@ -93,12 +93,12 @@ make coverage
 # Verbose per-file output
 VERBOSE=1 make coverage
 
-# Gate on minimum line coverage once baseline is known
-COVERAGE_THRESHOLD=65 make coverage
+# Override the line and branch minimums
+COVERAGE_THRESHOLD=99 BRANCH_COVERAGE_THRESHOLD=90 make coverage
 ```
 
 Downloads the helmcov release pinned in `scripts/tool-versions.env` into `.tools/`
-and runs it with a **65% line coverage threshold**. Outputs `coverage.out` (Go
+and fails below **99% line and 90% branch coverage**. Outputs `coverage.out` (Go
 coverprofile) and `coverage.xml` (Cobertura).
 
 CI runs the [helmcov GitHub Action](https://github.com/ClickHouse/helmcov)

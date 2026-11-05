@@ -9,7 +9,8 @@ CHART_PATH="${CHART_PATH:-charts/clickstack}"
 TESTS_PATH="${TESTS_PATH:-charts/clickstack/tests}"
 COVERAGE_OUT="${COVERAGE_OUT:-coverage.out}"
 COVERAGE_XML="${COVERAGE_XML:-coverage.xml}"
-THRESHOLD="${THRESHOLD:-${COVERAGE_THRESHOLD:-65}}"
+THRESHOLD="${THRESHOLD:-${COVERAGE_THRESHOLD:-}}"
+BRANCH_THRESHOLD="${BRANCH_THRESHOLD:-${BRANCH_COVERAGE_THRESHOLD:-}}"
 MAX_SCENARIOS="${MAX_SCENARIOS:-20}"
 SEED="${SEED:-42}"
 VERBOSE="${VERBOSE:-}"
@@ -40,13 +41,13 @@ helmcov_args=(
   --seed "${SEED}"
 )
 
-# The threshold is the coverage gate; refuse to run with it disabled (0/empty)
+# The thresholds are the coverage gate; refuse to run with either disabled (0/empty)
 # so a config change can't silently neutralize enforcement.
-if [[ -z "${THRESHOLD}" || "${THRESHOLD}" == "0" ]]; then
-  echo "COVERAGE_THRESHOLD must be a positive integer; refusing to run with the coverage gate disabled." >&2
+if [[ -z "${THRESHOLD}" || "${THRESHOLD}" == "0" || -z "${BRANCH_THRESHOLD}" || "${BRANCH_THRESHOLD}" == "0" ]]; then
+  echo "COVERAGE_THRESHOLD and BRANCH_COVERAGE_THRESHOLD must be positive; refusing to run with the coverage gate disabled." >&2
   exit 1
 fi
-helmcov_args+=(--threshold "${THRESHOLD}")
+helmcov_args+=(--threshold "${THRESHOLD}" --branch-threshold "${BRANCH_THRESHOLD}")
 if [[ "${VERBOSE}" == "1" ]]; then
   helmcov_args+=(--verbose)
 fi
