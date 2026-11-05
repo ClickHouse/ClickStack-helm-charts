@@ -116,6 +116,15 @@ tests:
           path: spec.template.spec.containers[0].env[?(@.name == "DEFAULT_SOURCES")].value
           pattern: '"kind": "trace",[^}]*"spanLinksValueExpression": "Links"'
 
+  - it: should set severity number and event name on the default log source
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].env[?(@.name == "DEFAULT_SOURCES")].value
+          pattern: '"kind": "log",[^}]*"severityNumberExpression": "SeverityNumber"'
+      - matchRegex:
+          path: spec.template.spec.containers[0].env[?(@.name == "DEFAULT_SOURCES")].value
+          pattern: '"kind": "log",[^}]*"eventNameExpression": "EventName"'
+
   # metricTables keys must match MetricsDataType values; unknown keys
   # (e.g. camelCase "exponentialHistogram") are silently dropped by HyperDX.
   - it: should register all OTel metric tables on the default metric source
