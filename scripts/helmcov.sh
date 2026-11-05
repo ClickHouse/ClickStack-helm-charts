@@ -14,10 +14,8 @@ MAX_SCENARIOS="${MAX_SCENARIOS:-20}"
 SEED="${SEED:-42}"
 VERBOSE="${VERBOSE:-}"
 
-if ! command -v docker >/dev/null; then
-  echo "docker is required for helmcov; install Docker and retry." >&2
-  exit 1
-fi
+"${ROOT_DIR}/scripts/install-helmcov.sh"
+HELMCOV_BIN="${ROOT_DIR}/.tools/helmcov-${HELMCOV_VERSION}"
 
 chart_abs="${ROOT_DIR}/${CHART_PATH}"
 tests_abs="${ROOT_DIR}/${TESTS_PATH}"
@@ -32,12 +30,12 @@ if ! compgen -G "${tests_abs}/*_test.yaml" >/dev/null; then
 fi
 
 helmcov_args=(
-  --chart "/work/${CHART_PATH}"
-  --tests "/work/${TESTS_PATH}"
+  --chart "${ROOT_DIR}/${CHART_PATH}"
+  --tests "${ROOT_DIR}/${TESTS_PATH}"
   --format go
   --format cobertura
-  --go-coverprofile "/work/${COVERAGE_OUT}"
-  --cobertura-file "/work/${COVERAGE_XML}"
+  --go-coverprofile "${ROOT_DIR}/${COVERAGE_OUT}"
+  --cobertura-file "${ROOT_DIR}/${COVERAGE_XML}"
   --max-scenarios "${MAX_SCENARIOS}"
   --seed "${SEED}"
 )
@@ -53,19 +51,4 @@ if [[ "${VERBOSE}" == "1" ]]; then
   helmcov_args+=(--verbose)
 fi
 
-# The helmcov image is amd64-only. On amd64 hosts run natively; elsewhere force
-# emulation (slower) rather than letting docker fail on a missing arch variant.
-platform_args=()
-host_arch="$(uname -m)"
-if [[ "${host_arch}" != "x86_64" && "${host_arch}" != "amd64" ]]; then
-  echo "helmcov image is amd64-only; running under emulation on ${host_arch} (slower)." >&2
-  platform_args=(--platform linux/amd64)
-fi
-
-docker run --rm \
-  ${platform_args[@]+"${platform_args[@]}"} \
-  --user "$(id -u):$(id -g)" \
-  -v "${ROOT_DIR}:/work" \
-  -w /work \
-  "${HELMCOV_IMAGE}" \
-  "${helmcov_args[@]}"
+"${HELMCOV_BIN}" "${helmcov_args[@]}"

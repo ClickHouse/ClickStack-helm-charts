@@ -53,7 +53,7 @@ jobs:
         run: grep -E '^(HELMCOV_VERSION|COVERAGE_THRESHOLD)=' scripts/tool-versions.env >> "$GITHUB_ENV"
 
       - name: Run helmcov
-        uses: jordan-simonovski/helmcov@6346c80e742f697b55b2cb9fe6b9af72a71960ce  # v1
+        uses: ClickHouse/helmcov@60f4e0b54382e116de5f5a989fb3162ff956b6b8  # v0.5.1
         with:
           chart: charts/clickstack
           tests: charts/clickstack/tests

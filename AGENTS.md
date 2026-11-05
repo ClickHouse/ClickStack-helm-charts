@@ -15,7 +15,8 @@ Use the Makefile for tool setup, unit tests, and template coverage:
 ```bash
 make setup      # install helm-unittest, helm-docs, chart deps, and git hooks
 make test       # helm-unittest + example values validation
-make coverage   # helmcov template coverage via Docker (requires Docker)
+make coverage   # helmcov template coverage
+make integration  # Kind integration suites (SUITES=api-only for one)
 make ci         # test + coverage + docs verification
 ```
 
@@ -94,16 +95,13 @@ VERBOSE=1 make coverage
 
 # Gate on minimum line coverage once baseline is known
 COVERAGE_THRESHOLD=30 make coverage
-
-# Override the pinned image (see scripts/tool-versions.env)
-HELMCOV_IMAGE=ghcr.io/example/helmcov@sha256:... make coverage
 ```
 
-Uses the digest-pinned image in `scripts/tool-versions.env` with a **30% line
-coverage threshold** for local runs. Outputs `coverage.out` (Go coverprofile) and
-`coverage.xml` (Cobertura).
+Downloads the helmcov release pinned in `scripts/tool-versions.env` into `.tools/`
+and runs it with a **30% line coverage threshold**. Outputs `coverage.out` (Go
+coverprofile) and `coverage.xml` (Cobertura).
 
-CI runs the [helmcov GitHub Action](https://github.com/jordan-simonovski/helmcov)
+CI runs the [helmcov GitHub Action](https://github.com/ClickHouse/helmcov)
 via the `helmcov` job in `.github/workflows/helm-test.yaml`, which posts or updates
 a pull request comment with line/branch coverage and uncovered details.
 
@@ -124,11 +122,12 @@ Suites live under `integration-tests/<suite-name>/`. Each has `suite.yaml`,
 `values.yaml`, and `assert.sh`. Run locally with:
 
 ```bash
-./integration-tests/run-suite.sh api-only    # or full-stack
-# Cleanup
-helm uninstall test-api-only || true
-kind delete cluster --name test-api-only || true
+make integration                 # every suite, as CI runs them
+make integration SUITES=api-only # one suite
 ```
+
+Each suite creates a `test-<suite>` Kind cluster and deletes it afterwards. The
+full-stack suite also runs `scripts/smoke-test.sh` and the Playwright checks in `scripts/e2e/`.
 
 Requires: `kind`, `helm`, `kubectl`, `yq`.
 

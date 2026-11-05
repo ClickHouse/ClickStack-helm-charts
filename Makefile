@@ -1,25 +1,28 @@
 SHELL := /bin/bash
 
 include scripts/tool-versions.env
-export HELM_DOCS_VERSION HELM_UNITTEST_VERSION HELMCOV_IMAGE HELMCOV_VERSION COVERAGE_THRESHOLD
+export HELM_DOCS_VERSION HELM_UNITTEST_VERSION HELMCOV_VERSION HELMCOV_CHECKSUMS_SHA256 COVERAGE_THRESHOLD
 
 CHART ?= charts/clickstack
+SUITES ?= $(patsubst integration-tests/%/suite.yaml,%,$(wildcard integration-tests/*/suite.yaml))
 HELM_UNITTEST_PLUGIN := https://github.com/helm-unittest/helm-unittest.git
 # COVERAGE_THRESHOLD comes from scripts/tool-versions.env; override with `make coverage COVERAGE_THRESHOLD=N`.
 
-.PHONY: help setup ci-setup hooks chart-deps install-helm-unittest install-helm-docs validate test coverage docs docs-check ci
+.PHONY: help setup ci-setup hooks chart-deps install-helm-unittest install-helm-docs validate test coverage integration docs docs-check ci
 
 help:
 	@echo "Targets:"
 	@echo "  make setup     Install helm-unittest, helm-docs, chart deps, and git hooks"
 	@echo "  make test      Run helm-unittest and example values validation"
-	@echo "  make coverage  Run helmcov template coverage via Docker (min $(COVERAGE_THRESHOLD)%)"
+	@echo "  make coverage  Run helmcov template coverage (min $(COVERAGE_THRESHOLD)%)"
+	@echo "  make integration  Run Kind integration suites (needs kind, kubectl, yq; SUITES=api-only for one)"
 	@echo "  make docs      Regenerate chart README files from values.yaml via helm-docs"
 	@echo "  make ci        Run test, coverage, and docs verification"
 	@echo ""
 	@echo "Variables:"
 	@echo "  CHART=$(CHART)"
-	@echo "  HELMCOV_IMAGE=$(HELMCOV_IMAGE)"
+	@echo "  SUITES=$(SUITES)"
+	@echo "  HELMCOV_VERSION=$(HELMCOV_VERSION)"
 	@echo "  HELM_UNITTEST_VERSION=$(HELM_UNITTEST_VERSION)"
 	@echo "  COVERAGE_THRESHOLD=$(COVERAGE_THRESHOLD)"
 
@@ -60,7 +63,16 @@ test: chart-deps validate
 	helm unittest $(CHART)
 
 coverage: chart-deps
-	THRESHOLD=$(COVERAGE_THRESHOLD) HELMCOV_IMAGE=$(HELMCOV_IMAGE) ./scripts/helmcov.sh
+	THRESHOLD=$(COVERAGE_THRESHOLD) ./scripts/helmcov.sh
+
+# Each suite gets its own Kind cluster; delete it whether the suite passes or not.
+integration:
+	@for t in kind kubectl yq helm; do command -v $$t >/dev/null || { echo "$$t is required for integration tests." >&2; exit 1; }; done
+	@for s in $(SUITES); do \
+		rc=0; ./integration-tests/run-suite.sh "$$s" || rc=$$?; \
+		kind delete cluster --name "test-$$s" || true; \
+		[ $$rc -eq 0 ] || exit $$rc; \
+	done
 
 docs: install-helm-docs
 	./scripts/helmdocs.sh
