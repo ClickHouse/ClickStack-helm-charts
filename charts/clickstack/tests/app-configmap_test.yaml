@@ -28,6 +28,56 @@ tests:
           path: data.OPAMP_SERVER_URL
           pattern: "http://.*-app:4320"
 
+  - it: should use the otel database for the bundled ClickHouse
+    asserts:
+      - equal:
+          path: data.HYPERDX_OTEL_EXPORTER_CLICKHOUSE_DATABASE
+          value: "otel"
+
+  - it: should use the default database for an external ClickHouse
+    set:
+      clickhouse:
+        enabled: false
+    asserts:
+      - equal:
+          path: data.HYPERDX_OTEL_EXPORTER_CLICKHOUSE_DATABASE
+          value: "default"
+
+  - it: should render a plain string database override
+    set:
+      hyperdx:
+        config:
+          HYPERDX_OTEL_EXPORTER_CLICKHOUSE_DATABASE: "clickstack"
+    asserts:
+      - equal:
+          path: data.HYPERDX_OTEL_EXPORTER_CLICKHOUSE_DATABASE
+          value: "clickstack"
+
+  - it: should enable replicated seeding for the bundled ClickHouse
+    asserts:
+      - equal:
+          path: data.HYPERDX_OTEL_EXPORTER_CLICKHOUSE_REPLICATED
+          value: "true"
+
+  - it: should disable replicated seeding for an external ClickHouse
+    set:
+      clickhouse:
+        enabled: false
+    asserts:
+      - equal:
+          path: data.HYPERDX_OTEL_EXPORTER_CLICKHOUSE_REPLICATED
+          value: "false"
+
+  - it: should allow opting out of replicated seeding
+    set:
+      hyperdx:
+        config:
+          HYPERDX_OTEL_EXPORTER_CLICKHOUSE_REPLICATED: "false"
+    asserts:
+      - equal:
+          path: data.HYPERDX_OTEL_EXPORTER_CLICKHOUSE_REPLICATED
+          value: "false"
+
   - it: should render user-provided config values
     set:
       hyperdx:

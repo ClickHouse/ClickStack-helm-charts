@@ -1,0 +1,286 @@
+suite: Test ClickStack Database Selection
+templates:
+  - hyperdx/configmap.yaml
+  - hyperdx/deployment.yaml
+  - clickhouse/cluster.yaml
+release:
+  namespace: clickstack-ns
+# Each case checks the ConfigMap values, all four default sources, and the ClickHouse grants.
+# The default sources define exactly four databaseName entries, so {4} matches means all of them.
+tests:
+  - it: should use a Replicated otel database on a fresh install
+    asserts:
+      - equal:
+          path: data.HYPERDX_OTEL_EXPORTER_CLICKHOUSE_DATABASE
+          value: "otel"
+        template: hyperdx/configmap.yaml
+      - equal:
+          path: data.HYPERDX_OTEL_EXPORTER_CLICKHOUSE_REPLICATED
+          value: "true"
+        template: hyperdx/configmap.yaml
+      - equal:
+          path: data.HYPERDX_OTEL_EXPORTER_CLICKHOUSE_FALLBACK_DATABASE
+          value: "default"
+        template: hyperdx/configmap.yaml
+      - matchRegex:
+          path: spec.template.spec.containers[0].env[?(@.name=="DEFAULT_SOURCES")].value
+          pattern: '(?s)("databaseName": "otel".*){4}'
+        template: hyperdx/deployment.yaml
+      - equal:
+          path: spec.settings.extraUsersConfig.users.app.grants[0].query
+          value: "GRANT SHOW ON *.*, SELECT ON system.*, SELECT ON default.*, SELECT ON otel.*"
+        template: clickhouse/cluster.yaml
+      - equal:
+          path: spec.settings.extraUsersConfig.users.otelcollector.grants[0].query
+          value: "GRANT SELECT,INSERT,CREATE,SHOW ON default.*, SELECT,INSERT,CREATE,SHOW ON otel.*"
+        template: clickhouse/cluster.yaml
+
+  - it: should keep default and plain engines on upgrade from a chart without these keys
+    kubernetesProvider:
+      scheme: &configMapScheme
+        "v1/ConfigMap":
+          gvr:
+            version: "v1"
+            resource: "configmaps"
+          namespaced: true
+      objects:
+        - kind: ConfigMap
+          apiVersion: v1
+          metadata:
+            name: clickstack-config
+            namespace: clickstack-ns
+          data:
+            HYPERDX_OTEL_EXPORTER_CLICKHOUSE_DATABASE: "default"
+    asserts:
+      - equal:
+          path: data.HYPERDX_OTEL_EXPORTER_CLICKHOUSE_DATABASE
+          value: "default"
+        template: hyperdx/configmap.yaml
+      - equal:
+          path: data.HYPERDX_OTEL_EXPORTER_CLICKHOUSE_REPLICATED
+          value: "false"
+        template: hyperdx/configmap.yaml
+      - equal:
+          path: data.HYPERDX_OTEL_EXPORTER_CLICKHOUSE_FALLBACK_DATABASE
+          value: "default"
+        template: hyperdx/configmap.yaml
+      - matchRegex:
+          path: spec.template.spec.containers[0].env[?(@.name=="DEFAULT_SOURCES")].value
+          pattern: '(?s)("databaseName": "default".*){4}'
+        template: hyperdx/deployment.yaml
+      # Same grants as charts before the otel database, so upgrades render no grant change.
+      - equal:
+          path: spec.settings.extraUsersConfig.users.app.grants[0].query
+          value: "GRANT SHOW ON *.*, SELECT ON system.*, SELECT ON default.*"
+        template: clickhouse/cluster.yaml
+      - equal:
+          path: spec.settings.extraUsersConfig.users.otelcollector.grants[0].query
+          value: "GRANT SELECT,INSERT,CREATE,SHOW ON default.*"
+        template: clickhouse/cluster.yaml
+
+  - it: should fall back to default when an existing ConfigMap has neither key
+    kubernetesProvider:
+      scheme: *configMapScheme
+      objects:
+        - kind: ConfigMap
+          apiVersion: v1
+          metadata:
+            name: clickstack-config
+            namespace: clickstack-ns
+          data:
+            HYPERDX_LOG_LEVEL: "info"
+    asserts:
+      - equal:
+          path: data.HYPERDX_OTEL_EXPORTER_CLICKHOUSE_DATABASE
+          value: "default"
+        template: hyperdx/configmap.yaml
+      - equal:
+          path: data.HYPERDX_OTEL_EXPORTER_CLICKHOUSE_REPLICATED
+          value: "false"
+        template: hyperdx/configmap.yaml
+
+  - it: should keep the otel database on upgrade from this chart
+    kubernetesProvider:
+      scheme: *configMapScheme
+      objects:
+        - kind: ConfigMap
+          apiVersion: v1
+          metadata:
+            name: clickstack-config
+            namespace: clickstack-ns
+          data:
+            HYPERDX_OTEL_EXPORTER_CLICKHOUSE_DATABASE: "otel"
+            HYPERDX_OTEL_EXPORTER_CLICKHOUSE_REPLICATED: "true"
+    asserts:
+      - equal:
+          path: data.HYPERDX_OTEL_EXPORTER_CLICKHOUSE_DATABASE
+          value: "otel"
+        template: hyperdx/configmap.yaml
+      - equal:
+          path: data.HYPERDX_OTEL_EXPORTER_CLICKHOUSE_REPLICATED
+          value: "true"
+        template: hyperdx/configmap.yaml
+      - equal:
+          path: data.HYPERDX_OTEL_EXPORTER_CLICKHOUSE_FALLBACK_DATABASE
+          value: "default"
+        template: hyperdx/configmap.yaml
+      - matchRegex:
+          path: spec.template.spec.containers[0].env[?(@.name=="DEFAULT_SOURCES")].value
+          pattern: '(?s)("databaseName": "otel".*){4}'
+        template: hyperdx/deployment.yaml
+      - equal:
+          path: spec.settings.extraUsersConfig.users.app.grants[0].query
+          value: "GRANT SHOW ON *.*, SELECT ON system.*, SELECT ON default.*, SELECT ON otel.*"
+        template: clickhouse/cluster.yaml
+      - equal:
+          path: spec.settings.extraUsersConfig.users.otelcollector.grants[0].query
+          value: "GRANT SELECT,INSERT,CREATE,SHOW ON default.*, SELECT,INSERT,CREATE,SHOW ON otel.*"
+        template: clickhouse/cluster.yaml
+
+  - it: should ignore a clickstack-config ConfigMap in another namespace
+    kubernetesProvider:
+      scheme: *configMapScheme
+      objects:
+        - kind: ConfigMap
+          apiVersion: v1
+          metadata:
+            name: clickstack-config
+            namespace: other-ns
+          data:
+            HYPERDX_OTEL_EXPORTER_CLICKHOUSE_DATABASE: "default"
+    asserts:
+      - equal:
+          path: data.HYPERDX_OTEL_EXPORTER_CLICKHOUSE_DATABASE
+          value: "otel"
+        template: hyperdx/configmap.yaml
+      - equal:
+          path: data.HYPERDX_OTEL_EXPORTER_CLICKHOUSE_REPLICATED
+          value: "true"
+        template: hyperdx/configmap.yaml
+
+  - it: should use default and plain engines for an external ClickHouse
+    set:
+      clickhouse:
+        enabled: false
+    asserts:
+      - equal:
+          path: data.HYPERDX_OTEL_EXPORTER_CLICKHOUSE_DATABASE
+          value: "default"
+        template: hyperdx/configmap.yaml
+      - equal:
+          path: data.HYPERDX_OTEL_EXPORTER_CLICKHOUSE_REPLICATED
+          value: "false"
+        template: hyperdx/configmap.yaml
+      - equal:
+          path: data.HYPERDX_OTEL_EXPORTER_CLICKHOUSE_FALLBACK_DATABASE
+          value: ""
+        template: hyperdx/configmap.yaml
+      - matchRegex:
+          path: spec.template.spec.containers[0].env[?(@.name=="DEFAULT_SOURCES")].value
+          pattern: '(?s)("databaseName": "default".*){4}'
+        template: hyperdx/deployment.yaml
+      - hasDocuments:
+          count: 0
+        template: clickhouse/cluster.yaml
+
+  - it: should treat a string "false" for clickhouse.enabled as an external ClickHouse
+    set:
+      clickhouse.enabled: "false"
+    kubernetesProvider:
+      scheme: *configMapScheme
+      objects:
+        - kind: ConfigMap
+          apiVersion: v1
+          metadata:
+            name: clickstack-config
+            namespace: clickstack-ns
+          data:
+            HYPERDX_OTEL_EXPORTER_CLICKHOUSE_DATABASE: "otel"
+            HYPERDX_OTEL_EXPORTER_CLICKHOUSE_REPLICATED: "true"
+    asserts:
+      - equal:
+          path: data.HYPERDX_OTEL_EXPORTER_CLICKHOUSE_DATABASE
+          value: "default"
+        template: hyperdx/configmap.yaml
+      - equal:
+          path: data.HYPERDX_OTEL_EXPORTER_CLICKHOUSE_REPLICATED
+          value: "false"
+        template: hyperdx/configmap.yaml
+      - equal:
+          path: data.HYPERDX_OTEL_EXPORTER_CLICKHOUSE_FALLBACK_DATABASE
+          value: ""
+        template: hyperdx/configmap.yaml
+
+  - it: should let explicit values win over an existing ConfigMap
+    set:
+      hyperdx:
+        config:
+          HYPERDX_OTEL_EXPORTER_CLICKHOUSE_DATABASE: "clickstack"
+          HYPERDX_OTEL_EXPORTER_CLICKHOUSE_REPLICATED: "false"
+          HYPERDX_OTEL_EXPORTER_CLICKHOUSE_FALLBACK_DATABASE: ""
+    kubernetesProvider:
+      scheme: *configMapScheme
+      objects:
+        - kind: ConfigMap
+          apiVersion: v1
+          metadata:
+            name: clickstack-config
+            namespace: clickstack-ns
+          data:
+            HYPERDX_OTEL_EXPORTER_CLICKHOUSE_DATABASE: "otel"
+            HYPERDX_OTEL_EXPORTER_CLICKHOUSE_REPLICATED: "true"
+    asserts:
+      - equal:
+          path: data.HYPERDX_OTEL_EXPORTER_CLICKHOUSE_DATABASE
+          value: "clickstack"
+        template: hyperdx/configmap.yaml
+      - equal:
+          path: data.HYPERDX_OTEL_EXPORTER_CLICKHOUSE_REPLICATED
+          value: "false"
+        template: hyperdx/configmap.yaml
+      - equal:
+          path: data.HYPERDX_OTEL_EXPORTER_CLICKHOUSE_FALLBACK_DATABASE
+          value: ""
+        template: hyperdx/configmap.yaml
+      - matchRegex:
+          path: spec.template.spec.containers[0].env[?(@.name=="DEFAULT_SOURCES")].value
+          pattern: '(?s)("databaseName": "clickstack".*){4}'
+        template: hyperdx/deployment.yaml
+      - equal:
+          path: spec.settings.extraUsersConfig.users.app.grants[0].query
+          value: "GRANT SHOW ON *.*, SELECT ON system.*, SELECT ON default.*, SELECT ON clickstack.*"
+        template: clickhouse/cluster.yaml
+      - equal:
+          path: spec.settings.extraUsersConfig.users.otelcollector.grants[0].query
+          value: "GRANT SELECT,INSERT,CREATE,SHOW ON default.*, SELECT,INSERT,CREATE,SHOW ON clickstack.*"
+        template: clickhouse/cluster.yaml
+
+  - it: should not duplicate the default grant when default is set explicitly
+    set:
+      hyperdx:
+        config:
+          HYPERDX_OTEL_EXPORTER_CLICKHOUSE_DATABASE: "default"
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].env[?(@.name=="DEFAULT_SOURCES")].value
+          pattern: '(?s)("databaseName": "default".*){4}'
+        template: hyperdx/deployment.yaml
+      - equal:
+          path: spec.settings.extraUsersConfig.users.app.grants[0].query
+          value: "GRANT SHOW ON *.*, SELECT ON system.*, SELECT ON default.*"
+        template: clickhouse/cluster.yaml
+      - equal:
+          path: spec.settings.extraUsersConfig.users.otelcollector.grants[0].query
+          value: "GRANT SELECT,INSERT,CREATE,SHOW ON default.*"
+        template: clickhouse/cluster.yaml
+
+  - it: should render a plain string fallback database override
+    set:
+      hyperdx:
+        config:
+          HYPERDX_OTEL_EXPORTER_CLICKHOUSE_FALLBACK_DATABASE: "legacy"
+    asserts:
+      - equal:
+          path: data.HYPERDX_OTEL_EXPORTER_CLICKHOUSE_FALLBACK_DATABASE
+          value: "legacy"
+        template: hyperdx/configmap.yaml

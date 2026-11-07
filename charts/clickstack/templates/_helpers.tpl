@@ -228,3 +228,79 @@ ClickHouse headless service name. The operator creates a headless service named 
 {{- define "clickstack.clickhouse.svc" -}}
 {{- printf "%s-clickhouse-headless" (include "clickstack.clickhouse.fullname" .) -}}
 {{- end }}
+
+{{/*
+Whether the bundled ClickHouse is enabled. Accepts a bool or a "true"/"false" string
+(e.g. from --set-string). Renders "true" or "".
+*/}}
+{{- define "clickstack.clickhouse.enabled" -}}
+{{- if eq (lower (toString .Values.clickhouse.enabled)) "true" }}true{{- end -}}
+{{- end }}
+
+{{/*
+Default ClickStack database and replicated seed flag, as JSON with "database" and "replicated".
+- External ClickHouse: default, not replicated.
+- Upgrade: reuse the existing clickstack-config ConfigMap, so installs keep their database and
+  engines. A missing key means default or "false", matching charts that predate these keys.
+- Fresh install, or a render without cluster access (helm template): Replicated otel database.
+*/}}
+{{- define "clickstack.clickhouse.seedDefaults" -}}
+{{- $defaults := dict "database" "otel" "replicated" "true" -}}
+{{- if not (include "clickstack.clickhouse.enabled" .) -}}
+{{- $defaults = dict "database" "default" "replicated" "false" -}}
+{{- else -}}
+{{- $existing := lookup "v1" "ConfigMap" .Release.Namespace "clickstack-config" -}}
+{{- if $existing -}}
+{{- $data := default (dict) $existing.data -}}
+{{- $defaults = dict
+      "database" (default "default" (get $data "HYPERDX_OTEL_EXPORTER_CLICKHOUSE_DATABASE"))
+      "replicated" (default "false" (get $data "HYPERDX_OTEL_EXPORTER_CLICKHOUSE_REPLICATED")) -}}
+{{- end -}}
+{{- end -}}
+{{- toJson $defaults -}}
+{{- end }}
+
+{{/*
+Default for hyperdx.config.HYPERDX_OTEL_EXPORTER_CLICKHOUSE_DATABASE. See clickstack.clickhouse.seedDefaults.
+*/}}
+{{- define "clickstack.clickhouse.defaultDatabase" -}}
+{{- (include "clickstack.clickhouse.seedDefaults" . | fromJson).database -}}
+{{- end }}
+
+{{/*
+Default for hyperdx.config.HYPERDX_OTEL_EXPORTER_CLICKHOUSE_REPLICATED. See clickstack.clickhouse.seedDefaults.
+*/}}
+{{- define "clickstack.clickhouse.defaultReplicated" -}}
+{{- (include "clickstack.clickhouse.seedDefaults" . | fromJson).replicated -}}
+{{- end }}
+
+{{/*
+Default for hyperdx.config.HYPERDX_OTEL_EXPORTER_CLICKHOUSE_FALLBACK_DATABASE: default for the
+bundled ClickHouse, so renders without lookup keep existing installs on default, and empty otherwise.
+*/}}
+{{- define "clickstack.clickhouse.defaultFallbackDatabase" -}}
+{{- if include "clickstack.clickhouse.enabled" . }}default{{- end -}}
+{{- end }}
+
+{{/*
+ClickHouse database for ClickStack tables: hyperdx.config.HYPERDX_OTEL_EXPORTER_CLICKHOUSE_DATABASE
+rendered through tpl, so the collector seed, default sources, and user grants always agree.
+*/}}
+{{- define "clickstack.clickhouse.database" -}}
+{{- $config := default (dict) .Values.hyperdx.config -}}
+{{- tpl (toString (default "default" (index $config "HYPERDX_OTEL_EXPORTER_CLICKHOUSE_DATABASE"))) . -}}
+{{- end }}
+
+{{/*
+ClickHouse grant elements for ClickStack tables. Always covers default.* so data written
+before the dedicated database stays readable, plus the configured database when it differs.
+Usage: include "clickstack.clickhouse.databaseGrants" (dict "privileges" "SELECT" "context" .)
+*/}}
+{{- define "clickstack.clickhouse.databaseGrants" -}}
+{{- $database := include "clickstack.clickhouse.database" .context -}}
+{{- $grants := list (printf "%s ON default.*" .privileges) -}}
+{{- if ne $database "default" -}}
+{{- $grants = append $grants (printf "%s ON %s.*" .privileges $database) -}}
+{{- end -}}
+{{- join ", " $grants -}}
+{{- end }}
