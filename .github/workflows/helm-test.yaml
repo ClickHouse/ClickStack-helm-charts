@@ -104,3 +104,5 @@ jobs:
           threshold: ${{ env.COVERAGE_THRESHOLD }}
           branch-threshold: ${{ env.BRANCH_COVERAGE_THRESHOLD }}
           version: ${{ env.HELMCOV_VERSION }}
+          # Fork PRs get a read-only token, so posting the comment would 403 and fail the job.
+          comment: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
