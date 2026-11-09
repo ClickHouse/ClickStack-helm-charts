@@ -52,7 +52,6 @@ fi
 
 echo "--- Building chart dependencies ---"
 if [ "$NEEDS_OPERATORS" = "true" ]; then
-    helm repo add mongodb https://mongodb.github.io/helm-charts 2>/dev/null || true
     helm dependency build "$REPO_ROOT/charts/clickstack-operators"
 fi
 helm dependency build "$REPO_ROOT/charts/clickstack"

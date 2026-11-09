@@ -43,10 +43,6 @@ jobs:
           publish: yarn run release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Add Helm dependency repositories
-        run: |
-          helm repo add mongodb https://mongodb.github.io/helm-charts
-          helm repo update
       - name: Generate release notes from CHANGELOG.md
         if: steps.changesets.outputs.hasChangesets == 'false'
         run: node scripts/extract-release-notes.js
