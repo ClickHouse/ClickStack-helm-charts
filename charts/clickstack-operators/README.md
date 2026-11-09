@@ -21,8 +21,8 @@ After the operators are ready, install the [clickstack](../clickstack) chart.
 
 | Repository | Name | Version |
 |------------|------|---------|
-| https://mongodb.github.io/helm-charts | mongodb-operator(mongodb-kubernetes) | ~1.7.0 |
 | oci://ghcr.io/clickhouse | clickhouse-operator(clickhouse-operator-helm) | ~0.0.7 |
+| oci://quay.io/mongodb/helm-charts | mongodb-operator(mongodb-kubernetes) | ~1.7.0 |
 
 ## Values
 

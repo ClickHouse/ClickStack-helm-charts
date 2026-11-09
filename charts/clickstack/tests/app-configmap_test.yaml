@@ -57,6 +57,24 @@ tests:
           path: data.HDX_EXPORTER_ENABLED
           value: "true"
 
+  - it: should fail when the removed 1.x usageStatsEnabled key is set
+    set:
+      hyperdx:
+        usageStatsEnabled: false
+    asserts:
+      - failedTemplate:
+          errorPattern: "hyperdx.usageStatsEnabled was removed in chart 2.0"
+
+  - it: should render USAGE_STATS_ENABLED false when opted out
+    set:
+      hyperdx:
+        config:
+          USAGE_STATS_ENABLED: false
+    asserts:
+      - equal:
+          path: data.USAGE_STATS_ENABLED
+          value: "false"
+
   - it: should render user-provided config values
     set:
       hyperdx:
