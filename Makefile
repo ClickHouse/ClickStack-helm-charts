@@ -40,8 +40,6 @@ install-helm-docs:
 
 chart-deps:
 	@command -v helm >/dev/null || { echo "helm is required; install Helm 3 first." >&2; exit 1; }
-	helm repo add mongodb https://mongodb.github.io/helm-charts >/dev/null 2>&1 || true
-	helm repo add open-telemetry https://open-telemetry.github.io/opentelemetry-helm-charts >/dev/null 2>&1 || true
 	helm dependency build $(CHART)
 
 install-helm-unittest:
