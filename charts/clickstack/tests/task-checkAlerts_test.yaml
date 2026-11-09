@@ -40,7 +40,7 @@ tests:
           value: hyperdx/hyperdx:2-beta
       - equal:
           path: spec.jobTemplate.spec.template.spec.containers[0].command
-          value: ["node", "/app/packages/api/build/tasks/index.js", "check-alerts"]
+          value: ["/app/packages/api/bin/hyperdx", "task", "check-alerts"]
       - isSubset:
           path: spec.jobTemplate.spec.template.spec.containers[0].resources
           content:
@@ -186,7 +186,7 @@ tests:
           path: spec.jobTemplate.spec.template.spec.containers[0].command
           value: ["node", "/app/packages/api/build/tasks/index.js", "check-alerts"]
 
-  - it: should use post-esbuild command path for version 3.0.0
+  - it: should use bin/hyperdx command for version 3.0.0
     set:
       hyperdx:
         tasks:
@@ -197,7 +197,59 @@ tests:
     asserts:
       - equal:
           path: spec.jobTemplate.spec.template.spec.containers[0].command
+          value: ["/app/packages/api/bin/hyperdx", "task", "check-alerts"]
+
+  - it: should use post-esbuild command path for version 2.21.9
+    set:
+      hyperdx:
+        tasks:
+          enabled: true
+        deployment:
+          image:
+            tag: "2.21.9"
+    asserts:
+      - equal:
+          path: spec.jobTemplate.spec.template.spec.containers[0].command
           value: ["node", "/app/packages/api/build/tasks/index.js", "check-alerts"]
+
+  - it: should use bin/hyperdx command for version 2.22.0
+    set:
+      hyperdx:
+        tasks:
+          enabled: true
+        deployment:
+          image:
+            tag: "2.22.0"
+    asserts:
+      - equal:
+          path: spec.jobTemplate.spec.template.spec.containers[0].command
+          value: ["/app/packages/api/bin/hyperdx", "task", "check-alerts"]
+
+  - it: should use bin/hyperdx command for the default appVersion
+    set:
+      hyperdx:
+        tasks:
+          enabled: true
+    asserts:
+      - equal:
+          path: spec.jobTemplate.spec.template.spec.containers[0].command
+          value: ["/app/packages/api/bin/hyperdx", "task", "check-alerts"]
+
+  - it: should include additionalArgs in bin/hyperdx command
+    set:
+      hyperdx:
+        tasks:
+          enabled: true
+          checkAlerts:
+            additionalArgs:
+              concurrency: 6
+        deployment:
+          image:
+            tag: "2.39.1"
+    asserts:
+      - equal:
+          path: spec.jobTemplate.spec.template.spec.containers[0].command
+          value: ["/app/packages/api/bin/hyperdx", "task", "check-alerts", "--concurrency", "6"]
 
   - it: should not include additionalArgs when empty
     set:

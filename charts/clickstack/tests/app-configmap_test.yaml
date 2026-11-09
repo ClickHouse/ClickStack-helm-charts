@@ -28,6 +28,53 @@ tests:
           path: data.OPAMP_SERVER_URL
           pattern: "http://.*-app:4320"
 
+  - it: should disable HyperDX's own telemetry when no browser-reachable endpoint is set
+    asserts:
+      - equal:
+          path: data.HDX_EXPORTER_ENABLED
+          value: "false"
+
+  - it: should enable HyperDX's own telemetry when a browser endpoint is set
+    set:
+      hyperdx:
+        config:
+          NEXT_PUBLIC_OTEL_EXPORTER_OTLP_ENDPOINT: "https://otel.example.com"
+    asserts:
+      - equal:
+          path: data.HDX_EXPORTER_ENABLED
+          value: "true"
+      - equal:
+          path: data.NEXT_PUBLIC_OTEL_EXPORTER_OTLP_ENDPOINT
+          value: "https://otel.example.com"
+
+  - it: should let an explicit HDX_EXPORTER_ENABLED win
+    set:
+      hyperdx:
+        config:
+          HDX_EXPORTER_ENABLED: "true"
+    asserts:
+      - equal:
+          path: data.HDX_EXPORTER_ENABLED
+          value: "true"
+
+  - it: should fail when the removed 1.x usageStatsEnabled key is set
+    set:
+      hyperdx:
+        usageStatsEnabled: false
+    asserts:
+      - failedTemplate:
+          errorPattern: "hyperdx.usageStatsEnabled was removed in chart 2.0"
+
+  - it: should render USAGE_STATS_ENABLED false when opted out
+    set:
+      hyperdx:
+        config:
+          USAGE_STATS_ENABLED: false
+    asserts:
+      - equal:
+          path: data.USAGE_STATS_ENABLED
+          value: "false"
+
   - it: should render user-provided config values
     set:
       hyperdx:

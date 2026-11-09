@@ -120,6 +120,10 @@ hyperdx:
     FRONTEND_URL: "http://localhost:3000"
     MONGO_URI: 'mongodb://hyperdx:{{ .Values.hyperdx.secrets.MONGODB_PASSWORD }}@{{ include "clickstack.mongodb.svc" . }}:27017/hyperdx?authSource=hyperdx'
     OTEL_EXPORTER_OTLP_ENDPOINT: 'http://{{ include "clickstack.otel.fullname" . }}:4318'
+    # HyperDX's own browser and Next.js server telemetry. Browsers can't reach the in-cluster
+    # endpoint above, so this is on only when a browser-reachable collector URL is set:
+    #   NEXT_PUBLIC_OTEL_EXPORTER_OTLP_ENDPOINT: "https://otel.example.com"
+    HDX_EXPORTER_ENABLED: '{{ if .Values.hyperdx.config.NEXT_PUBLIC_OTEL_EXPORTER_OTLP_ENDPOINT }}true{{ else }}false{{ end }}'
     CLICKHOUSE_ENDPOINT: 'tcp://{{ include "clickstack.clickhouse.svc" . }}:{{ .Values.clickhouse.nativePort }}?dial_timeout=10s'
     CLICKHOUSE_SERVER_ENDPOINT: '{{ include "clickstack.clickhouse.svc" . }}:{{ .Values.clickhouse.nativePort }}'
     CLICKHOUSE_PROMETHEUS_METRICS_ENDPOINT: '{{ include "clickstack.clickhouse.svc" . }}:{{ .Values.clickhouse.prometheus.port }}'
@@ -177,6 +181,7 @@ hyperdx:
     labels: {}
     # Labels applied to the HyperDX pod template metadata.
     podLabels: {}
+    # -- Extra environment variables for the HyperDX container, rendered verbatim (supports `valueFrom`, e.g. `secretKeyRef`).
     env: []
     # -- Additional init containers to run before the HyperDX container starts.
     initContainers: []
