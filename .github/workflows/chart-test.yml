@@ -95,12 +95,21 @@ jobs:
           kind delete cluster --name "test-${{ matrix.suite }}" || true
 
   otel-cicd-action:
-    if: always()
+    # Only run when secrets are available. Fork PRs (external contributors) do
+    # not receive repository secrets, so OTLP_ENDPOINT is empty and the export
+    # action fails with "Name resolution failed for target dns:v1". Skip the job
+    # on fork PRs and run it for same-repo events (push, internal PRs, schedule).
+    if: ${{ always() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     name: OpenTelemetry Export Trace
     runs-on: ubuntu-latest
     needs: [integration-test]
+    env:
+      OTLP_ENDPOINT: ${{ secrets.OTLP_ENDPOINT }}
     steps:
       - name: Export workflow
+        # Defense-in-depth: skip if the endpoint secret is unset even on
+        # same-repo runs, so an empty endpoint never reaches the action.
+        if: ${{ env.OTLP_ENDPOINT != '' }}
         uses: corentinmusard/otel-cicd-action@v4
         with:
           otlpEndpoint: ${{ secrets.OTLP_ENDPOINT }}/v1/traces

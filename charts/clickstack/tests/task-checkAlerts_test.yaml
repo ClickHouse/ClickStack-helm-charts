@@ -65,6 +65,40 @@ tests:
           content:
             name: OTEL_SERVICE_NAME
             value: "hdx-oss-task-check-alerts"
+      - isNull:
+          path: spec.jobTemplate.spec.template.spec.securityContext
+      - isNull:
+          path: spec.jobTemplate.spec.template.spec.containers[0].securityContext
+
+  - it: should configure pod and container security contexts
+    set:
+      hyperdx:
+        deployment:
+          podSecurityContext:
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+          containerSecurityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+        tasks:
+          enabled: true
+    asserts:
+      - equal:
+          path: spec.jobTemplate.spec.template.spec.securityContext
+          value:
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+      - equal:
+          path: spec.jobTemplate.spec.template.spec.containers[0].securityContext
+          value:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
 
   - it: should use default schedule when not provided
     set:

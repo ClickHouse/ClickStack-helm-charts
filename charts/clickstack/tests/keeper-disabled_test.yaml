@@ -1,0 +1,10 @@
+suite: Test ClickHouse Keeper Disabled
+templates:
+  - clickhouse/keeper.yaml
+values:
+  - values/components-disabled.yaml
+tests:
+  - it: should not render clickhouse keeper when disabled
+    asserts:
+      - hasDocuments:
+          count: 0

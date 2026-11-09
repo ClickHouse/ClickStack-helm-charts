@@ -1,0 +1,11 @@
+suite: Test Check Alerts CronJob Pre Esbuild
+templates:
+  - hyperdx/cronjob-check-alerts.yaml
+values:
+  - values/tasks-pre-esbuild.yaml
+tests:
+  - it: should use pre-esbuild command path
+    asserts:
+      - equal:
+          path: spec.jobTemplate.spec.template.spec.containers[0].command[1]
+          value: /app/packages/api/tasks/index

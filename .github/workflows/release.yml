@@ -48,10 +48,14 @@ jobs:
           helm repo add mongodb https://mongodb.github.io/helm-charts
           helm repo add open-telemetry https://open-telemetry.github.io/opentelemetry-helm-charts
           helm repo update
+      - name: Generate release notes from CHANGELOG.md
+        if: steps.changesets.outputs.hasChangesets == 'false'
+        run: node scripts/extract-release-notes.js
       - name: Run chart-releaser job
         if: steps.changesets.outputs.hasChangesets == 'false'
         uses: helm/chart-releaser-action@v1.7.0
         with:
           skip_existing: true
+          config: .github/cr.yaml
         env:
           CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"

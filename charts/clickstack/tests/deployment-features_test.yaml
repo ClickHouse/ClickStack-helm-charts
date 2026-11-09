@@ -1,0 +1,24 @@
+suite: Test HyperDX Deployment Features
+templates:
+  - hyperdx/deployment.yaml
+values:
+  - values/deployment-features.yaml
+tests:
+  - it: should render optional deployment features
+    asserts:
+      - isKind:
+          of: Deployment
+      - equal:
+          path: metadata.labels.team
+          value: observability
+      - equal:
+          path: spec.template.spec.nodeSelector["kubernetes.io/os"]
+          value: linux
+      - matchRegex:
+          path: spec.template.spec.initContainers[1].name
+          pattern: custom-init
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CUSTOM_ENV
+            value: test

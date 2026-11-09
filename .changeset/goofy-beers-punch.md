@@ -2,4 +2,4 @@
 "helm-charts": minor
 ---
 
-feat: support custom command and args for container
+feat: override the HyperDX container entrypoint and arguments with `hyperdx.deployment.command` and `hyperdx.deployment.args`

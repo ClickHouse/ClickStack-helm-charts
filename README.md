@@ -18,12 +18,16 @@ For configuration, cloud deployment, ingress setup, and troubleshooting, see the
 
 ## Charts
 
-- **`clickstack/clickstack-operators`** - Installs the MongoDB and ClickHouse operator controllers and CRDs. Must be installed first.
-- **`clickstack/clickstack`** - Installs HyperDX, OpenTelemetry Collector, and operator custom resources.
+- **[`clickstack/clickstack-operators`](charts/clickstack-operators/README.md)** - Installs the MongoDB and ClickHouse operator controllers and CRDs. Must be installed first.
+- **[`clickstack/clickstack`](charts/clickstack/README.md)** - Installs HyperDX, OpenTelemetry Collector, and operator custom resources.
 
 ## Additional Manifests
 
 The `clickstack` chart supports deploying arbitrary Kubernetes objects (NetworkPolicy, HPA, ServiceAccount, PodMonitor, ALB Ingress, etc.) alongside the chart's own resources via the `additionalManifests` value. See the [Additional Manifests Guide](docs/ADDITIONAL-MANIFESTS.md) for values-file constraints and examples, including [AWS ALB example values](examples/alb-ingress/values.yaml).
+
+## Production Hardening
+
+Chart defaults are safe for development (Service `ClusterIP`, Ingress disabled). For production deployments — and especially for any deployment that exposes the OTLP gRPC receiver or fronts HyperDX with an HTTP/2-capable Ingress — see [docs/SECURITY-HARDENING.md](docs/SECURITY-HARDENING.md). Covers ingress controller version pinning (HTTP/2 bomb mitigation), NetworkPolicy examples, and recommended resource limits.
 
 ## Operator Dependencies
 
