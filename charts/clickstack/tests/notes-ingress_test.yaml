@@ -1,0 +1,12 @@
+suite: Test Chart Notes Ingress Enabled
+templates:
+  - NOTES.txt
+values:
+  - values/notes-ingress-enabled.yaml
+tests:
+  - it: should render ingress guidance when ingress is enabled
+    asserts:
+      - matchRegexRaw:
+          pattern: Ingress is enabled
+      - matchRegexRaw:
+          pattern: kubectl get ingress

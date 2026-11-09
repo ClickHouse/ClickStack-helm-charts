@@ -1,0 +1,13 @@
+suite: Test HyperDX PodDisruptionBudget With Labels
+templates:
+  - hyperdx/pdb.yaml
+values:
+  - values/pdb-with-labels.yaml
+tests:
+  - it: should render deployment labels on PDB metadata
+    asserts:
+      - isKind:
+          of: PodDisruptionBudget
+      - equal:
+          path: metadata.labels.team
+          value: platform

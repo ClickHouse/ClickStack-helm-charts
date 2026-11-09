@@ -18,8 +18,8 @@ For configuration, cloud deployment, ingress setup, and troubleshooting, see the
 
 ## Charts
 
-- **`clickstack/clickstack-operators`** - Installs the MongoDB and ClickHouse operator controllers and CRDs. Must be installed first.
-- **`clickstack/clickstack`** - Installs HyperDX, OpenTelemetry Collector, and operator custom resources.
+- **[`clickstack/clickstack-operators`](charts/clickstack-operators/README.md)** - Installs the MongoDB and ClickHouse operator controllers and CRDs. Must be installed first.
+- **[`clickstack/clickstack`](charts/clickstack/README.md)** - Installs HyperDX, OpenTelemetry Collector, and operator custom resources.
 
 ## Additional Manifests
 

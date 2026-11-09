@@ -1,0 +1,3 @@
+hyperdx:
+  podDisruptionBudget:
+    enabled: true
