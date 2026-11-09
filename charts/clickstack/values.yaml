@@ -173,6 +173,7 @@ hyperdx:
     labels: {}
     # Labels applied to the HyperDX pod template metadata.
     podLabels: {}
+    # -- Extra environment variables for the HyperDX container, rendered verbatim (supports `valueFrom`, e.g. `secretKeyRef`).
     env: []
     # -- Additional init containers to run before the HyperDX container starts.
     initContainers: []
