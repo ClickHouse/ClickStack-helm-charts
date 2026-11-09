@@ -10,9 +10,9 @@ on:
       - 'scripts/**'
       - '.githooks/**'
       - '.github/workflows/helm-test.yaml'
+  # No paths filter: helm-unittest is a required check, and a filtered-out PR would never report it.
   pull_request:
     branches: [ main ]
-    paths: *paths
 
 permissions:
   contents: read
