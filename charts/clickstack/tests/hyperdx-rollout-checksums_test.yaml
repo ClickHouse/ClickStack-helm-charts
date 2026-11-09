@@ -4,6 +4,8 @@ templates:
   - hyperdx/configmap.yaml
   - hyperdx/secret.yaml
 # Pin chart metadata so release version bumps do not invalidate content-change assertions.
+# When chart defaults change, copy the new hashes from the "Actual" values in the failing
+# `helm unittest -f tests/hyperdx-rollout-checksums_test.yaml charts/clickstack` output.
 chart:
   version: 3.3.0
   appVersion: 2.36.0
