@@ -187,6 +187,8 @@ hyperdx:
     waitForMongodb:
       image: "busybox@sha256:1fcf5df59121b92d61e066df1788e8df0cc35623f5d62d9679a41e163b6a0cdb"
       pullPolicy: IfNotPresent
+      # -- Resources for the wait-for-mongodb init container, for clusters that enforce namespace resource quotas.
+      resources: {}
     # -- Load HyperDX connections JSON from an existing Secret instead of defaultConnections.
     useExistingConfigSecret: false
     # -- Secret containing connections and sources JSON when useExistingConfigSecret is true.
@@ -345,6 +347,7 @@ hyperdx:
 mongodb:
   enabled: true
   # -- MongoDBCommunity CRD spec (rendered verbatim). See MongoDB Kubernetes Operator docs.
+  # Set mongod resources under `statefulSet.spec.template.spec.containers`, in an entry named `mongod`.
   spec:
     members: 1
     type: ReplicaSet
