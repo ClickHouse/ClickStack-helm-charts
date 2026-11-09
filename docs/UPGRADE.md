@@ -108,6 +108,12 @@ hyperdx:
 | `clickhouse.config.users.appUserPassword` | `hyperdx.secrets.CLICKHOUSE_APP_PASSWORD` |
 | `clickhouse.config.users.otelUserPassword` | `hyperdx.secrets.CLICKHOUSE_PASSWORD` |
 | `otel.*` env overrides | `hyperdx.config.*` (non-sensitive) and `hyperdx.secrets.*` (sensitive) |
+| `hyperdx.apiKey` | `hyperdx.secrets.HYPERDX_API_KEY` |
+| `hyperdx.logLevel` | `hyperdx.config.HYPERDX_LOG_LEVEL` |
+| `hyperdx.usageStatsEnabled` | `hyperdx.config.USAGE_STATS_ENABLED` (a string). Rendering fails while the old key is set |
+| `hyperdx.otelExporterEndpoint` | `hyperdx.config.OTEL_EXPORTER_OTLP_ENDPOINT` |
+| `hyperdx.mongoUri` | `hyperdx.config.MONGO_URI` |
+| `hyperdx.apiPort`, `hyperdx.appPort`, `hyperdx.opampPort` | `hyperdx.ports.api`, `hyperdx.ports.app`, `hyperdx.ports.opamp` |
 
 ### Unified ConfigMap and Secret
 
