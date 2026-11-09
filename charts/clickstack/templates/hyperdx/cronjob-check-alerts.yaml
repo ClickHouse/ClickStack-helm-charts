@@ -35,7 +35,8 @@ spec:
                 {{- toYaml . | nindent 16 }}
               {{- end }}
               {{- $tag := .Values.hyperdx.deployment.image.tag | default .Chart.AppVersion -}}
-              {{- if and (regexMatch "^[0-9]+\\.[0-9]+\\.[0-9]+" $tag) (semverCompare "< 2.7.0" $tag) }} # before esbuild revert
+              {{- $semver := regexMatch "^[0-9]+\\.[0-9]+\\.[0-9]+" $tag -}}
+              {{- if and $semver (semverCompare "< 2.7.0" $tag) }}
               command:
                 - "node"
                 - "/app/packages/api/tasks/index"
@@ -44,10 +45,20 @@ spec:
                 - "--{{ $key }}"
                 - "{{ $value }}"
                 {{- end }}
-              {{- else }}
-              command: # after esbuild revert
+              {{- else if and $semver (semverCompare "< 2.22.0" $tag) }}
+              command:
                 - "node"
                 - "/app/packages/api/build/tasks/index.js"
+                - "check-alerts"
+                {{- range $key, $value := .Values.hyperdx.tasks.checkAlerts.additionalArgs }}
+                - "--{{ $key }}"
+                - "{{ $value }}"
+                {{- end }}
+              {{- else }}
+              # bin/hyperdx loads the image's own self-telemetry preload
+              command:
+                - "/app/packages/api/bin/hyperdx"
+                - "task"
                 - "check-alerts"
                 {{- range $key, $value := .Values.hyperdx.tasks.checkAlerts.additionalArgs }}
                 - "--{{ $key }}"
