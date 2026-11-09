@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(git rev-parse --show-toplevel)"
+cd "$repo_root"
+
+staged="$(git diff --cached --name-only --diff-filter=ACMR || true)"
+
+if [[ -z "${staged}" ]]; then
+  exit 0
+fi
+
+chart_changes=false
+docs_changes=false
+
+while IFS= read -r path; do
+  [[ -z "${path}" ]] && continue
+  case "${path}" in
+    charts/*)
+      chart_changes=true
+      ;;
+  esac
+  case "${path}" in
+    charts/*/Chart.yaml|charts/*/values.yaml|charts/*/README.md.gotmpl|charts/*/templates/*|scripts/helmdocs.sh|scripts/install-helm-docs.sh)
+      docs_changes=true
+      ;;
+  esac
+done <<< "${staged}"
+
+if [[ "${chart_changes}" != true && "${docs_changes}" != true ]]; then
+  exit 0
+fi
+
+# Contributors without Helm can't run the chart checks; warn rather than block
+# the commit. CI still enforces tests and docs on the PR.
+if ! command -v helm >/dev/null 2>&1; then
+  echo "pre-commit: helm not found; skipping chart tests and docs check (CI will enforce them)." >&2
+  echo "pre-commit: install Helm 3, or bypass this hook with 'git commit --no-verify'." >&2
+  exit 0
+fi
+
+# Validate the staged snapshot, not the working tree: stash unstaged/untracked
+# changes (keeping the index applied) so make runs against exactly what's being
+# committed. Restore the tree afterwards no matter how we exit.
+stashed=false
+if ! git diff --quiet || [[ -n "$(git ls-files --others --exclude-standard)" ]]; then
+  git stash push --keep-index --include-untracked --quiet
+  stashed=true
+fi
+
+restore() {
+  rc=$?
+  git checkout -- . >/dev/null 2>&1 || true          # drop anything make regenerated
+  if [[ "${stashed}" == true ]] && ! git stash pop --quiet; then
+    echo "pre-commit: FAILED to restore your unstaged/untracked changes." >&2
+    echo "pre-commit: they are safe in the stash — recover with 'git stash list' then 'git stash pop'." >&2
+    rc=1
+  fi
+  exit "${rc}"
+}
+trap restore EXIT
+
+if [[ "${chart_changes}" == true ]]; then
+  make test
+fi
+
+if [[ "${docs_changes}" == true ]]; then
+  if ! make docs-check; then
+    echo "Chart README(s) are out of date. Run 'make docs' and stage the updated README.md files." >&2
+    exit 1
+  fi
+fi

@@ -1,0 +1,10 @@
+suite: Test MongoDB Community Disabled
+templates:
+  - mongodb/community.yaml
+values:
+  - values/components-disabled.yaml
+tests:
+  - it: should not render mongodb community when disabled
+    asserts:
+      - hasDocuments:
+          count: 0

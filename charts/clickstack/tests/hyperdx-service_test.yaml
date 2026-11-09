@@ -21,6 +21,14 @@ tests:
       - isNull:
           path: metadata.annotations
 
+  - it: should use nameOverride in service selector labels
+    set:
+      nameOverride: custom-stack
+    asserts:
+      - equal:
+          path: spec.selector["app.kubernetes.io/name"]
+          value: custom-stack
+
   - it: should use LoadBalancer type when configured
     set:
       hyperdx:
