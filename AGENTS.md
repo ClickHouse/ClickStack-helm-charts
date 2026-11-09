@@ -32,7 +32,6 @@ yarn install
 
 # Build Helm chart dependencies (required before template/test commands)
 helm repo add mongodb https://mongodb.github.io/helm-charts
-helm repo add open-telemetry https://open-telemetry.github.io/opentelemetry-helm-charts
 helm dependency build charts/clickstack
 ```
 

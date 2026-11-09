@@ -30,7 +30,7 @@ See the [ClickStack Helm documentation](https://clickhouse.com/docs/use-cases/ob
 
 | Repository | Name | Version |
 |------------|------|---------|
-| https://open-telemetry.github.io/opentelemetry-helm-charts | otel-collector(opentelemetry-collector) | ~0.146.0 |
+| oci://ghcr.io/open-telemetry/opentelemetry-helm-charts | otel-collector(opentelemetry-collector) | ~0.146.0 |
 
 Documented values below. Undocumented keys (operator CRD passthrough fields, subchart defaults) are omitted — see the linked operator and subchart docs above.
 
