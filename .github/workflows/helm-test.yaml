@@ -3,49 +3,104 @@ name: Helm Chart Tests
 on:
   push:
     branches: [ main ]
-    paths:
+    paths: &paths
       - 'charts/**'
+      - 'examples/**'
+      - 'Makefile'
+      - 'scripts/**'
+      - '.githooks/**'
+      - '.github/workflows/helm-test.yaml'
   pull_request:
     branches: [ main ]
+    paths: *paths
+
+permissions:
+  contents: read
 
 jobs:
-  helm-unittest:
+  version-script-smoke:
+    # The release scripts (update-chart-versions.js, extract-release-notes.js)
+    # otherwise only run post-merge in release.yml; exercise them at PR time so
+    # dependency bumps (e.g. js-yaml) can't break chart releases silently.
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
 
-      - name: Install dependencies
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install Dependencies
+        run: yarn
+
+      - name: Run update-chart-versions script
         run: |
-          sudo apt-get update
-          sudo apt-get install -y unzip git curl
+          node scripts/update-chart-versions.js
+          # Verify the yaml round-trip produced a valid Chart.yaml with the
+          # version from package.json.
+          node -e '
+            const fs = require("fs");
+            const yaml = require("js-yaml");
+            const { version } = require("./package.json");
+            const chart = yaml.load(fs.readFileSync("charts/clickstack/Chart.yaml", "utf8"));
+            if (chart.version !== version) {
+              console.error(`Chart.yaml version ${chart.version} != package.json version ${version}`);
+              process.exit(1);
+            }
+            console.log(`Chart.yaml round-trip OK (version ${chart.version})`);
+          '
+          git checkout -- charts/*/Chart.yaml
+
+      - name: Run extract-release-notes script
+        run: |
+          node scripts/extract-release-notes.js
+          # Discard the generated release notes file, if any.
+          rm -f charts/clickstack/RELEASE_NOTES.md
+
+  helm-unittest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Set up Helm
-        uses: azure/setup-helm@v3
+        uses: azure/setup-helm@v4
         with:
           version: v3.12.0
 
-      - name: Install helm-unittest plugin
-        run: |
-          helm plugin install https://github.com/helm-unittest/helm-unittest.git --version v1.0.3 ${{ runner.debug && '--debug' || ''}}
+      - name: Install tools, run unit tests, verify docs
+        run: make ci-setup test docs-check
+
+  helmcov:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.12.0
 
       - name: Build chart dependencies
-        run: |
-          helm repo add mongodb https://mongodb.github.io/helm-charts
-          helm repo add open-telemetry https://open-telemetry.github.io/opentelemetry-helm-charts
-          helm dependency build charts/clickstack
+        run: make chart-deps
 
-      - name: Validate example values render
-        run: |
-          helm template clickstack-example charts/clickstack \
-            -f examples/alb-ingress/values.yaml >/dev/null
-          helm template clickstack-example charts/clickstack \
-            -f examples/api-only/values.yaml >/dev/null
-          helm template clickstack-example charts/clickstack \
-            -f examples/otel-custom-config/values.yaml >/dev/null
+      - name: Load pinned helmcov version and thresholds
+        run: grep -E '^(HELMCOV_VERSION|COVERAGE_THRESHOLD|BRANCH_COVERAGE_THRESHOLD)=' scripts/tool-versions.env >> "$GITHUB_ENV"
 
-      - name: Run helm-unittest
-        run: |
-          helm unittest charts/clickstack
+      - name: Run helmcov
+        uses: ClickHouse/helmcov@f99c69183ad2528bf62828d6a02fb0d5f0da13ea  # v0.7.0
+        with:
+          chart: charts/clickstack
+          tests: charts/clickstack/tests
+          threshold: ${{ env.COVERAGE_THRESHOLD }}
+          branch-threshold: ${{ env.BRANCH_COVERAGE_THRESHOLD }}
+          version: ${{ env.HELMCOV_VERSION }}

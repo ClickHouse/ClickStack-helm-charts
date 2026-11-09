@@ -8,6 +8,22 @@ Helm charts for ClickStack (HyperDX observability platform). Two charts:
 
 Package manager: Yarn 4 (via Corepack). Versioning: Changesets.
 
+## Local Development
+
+Use the Makefile for tool setup, unit tests, and template coverage:
+
+```bash
+make setup      # install helm-unittest, helm-docs, chart deps, and git hooks
+make test       # helm-unittest + example values validation
+make coverage   # helmcov template coverage
+make integration  # Kind integration suites (SUITES=api-only for one)
+make ci         # test + coverage + docs verification
+```
+
+The pre-commit hook runs `make test` when staged files under `charts/` change, and
+`make docs` when chart values, templates, or README templates change. Install hooks
+with `make setup` or `make hooks`.
+
 ## Build & Dependency Commands
 
 ```bash
@@ -35,14 +51,8 @@ helm template clickstack-test charts/clickstack -f examples/api-only/values.yaml
 
 ### Unit Tests (helm-unittest)
 
-Requires the `helm-unittest` plugin:
 ```bash
-helm plugin install https://github.com/helm-unittest/helm-unittest.git --version v1.0.3
-```
-
-```bash
-# Run ALL unit tests
-helm unittest charts/clickstack
+make test
 
 # Run a SINGLE test file
 helm unittest -f tests/app-deployment_test.yaml charts/clickstack
@@ -54,17 +64,70 @@ helm unittest -f 'tests/clickhouse-*_test.yaml' charts/clickstack
 Test files live in `charts/clickstack/tests/` and follow the naming convention
 `<component>_test.yaml`. Snapshots are stored in `tests/__snapshot__/`.
 
+Shared value fixtures live in `charts/clickstack/tests/values/<case>.yaml` and are
+loaded with the suite-level `values:` key when a test needs more data than inline
+`set:` overrides comfortably provide:
+
+```yaml
+suite: Test Deployment Default Sources Tpl
+templates:
+  - hyperdx/deployment.yaml
+values:
+  - values/deployment-tpl-defaults.yaml
+tests:
+  - it: should render tpl-interpolated default connections
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].env[?(@.name=="DEFAULT_CONNECTIONS")].value
+          pattern: clickhouse-headless
+```
+
+Prefer inline `set:` for small overrides; use `tests/values/` for multi-field
+fixtures or tpl-heavy defaults reused across assertions.
+
+### Template Coverage (helmcov)
+
+```bash
+make coverage
+
+# Verbose per-file output
+VERBOSE=1 make coverage
+
+# Override the line and branch minimums
+COVERAGE_THRESHOLD=99 BRANCH_COVERAGE_THRESHOLD=90 make coverage
+```
+
+Downloads the helmcov release pinned in `scripts/tool-versions.env` into `.tools/`
+and fails below **99% line and 90% branch coverage**. Outputs `coverage.out` (Go
+coverprofile) and `coverage.xml` (Cobertura).
+
+CI runs the [helmcov GitHub Action](https://github.com/ClickHouse/helmcov)
+via the `helmcov` job in `.github/workflows/helm-test.yaml`, which posts or updates
+a pull request comment with line/branch coverage and uncovered details.
+
+### Chart README (helm-docs)
+
+```bash
+make docs
+```
+
+Regenerates `charts/*/README.md` from `values.yaml` using [helm-docs](https://github.com/norwoodj/helm-docs).
+Only values with `#` comments in `values.yaml` appear in the README (`--ignore-non-descriptions`).
+Each chart README includes version and CI build status badges.
+The pre-commit hook verifies docs are up to date when values or templates change.
+
 ### Integration Tests (Kind cluster)
 
 Suites live under `integration-tests/<suite-name>/`. Each has `suite.yaml`,
 `values.yaml`, and `assert.sh`. Run locally with:
 
 ```bash
-./integration-tests/run-suite.sh api-only    # or full-stack
-# Cleanup
-helm uninstall test-api-only || true
-kind delete cluster --name test-api-only || true
+make integration                 # every suite, as CI runs them
+make integration SUITES=api-only # one suite
 ```
+
+Each suite creates a `test-<suite>` Kind cluster and deletes it afterwards. The
+full-stack suite also runs `scripts/smoke-test.sh` and the Playwright checks in `scripts/e2e/`.
 
 Requires: `kind`, `helm`, `kubectl`, `yq`.
 
@@ -103,6 +166,8 @@ Requires: `kind`, `helm`, `kubectl`, `yq`.
 
 ### Values Structure (`values.yaml`)
 - Top-level keys: `global`, `hyperdx`, `clickhouse`, `mongodb`, `otel-collector`
+- Document user-facing values with `# --` comments directly above each key (helm-docs format)
+- `make docs` omits undocumented keys (`--ignore-non-descriptions`); prefer commenting parent keys for operator/subchart passthrough specs
 - `hyperdx.config` — non-sensitive env vars (ConfigMap), supports `tpl` expressions
 - `hyperdx.secrets` — sensitive env vars (Secret); set to `null` to skip creation
 - `hyperdx.deployment` — Deployment spec (image, replicas, resources, probes, etc.)
@@ -141,7 +206,7 @@ tests:
 
 ## Shell Script Conventions
 
-- Always start with `#!/bin/bash`, `set -e`, and `set -o pipefail`
+- Always start with `#!/usr/bin/env bash` and `set -euo pipefail`
 - Use uppercase for exported env vars: `RELEASE_NAME`, `NAMESPACE`, `SUITE_DIR`
 - Use functions for reusable logic (see `smoke-test.sh`, `run-suite.sh`)
 - Default variables with `${VAR:-default}` or `${1:?Usage message}`
@@ -150,7 +215,7 @@ tests:
 
 | Workflow | File | Trigger | Purpose |
 |----------|------|---------|---------|
-| Helm Chart Tests | `helm-test.yaml` | push/PR to main | Unit tests + example validation |
+| Helm Chart Tests | `helm-test.yaml` | push/PR to main | `helm-unittest` job (unit tests + example validation + docs check) and `helmcov` job (template coverage; PR comment with line/branch coverage) |
 | Integration Test | `chart-test.yml` | push/PR/nightly | Kind-based integration suites |
 | Release | `release.yml` | after tests pass on main | Changeset version + chart release |
 | Update App Version | `update-app-version.yml` | workflow_dispatch | Bump `appVersion` in Chart.yaml |
@@ -165,3 +230,4 @@ tests:
 - Example values: `examples/*/values.yaml`
 - Version sync script: `scripts/update-chart-versions.js`
 - Smoke test: `scripts/smoke-test.sh`
+- Makefile: `make setup`, `make test`, `make coverage`

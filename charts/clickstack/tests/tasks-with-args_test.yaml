@@ -1,0 +1,14 @@
+suite: Test Check Alerts CronJob With Args
+templates:
+  - hyperdx/cronjob-check-alerts.yaml
+values:
+  - values/tasks-with-args.yaml
+tests:
+  - it: should include additional args in command
+    asserts:
+      - contains:
+          path: spec.jobTemplate.spec.template.spec.containers[0].command
+          content: "--concurrency"
+      - contains:
+          path: spec.jobTemplate.spec.template.spec.containers[0].command
+          content: "4"

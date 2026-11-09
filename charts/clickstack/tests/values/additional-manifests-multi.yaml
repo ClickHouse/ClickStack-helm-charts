@@ -1,0 +1,11 @@
+additionalManifests:
+  - apiVersion: v1
+    kind: ServiceAccount
+    metadata:
+      name: extra-service-account
+  - apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: extra-config
+    data:
+      key: value

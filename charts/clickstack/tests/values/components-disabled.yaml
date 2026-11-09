@@ -1,0 +1,6 @@
+clickhouse:
+  enabled: false
+mongodb:
+  enabled: false
+otel-collector:
+  enabled: false
