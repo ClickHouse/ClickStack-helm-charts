@@ -20,7 +20,7 @@ tests:
     asserts:
       - equal:
           path: spec.template.metadata.annotations["checksum/clickstack-config"]
-          value: 5684d7349035a2d436775b5e0b5033c204ae8f05c70ff0d3a8cea191c3cfa4ab
+          value: feeb4f67ae2d01415d2fdb317f6bf6da573c0df8b80526ea61c8055c2d7fe05b
       - equal:
           path: spec.template.metadata.annotations["checksum/clickstack-secret"]
           value: 93200c574b88c22d434ac7d53d4f1105effa8d491a41f9102e131b7f5b919218
@@ -34,7 +34,7 @@ tests:
     asserts:
       - equal:
           path: spec.template.metadata.annotations["checksum/clickstack-config"]
-          value: c43e9bf82686f182834f1ce175f60f07f508d26520ef7ed6147be973c6d6e01e
+          value: ea0e67552953545def4dcf843ecbb2718d14295179f7da3f24087b3fba534be1
       - equal:
           path: spec.template.metadata.annotations["checksum/clickstack-secret"]
           value: 93200c574b88c22d434ac7d53d4f1105effa8d491a41f9102e131b7f5b919218
@@ -48,7 +48,7 @@ tests:
     asserts:
       - equal:
           path: spec.template.metadata.annotations["checksum/clickstack-config"]
-          value: 5684d7349035a2d436775b5e0b5033c204ae8f05c70ff0d3a8cea191c3cfa4ab
+          value: feeb4f67ae2d01415d2fdb317f6bf6da573c0df8b80526ea61c8055c2d7fe05b
       - equal:
           path: spec.template.metadata.annotations["checksum/clickstack-secret"]
           value: 1adcdfb26c7114f9990031b28eb1ae1d7097dcf27c16487d16c8666da062a507
@@ -110,7 +110,7 @@ tests:
           value: preserved
       - equal:
           path: spec.template.metadata.annotations["checksum/clickstack-config"]
-          value: 5684d7349035a2d436775b5e0b5033c204ae8f05c70ff0d3a8cea191c3cfa4ab
+          value: feeb4f67ae2d01415d2fdb317f6bf6da573c0df8b80526ea61c8055c2d7fe05b
       - equal:
           path: spec.template.metadata.annotations["checksum/clickstack-secret"]
           value: 93200c574b88c22d434ac7d53d4f1105effa8d491a41f9102e131b7f5b919218
@@ -130,7 +130,7 @@ tests:
     asserts:
       - equal:
           path: spec.template.metadata.annotations["checksum/clickstack-config"]
-          value: 5684d7349035a2d436775b5e0b5033c204ae8f05c70ff0d3a8cea191c3cfa4ab
+          value: feeb4f67ae2d01415d2fdb317f6bf6da573c0df8b80526ea61c8055c2d7fe05b
       - equal:
           path: spec.template.metadata.annotations["checksum/clickstack-secret"]
           value: 93200c574b88c22d434ac7d53d4f1105effa8d491a41f9102e131b7f5b919218
