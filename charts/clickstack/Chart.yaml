@@ -20,6 +20,6 @@ appVersion: 2.43.1
 dependencies:
   - name: opentelemetry-collector
     version: ~0.146.0
-    repository: https://open-telemetry.github.io/opentelemetry-helm-charts
+    repository: oci://ghcr.io/open-telemetry/opentelemetry-helm-charts
     alias: otel-collector
     condition: otel-collector.enabled

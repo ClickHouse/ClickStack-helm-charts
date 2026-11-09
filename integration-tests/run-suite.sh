@@ -51,9 +51,7 @@ if [ "$NEEDS_LOCAL_STORAGE" = "true" ]; then
 fi
 
 echo "--- Building chart dependencies ---"
-helm repo add open-telemetry https://open-telemetry.github.io/opentelemetry-helm-charts 2>/dev/null || true
 if [ "$NEEDS_OPERATORS" = "true" ]; then
-    helm repo add mongodb https://mongodb.github.io/helm-charts 2>/dev/null || true
     helm dependency build "$REPO_ROOT/charts/clickstack-operators"
 fi
 helm dependency build "$REPO_ROOT/charts/clickstack"
