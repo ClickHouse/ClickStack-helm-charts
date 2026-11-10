@@ -15,12 +15,12 @@ async function registerOrLogin(page) {
     await page.getByRole('textbox', { name: /email/i }).fill(TEST_EMAIL);
     await page.locator('input[name="password"]').fill(TEST_PASSWORD);
     await page.locator('input[name="confirmPassword"]').fill(TEST_PASSWORD);
-    await page.getByRole('button', { name: 'Create' }).click();
+    await page.locator('[data-test-id="submit"]').click();
   } else {
     await page.goto('/login');
     await page.getByRole('textbox', { name: /email/i }).fill(TEST_EMAIL);
     await page.locator('input[name="password"]').fill(TEST_PASSWORD);
-    await page.getByRole('button', { name: /log in|sign in/i }).click();
+    await page.locator('[data-test-id="submit"]').click();
   }
 
   await page.waitForURL('**/search**', { timeout: 60_000 });
