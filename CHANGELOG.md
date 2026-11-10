@@ -1,5 +1,20 @@
 # helm-charts
 
+## 3.6.0
+
+### Minor Changes
+
+- 5dbebec: Automatically roll HyperDX pods when the chart-managed ConfigMap or Secret content changes. The first upgrade containing this change adds checksum annotations and triggers a one-time HyperDX rollout.
+
+  The bundled otel-collector now rolls on every `helm upgrade`, so it picks up changes to `clickstack-config` and `clickstack-secret` such as a new `CLICKHOUSE_PASSWORD`.
+
+### Patch Changes
+
+- fb991e6: fix: stop the HyperDX UI sending its own telemetry to the in-cluster collector address, which browsers can't reach (#110, #158). `HDX_EXPORTER_ENABLED` now defaults to on only when `hyperdx.config.NEXT_PUBLIC_OTEL_EXPORTER_OTLP_ENDPOINT` is set to a browser-reachable collector URL. This also turns off the Next.js server's own telemetry by default; set `HDX_EXPORTER_ENABLED: "true"` to keep it.
+- 789c949: fix(clickstack): start the check-alerts CronJob through `bin/hyperdx` on HyperDX images 2.22.0 and newer, so the task loads the image's own self-telemetry preload. Images built after the switch to the ClickStack Node SDK need this. Older image tags keep their previous command.
+- b1e7326: fix: raise the system log table TTL from 7 to 30 days to match the ClickHouse operator's `systemLogsTTLDays` default (ClickHouse/clickhouse-operator#329). ClickHouse recreates each system table whose TTL changed and keeps the old rows in `system.<table>_0`; drop those once you no longer need them.
+- de4ecc9: fix: fail rendering when the removed 1.x `hyperdx.usageStatsEnabled` key is set, instead of ignoring it and leaving usage stats on. Set `hyperdx.config.USAGE_STATS_ENABLED: "false"` to opt out. The upgrade guide now lists the other 1.x `hyperdx.*` keys that moved.
+
 ## 3.5.0
 
 ### Minor Changes
