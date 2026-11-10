@@ -134,3 +134,13 @@ tests:
       - notEqual:
           path: spec.template.metadata.annotations["checksum/custom-config"]
           value: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+
+  - it: should roll the collector on every upgrade to pick up clickstack-config/secret changes
+    template: charts/otel-collector/templates/deployment.yaml
+    release:
+      revision: 7
+      upgrade: true
+    asserts:
+      - equal:
+          path: spec.template.metadata.annotations["rollout/release-revision"]
+          value: "7"

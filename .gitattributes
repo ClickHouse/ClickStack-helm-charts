@@ -1,0 +1,2 @@
+# Helm template source must use LF so rendered-resource checksums are platform-independent.
+charts/clickstack/templates/** text eol=lf
