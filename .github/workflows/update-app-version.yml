@@ -40,6 +40,9 @@ jobs:
         run: |
           sed -i "/clickstack-otel-collector/{n;s/tag: \"[^\"]*\"/tag: \"$TAG\"/}" charts/clickstack/values.yaml
 
+      - name: Regenerate chart README
+        run: make docs
+
       - name: Create changeset
         env:
           TAG: ${{ inputs.tag }}
@@ -64,5 +67,6 @@ jobs:
             
             - Updated `charts/clickstack/Chart.yaml`
             - Updated `otel-collector.image.tag` in `charts/clickstack/values.yaml`
+            - Regenerated `charts/clickstack/README.md`
           branch: update-app-version-${{ github.event.inputs.tag }}
           delete-branch: true
