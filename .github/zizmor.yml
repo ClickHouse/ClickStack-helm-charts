@@ -1,0 +1,5 @@
+rules:
+  adhoc-packages:
+    ignore:
+      # Installs the Claude Code CLI from a tarball verified against a pinned SHA-512.
+      - deep-review.yml
