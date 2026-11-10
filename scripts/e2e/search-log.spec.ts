@@ -5,24 +5,22 @@ const TEST_PASSWORD = 'SmokeTest1234!';
 const SEARCH_TERM = 'clickstack smoke test log';
 
 async function registerOrLogin(page) {
-  await page.goto('/register');
+  // /register redirects to /login once it learns a team exists, which races any visibility
+  // check, so ask the endpoint the page uses before picking a form.
+  const installation = await page.request.get('/api/installation');
+  const { isTeamExisting } = await installation.json();
 
-  // If the user already exists (e.g. from a previous attempt), the
-  // confirmPassword field won't be present. Fall back to login.
-  const confirmPassword = page.locator('input[name="confirmPassword"]');
-  const isRegisterPage = await confirmPassword.isVisible({ timeout: 5_000 }).catch(() => false);
-
-  if (isRegisterPage) {
+  if (!isTeamExisting) {
+    await page.goto('/register');
     await page.getByRole('textbox', { name: /email/i }).fill(TEST_EMAIL);
     await page.locator('input[name="password"]').fill(TEST_PASSWORD);
-    await confirmPassword.fill(TEST_PASSWORD);
-    await page.getByRole('button', { name: 'Create' }).click();
+    await page.locator('input[name="confirmPassword"]').fill(TEST_PASSWORD);
+    await page.locator('[data-test-id="submit"]').click();
   } else {
-    // Registration not available — try logging in instead
     await page.goto('/login');
     await page.getByRole('textbox', { name: /email/i }).fill(TEST_EMAIL);
     await page.locator('input[name="password"]').fill(TEST_PASSWORD);
-    await page.getByRole('button', { name: /log in|sign in/i }).click();
+    await page.locator('[data-test-id="submit"]').click();
   }
 
   await page.waitForURL('**/search**', { timeout: 60_000 });

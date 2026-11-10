@@ -17,31 +17,47 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: false
+
+      - name: Validate tag
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          # The tag lands in sed expressions and a file name, so only allow version-like characters.
+          [[ "$TAG" =~ ^[0-9A-Za-z._-]+$ ]] || { echo "::error::invalid tag: $TAG"; exit 1; }
 
       - name: Update appVersion in Chart.yaml
+        env:
+          TAG: ${{ inputs.tag }}
         run: |
-          sed -i "s/^appVersion: .*/appVersion: ${{ github.event.inputs.tag }}/" charts/clickstack/Chart.yaml
+          sed -i "s/^appVersion: .*/appVersion: $TAG/" charts/clickstack/Chart.yaml
 
       - name: Update otel-collector image tag in values.yaml
+        env:
+          TAG: ${{ inputs.tag }}
         run: |
-          sed -i '/clickstack-otel-collector/{n;s/tag: "[^"]*"/tag: "${{ github.event.inputs.tag }}"/}' charts/clickstack/values.yaml
+          sed -i "/clickstack-otel-collector/{n;s/tag: \"[^\"]*\"/tag: \"$TAG\"/}" charts/clickstack/values.yaml
+
+      - name: Regenerate chart README
+        run: make docs
 
       - name: Create changeset
+        env:
+          TAG: ${{ inputs.tag }}
         run: |
           mkdir -p .changeset
-          cat > .changeset/update-app-version-${{ github.event.inputs.tag }}.md << 'EOF'
+          cat > ".changeset/update-app-version-$TAG.md" << EOF
           ---
           "helm-charts": patch
           ---
 
-          chore: update appVersion to ${{ github.event.inputs.tag }}
+          chore: update appVersion to $TAG
           EOF
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v5
+        uses: peter-evans/create-pull-request@4e1beaa7521e8b457b572c090b25bd3db56bf1c5 # v5.0.3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: "chore: Update appVersion to ${{ github.event.inputs.tag }}"
@@ -51,5 +67,6 @@ jobs:
             
             - Updated `charts/clickstack/Chart.yaml`
             - Updated `otel-collector.image.tag` in `charts/clickstack/values.yaml`
+            - Regenerated `charts/clickstack/README.md`
           branch: update-app-version-${{ github.event.inputs.tag }}
           delete-branch: true

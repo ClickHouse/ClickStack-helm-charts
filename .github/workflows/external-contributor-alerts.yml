@@ -3,7 +3,7 @@ name: Alert on external contributions
 on:
   issues:
     types: [opened, reopened]
-  pull_request_target:
+  pull_request_target: # zizmor: ignore[dangerous-triggers] reads PR metadata only, never checks out PR code
     types: [opened, reopened, ready_for_review]
 
 permissions:
@@ -18,7 +18,7 @@ jobs:
   alert:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/github-script@v9
+      - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           SLACK_WEBHOOK_OSS_PRS: ${{ secrets.SLACK_WEBHOOK_OSS_PRS }}
         with:
