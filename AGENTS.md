@@ -147,6 +147,9 @@ Requires: `kind`, `helm`, `kubectl`, `yq`.
 ### Changesets
 - Add a changeset for user-facing changes: `npx changeset`
 - Changesets live in `.changeset/` and drive version bumps on release
+- If a change needs action on upgrade or restarts pods, add a bullet under `## Unreleased` in
+  `docs/UPGRADE.md` (create the heading if the last release consumed it). The release renames it to
+  the new version. The Upgrade Notes check fails a `major` changeset without one and warns on `minor`.
 
 ## Helm Template Conventions
 
