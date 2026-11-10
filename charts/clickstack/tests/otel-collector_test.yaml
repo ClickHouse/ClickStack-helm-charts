@@ -28,13 +28,14 @@ tests:
   - it: should contain OPAMP_SERVER_URL with default service name
     set:
       hyperdx:
-        opampPort: 4320
+        ports:
+          opamp: 4321
     release:
       name: test-release
     asserts:
       - equal:
           path: data.OPAMP_SERVER_URL
-          value: "http://test-release-clickstack-app:4320"
+          value: "http://test-release-clickstack-app:4321"
 
   - it: should contain CLICKHOUSE_USER from config
     set:

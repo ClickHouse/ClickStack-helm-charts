@@ -311,7 +311,8 @@ hyperdx:
     spec: {}
     additionalIngresses: []
 
-  # -- PodDisruptionBudget for the HyperDX Deployment.
+  # -- PodDisruptionBudget for the HyperDX Deployment. Defaults to maxUnavailable: 1, which never blocks
+  # a node drain; set minAvailable or maxUnavailable to override.
   podDisruptionBudget:
     enabled: false
 

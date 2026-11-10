@@ -60,6 +60,89 @@ the namespaced Role and the cluster-scoped ClusterRole branches.
 {{- end -}}
 
 {{/*
+Fail on 1.x values that chart 2.0 moved or removed. The chart ignores them, so a
+user's setting (passwords, replicas, opt-outs) would fall back to the default.
+*/}}
+{{- define "clickstack.validateRemovedValues" -}}
+{{- $removed := dict
+  "global.storageClassName" "set storageClassName in the volume claim specs under mongodb.spec, clickhouse.keeper.spec and clickhouse.cluster.spec"
+  "global.keepPVC" "remove it; operator-managed PVCs are always kept on uninstall"
+  "tasks" "use hyperdx.tasks"
+  "otel" "configure the otel-collector subchart, and set collector env vars in hyperdx.config and hyperdx.secrets"
+  "hyperdx.apiKey" "use hyperdx.secrets.HYPERDX_API_KEY"
+  "hyperdx.apiPort" "use hyperdx.ports.api"
+  "hyperdx.appPort" "use hyperdx.ports.app"
+  "hyperdx.opampPort" "use hyperdx.ports.opamp"
+  "hyperdx.appUrl" "use hyperdx.config.FRONTEND_URL"
+  "hyperdx.frontendUrl" "use hyperdx.config.FRONTEND_URL"
+  "hyperdx.logLevel" "use hyperdx.config.HYPERDX_LOG_LEVEL"
+  "hyperdx.usageStatsEnabled" "use hyperdx.config.USAGE_STATS_ENABLED (a string, e.g. \"false\")"
+  "hyperdx.otelExporterEndpoint" "use hyperdx.config.OTEL_EXPORTER_OTLP_ENDPOINT"
+  "hyperdx.mongoUri" "use hyperdx.config.MONGO_URI"
+  "hyperdx.ingress.ingressClassName" "move into hyperdx.ingress.spec, and nginx proxy settings into hyperdx.ingress.annotations"
+  "hyperdx.ingress.host" "move into hyperdx.ingress.spec, and nginx proxy settings into hyperdx.ingress.annotations"
+  "hyperdx.ingress.path" "move into hyperdx.ingress.spec, and nginx proxy settings into hyperdx.ingress.annotations"
+  "hyperdx.ingress.pathType" "move into hyperdx.ingress.spec, and nginx proxy settings into hyperdx.ingress.annotations"
+  "hyperdx.ingress.tls" "move into hyperdx.ingress.spec, and nginx proxy settings into hyperdx.ingress.annotations"
+  "hyperdx.ingress.proxyBodySize" "move into hyperdx.ingress.spec, and nginx proxy settings into hyperdx.ingress.annotations"
+  "hyperdx.ingress.proxyConnectTimeout" "move into hyperdx.ingress.spec, and nginx proxy settings into hyperdx.ingress.annotations"
+  "hyperdx.ingress.proxySendTimeout" "move into hyperdx.ingress.spec, and nginx proxy settings into hyperdx.ingress.annotations"
+  "hyperdx.ingress.proxyReadTimeout" "move into hyperdx.ingress.spec, and nginx proxy settings into hyperdx.ingress.annotations"
+  "hyperdx.image" "use hyperdx.deployment.image"
+  "hyperdx.replicas" "use hyperdx.deployment.replicas"
+  "hyperdx.livenessProbe" "use hyperdx.deployment.livenessProbe"
+  "hyperdx.readinessProbe" "use hyperdx.deployment.readinessProbe"
+  "hyperdx.nodeSelector" "use hyperdx.deployment.nodeSelector"
+  "hyperdx.tolerations" "use hyperdx.deployment.tolerations"
+  "hyperdx.annotations" "use hyperdx.deployment.annotations"
+  "hyperdx.labels" "use hyperdx.deployment.labels"
+  "hyperdx.env" "use hyperdx.deployment.env"
+  "hyperdx.waitForMongodb" "use hyperdx.deployment.waitForMongodb"
+  "hyperdx.useExistingConfigSecret" "use hyperdx.deployment.useExistingConfigSecret"
+  "hyperdx.existingConfigSecret" "use hyperdx.deployment.existingConfigSecret"
+  "hyperdx.existingConfigConnectionsKey" "use hyperdx.deployment.existingConfigConnectionsKey"
+  "hyperdx.existingConfigSourcesKey" "use hyperdx.deployment.existingConfigSourcesKey"
+  "hyperdx.defaultConnections" "use hyperdx.deployment.defaultConnections"
+  "hyperdx.defaultSources" "use hyperdx.deployment.defaultSources"
+  "mongodb.password" "use hyperdx.secrets.MONGODB_PASSWORD"
+  "mongodb.image" "configure the MongoDBCommunity resource under mongodb.spec"
+  "mongodb.port" "configure the MongoDBCommunity resource under mongodb.spec"
+  "mongodb.strategy" "configure the MongoDBCommunity resource under mongodb.spec"
+  "mongodb.nodeSelector" "configure the MongoDBCommunity resource under mongodb.spec"
+  "mongodb.tolerations" "configure the MongoDBCommunity resource under mongodb.spec"
+  "mongodb.persistence" "configure the MongoDBCommunity resource under mongodb.spec"
+  "mongodb.livenessProbe" "configure the MongoDBCommunity resource under mongodb.spec"
+  "mongodb.readinessProbe" "configure the MongoDBCommunity resource under mongodb.spec"
+  "clickhouse.prometheus.endpoint" "remove it; only clickhouse.prometheus.port is read"
+  "clickhouse.config" "set ClickHouse credentials in hyperdx.secrets (CLICKHOUSE_PASSWORD, CLICKHOUSE_APP_PASSWORD)"
+  "clickhouse.image" "configure the ClickHouseCluster resource under clickhouse.cluster.spec"
+  "clickhouse.terminationGracePeriodSeconds" "configure the ClickHouseCluster resource under clickhouse.cluster.spec"
+  "clickhouse.resources" "configure the ClickHouseCluster resource under clickhouse.cluster.spec"
+  "clickhouse.livenessProbe" "configure the ClickHouseCluster resource under clickhouse.cluster.spec"
+  "clickhouse.readinessProbe" "configure the ClickHouseCluster resource under clickhouse.cluster.spec"
+  "clickhouse.startupProbe" "configure the ClickHouseCluster resource under clickhouse.cluster.spec"
+  "clickhouse.nodeSelector" "configure the ClickHouseCluster resource under clickhouse.cluster.spec"
+  "clickhouse.tolerations" "configure the ClickHouseCluster resource under clickhouse.cluster.spec"
+  "clickhouse.service" "configure the ClickHouseCluster resource under clickhouse.cluster.spec"
+  "clickhouse.persistence" "configure the ClickHouseCluster resource under clickhouse.cluster.spec"
+-}}
+{{- $found := list -}}
+{{- range $path := keys $removed | sortAlpha -}}
+{{- $node := $.Values -}}
+{{- range $key := splitList "." $path -}}
+{{- $node = index (ternary $node (dict) (kindIs "map" $node)) $key -}}
+{{- end -}}
+{{- /* A null value is how users clear a key, so it counts as unset. */ -}}
+{{- if not (kindIs "invalid" $node) -}}
+{{- $found = append $found (printf "%s: %s" $path (index $removed $path)) -}}
+{{- end -}}
+{{- end -}}
+{{- if $found -}}
+{{- fail (printf "these values were removed in chart 2.0 and are ignored, see docs/UPGRADE.md:\n- %s" (join "\n- " $found)) -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
 Fail fast on invalid dashboards input instead of surfacing Go template panics or
 API-server rejections: unusable ServiceAccount config, a non-list or ill-typed
 namespaces value, the contradictory ALL-plus-named-namespaces scope, malformed
