@@ -8,7 +8,7 @@
   "license": "MIT",
   "scripts": {
     "release": "changeset publish",
-    "version": "changeset version && npm run update-chart-versions",
+    "version": "changeset version && npm run update-chart-versions && make docs",
     "update-chart-versions": "node scripts/update-chart-versions.js"
   },
   "dependencies": {
