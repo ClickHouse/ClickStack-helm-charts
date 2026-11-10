@@ -1,13 +1,48 @@
-# Upgrade Guide: Migrating to the Subchart Architecture
+# Upgrade guide
+
+Each section lists what changes when you upgrade to that chart version and anything you have to do first, newest first. A version that isn't listed needs nothing beyond `helm upgrade`. The full list of changes is in [CHANGELOG.md](../CHANGELOG.md).
+
+## Unreleased
+
+- `helm upgrade` fails while your values still set the 1.x key `hyperdx.usageStatsEnabled`, which the chart has ignored since 2.0. Remove it, and set `hyperdx.config.USAGE_STATS_ENABLED: "false"` to opt out of usage stats.
+- The ClickHouse system log tables' TTL rises from 7 to 30 days, to match the ClickHouse operator's default. ClickHouse recreates each of those tables and keeps the old rows in a renamed `system.<table>_N` table; drop it once you no longer need it.
+- The Next.js server and browser no longer send HyperDX's own telemetry unless `hyperdx.config.NEXT_PUBLIC_OTEL_EXPORTER_OTLP_ENDPOINT` is set to a collector URL browsers can reach. Set `hyperdx.config.HDX_EXPORTER_ENABLED: "true"` to keep the server's telemetry.
+
+## 3.5.0
+
+- The ClickHouse server image moves from `25.7-alpine` to `26.8.36.3-alpine`, and Keeper is pinned to `clickhouse/clickhouse-keeper:26.8.36.3-alpine` instead of the operator's `latest`. The ClickHouse and Keeper pods restart.
+- The default HyperDX sources change for new installs only. Existing sources are not modified.
+
+## 3.4.0
+
+- The chart now sets the ClickHouse server log to `information` with 10 x 100M files, and a 7 day TTL on `query_log`, `part_log`, `text_log`, `metric_log` and `asynchronous_metric_log`. ClickHouse recreates each of those tables and keeps the old rows in `system.<table>_0`; drop those once you no longer need them. Override `clickhouse.cluster.spec.settings.logger` or the `extraConfig` block to keep more.
+
+## 3.3.0
+
+- The HyperDX readiness probe moves to `/ready`, which only exists in HyperDX 2.36.0 and newer. If you pin `hyperdx.deployment.image.tag` to an older version, set `hyperdx.deployment.readinessProbe.path: /health`, or the pods never become Ready.
+
+## 3.0.2
+
+- The ClickHouse server gets explicit resources: a 2Gi memory request and limit, and a 500m CPU request. ClickHouse restarts, and its node needs 2Gi free. Override `clickhouse.cluster.spec.containerTemplate.resources` to change them.
+
+## 3.0.0
+
+- The HyperDX Ingress values changed. `hyperdx.ingress.host`, `path`, `pathType`, `tls`, `ingressClassName` and the `proxy*` settings are replaced by a verbatim `hyperdx.ingress.spec` and `hyperdx.ingress.annotations`. If you set `hyperdx.ingress.enabled: true`, rewrite your ingress values before upgrading; [examples/alb-ingress](../examples/alb-ingress/values.yaml) shows the new shape.
+
+## 2.1.1
+
+- When `fullnameOverride` is set, the HyperDX Deployment and Service names no longer end in `-app`. If you set it, anything that addresses the old Service name (another Ingress, a NetworkPolicy, a client inside the cluster) has to change.
+
+## 1.x to 2.0.0
 
 This guide covers migrating from the inline-template ClickStack chart (v1.x) to the subchart-based architecture. This is a **breaking change** that replaces hand-rolled Kubernetes resources with operator-managed custom resources for MongoDB and ClickHouse, and uses the official OpenTelemetry Collector Helm chart.
 
-## Prerequisites
+### Prerequisites
 
 - Back up your data before upgrading (MongoDB, ClickHouse PVCs)
 - Review your current `values.yaml` overrides -- most keys have moved or been renamed
 
-## Two-Phase Installation
+### Two-Phase Installation
 
 The chart now uses a two-phase install. Operators (which register CRDs) must be installed before the main chart (which creates CRs):
 
@@ -26,14 +61,14 @@ helm uninstall my-clickstack
 helm uninstall clickstack-operators
 ```
 
-### Data Persistence
+#### Data Persistence
 
 PersistentVolumeClaims created by the MongoDB and ClickHouse operators are **not** removed by `helm uninstall`. This is by design to prevent accidental data loss. To clean up PVCs after uninstalling, refer to:
 
 - [MongoDB Kubernetes Operator docs](https://github.com/mongodb/mongodb-kubernetes/tree/master/docs/mongodbcommunity)
 - [ClickHouse Operator cleanup docs](https://clickhouse.com/docs/clickhouse-operator/managing-clusters/cleanup)
 
-### Storage Class
+#### Storage Class
 
 `global.storageClassName` and `global.keepPVC` have been removed. Storage class is now configured directly in each operator's CR spec:
 
@@ -57,7 +92,7 @@ clickhouse:
         storageClassName: "fast-ssd"
 ```
 
-## What Changed
+### What Changed
 
 | Component | Before (v1.x) | After |
 |-----------|---------------|-------|
@@ -67,7 +102,7 @@ clickhouse:
 | HyperDX values | Flat keys under `hyperdx.*` plus top-level `tasks:` and `appUrl` | Reorganised by K8s resource type under `hyperdx.*` (see below) |
 | hdx-oss-v2 | Deprecated legacy chart | Removed entirely |
 
-## HyperDX Values Reorganisation
+### HyperDX Values Reorganisation
 
 The `hyperdx:` block is now organised by Kubernetes resource type:
 
@@ -98,7 +133,7 @@ hyperdx:
   tasks:          # K8s CronJob specs (previously top-level tasks:)
 ```
 
-### Key moves
+#### Key moves
 
 | Before | After |
 |--------|-------|
@@ -115,7 +150,7 @@ hyperdx:
 | `hyperdx.mongoUri` | `hyperdx.config.MONGO_URI` |
 | `hyperdx.apiPort`, `hyperdx.appPort`, `hyperdx.opampPort` | `hyperdx.ports.api`, `hyperdx.ports.app`, `hyperdx.ports.opamp` |
 
-### Unified ConfigMap and Secret
+#### Unified ConfigMap and Secret
 
 All environment variables now flow through two static-named resources that are shared by the HyperDX Deployment **and** the OTEL Collector via `envFrom`:
 
@@ -124,9 +159,9 @@ All environment variables now flow through two static-named resources that are s
 
 There is no longer a separate OTEL-specific ConfigMap. Both workloads read from the same sources.
 
-## MongoDB Migration
+### MongoDB Migration
 
-### Removed values
+#### Removed values
 
 The following `mongodb.*` values no longer exist:
 
@@ -145,7 +180,7 @@ mongodb:
     dataSize: 10Gi
 ```
 
-### New values
+#### New values
 
 MongoDB is now managed by the MCK operator via a `MongoDBCommunity` custom resource. The CR spec is rendered verbatim from `mongodb.spec`:
 
@@ -196,9 +231,9 @@ mongodb:
 
 The MCK operator subchart is configured under `mongodb-operator:` (not `mongodb-kubernetes:`). See the [MCK documentation](https://github.com/mongodb/mongodb-kubernetes/tree/master/docs/mongodbcommunity) for all available CRD fields.
 
-## ClickHouse Migration
+### ClickHouse Migration
 
-### Removed values
+#### Removed values
 
 The following `clickhouse.*` values no longer exist:
 
@@ -228,7 +263,7 @@ clickhouse:
       otelUserName: "..."
 ```
 
-### New values
+#### New values
 
 ClickHouse is now managed by the ClickHouse Operator via `ClickHouseCluster` and `KeeperCluster` custom resources. Both CR specs are rendered verbatim from values:
 
@@ -276,9 +311,9 @@ ClickHouse user credentials are now sourced from `hyperdx.secrets` (not `clickho
 
 The ClickHouse Operator subchart is configured under `clickhouse-operator:`. Webhooks and cert-manager are disabled by default. See the [operator configuration guide](https://clickhouse.com/docs/clickhouse-operator/guides/configuration) for all available CRD fields.
 
-## OTEL Collector Migration
+### OTEL Collector Migration
 
-### Removed values
+#### Removed values
 
 The entire `otel:` block no longer exists:
 
@@ -303,7 +338,7 @@ otel:
   customConfig: ...
 ```
 
-### New values
+#### New values
 
 The OTEL Collector is now deployed via the official OpenTelemetry Collector Helm chart as the `otel-collector:` subchart. There is no parent-chart `otel:` wrapper -- configure the subchart directly.
 
@@ -391,13 +426,13 @@ global:
 
 Note: the subchart's native `config:`/`alternateConfig:` values are **not** honored by the ClickStack collector image -- its entrypoint runs the collector (or OpAMP supervisor) with its own baked-in config files and ignores the chart-generated `relay.yaml`. Use `global.otelCollector.customConfig` instead.
 
-## Unchanged Values
+### Unchanged Values
 
 The following sections are **not affected** by this migration:
 
 - `global.*` (imageRegistry, imagePullSecrets)
 
-## Fresh Install vs. In-Place Upgrade
+### Fresh Install vs. In-Place Upgrade
 
 For a **fresh install**, no special steps are needed. The default values work out of the box.
 
