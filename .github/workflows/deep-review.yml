@@ -136,7 +136,7 @@ jobs:
       # env, not files on disk -- leaving a `pull-requests: write` token where
       # the reviewer's git tooling can read it. Nothing here pushes.
       - name: Checkout PR head
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: ${{ steps.pr.outputs.head_repo }}
           ref: ${{ steps.pr.outputs.head_ref }}
@@ -402,7 +402,7 @@ jobs:
       # Bump `ref` deliberately; do not track main.
       - name: Checkout compound-engineering plugin
         if: steps.gate.outputs.should_review == 'true'
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: EveryInc/compound-engineering-plugin
           ref: ${{ env.PLUGIN_REF }}
