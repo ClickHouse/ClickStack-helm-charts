@@ -67,7 +67,8 @@ jobs:
         if: matrix.mode == 'upgrade'
         # The diff is for reviewers; without the plugin run-suite.sh skips it and still tests the upgrade.
         continue-on-error: true
-        run: helm plugin install https://github.com/databus23/helm-diff --version v3.15.15
+        # v3.13+ needs a newer Helm than the 3.12 pinned above.
+        run: helm plugin install https://github.com/databus23/helm-diff --version v3.12.5
 
       - name: Update appVersion for nightly builds
         if: github.event_name == 'schedule'
