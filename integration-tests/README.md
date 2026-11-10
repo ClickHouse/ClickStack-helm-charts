@@ -75,6 +75,17 @@ For each suite, the harness (`run-suite.sh`) runs these steps in order:
 
 On failure, the CI workflow collects pod status, events, logs, and resource descriptions for debugging.
 
+### Upgrade mode
+
+On pull requests every suite also runs a second time as `integration-test (<suite>, upgrade)`. That run installs the charts and `values.yaml` from the PR's base branch and passes that branch's `assert.sh`. It then upgrades to the PR's charts and values with `--wait` and runs the PR's `assert.sh`. The `helm diff` of the upgrade is written to the job summary. A suite that doesn't exist on the base branch passes the upgrade run without testing anything.
+
+To run it locally, point `UPGRADE_FROM` at a checkout of the older ref. The diff is skipped unless the `helm-diff` plugin is installed.
+
+```bash
+git worktree add /tmp/clickstack-main origin/main
+UPGRADE_FROM=/tmp/clickstack-main ./integration-tests/run-suite.sh api-only
+```
+
 ## Existing suites
 
 ### `full-stack`
