@@ -60,7 +60,7 @@ the namespaced Role and the cluster-scoped ClusterRole branches.
 {{- end -}}
 
 {{/*
-Fail on 1.x values that chart 2.0 moved or removed. The chart ignores them, so a
+Fail on 1.x and 2.x values that later charts moved or removed. The chart ignores them, so a
 user's setting (passwords, replicas, opt-outs) would fall back to the default.
 */}}
 {{- define "clickstack.validateRemovedValues" -}}
@@ -138,7 +138,7 @@ user's setting (passwords, replicas, opt-outs) would fall back to the default.
 {{- end -}}
 {{- end -}}
 {{- if $found -}}
-{{- fail (printf "these values were removed in chart 2.0 and are ignored, see docs/UPGRADE.md:\n- %s" (join "\n- " $found)) -}}
+{{- fail (printf "these values from chart 1.x or 2.x are no longer read, see docs/UPGRADE.md:\n- %s" (join "\n- " $found)) -}}
 {{- end -}}
 {{- end -}}
 
