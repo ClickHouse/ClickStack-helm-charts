@@ -1,0 +1,59 @@
+name: Bump ClickHouse Image
+
+on:
+  schedule:
+    - cron: "0 1 * * 1"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Bump ClickHouse server and keeper tags
+        id: bump
+        run: |
+          tag=$(scripts/bump-clickhouse-image.sh)
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+      - name: Regenerate chart README
+        if: steps.bump.outputs.tag != ''
+        run: make docs
+
+      - name: Create changeset
+        if: steps.bump.outputs.tag != ''
+        env:
+          TAG: ${{ steps.bump.outputs.tag }}
+        run: |
+          cat > ".changeset/bump-clickhouse-$TAG.md" << EOF
+          ---
+          "helm-charts": patch
+          ---
+
+          chore: bump ClickHouse server and keeper images to $TAG
+          EOF
+
+      # A fixed branch means each run updates the open PR instead of opening another.
+      - name: Create Pull Request
+        if: steps.bump.outputs.tag != ''
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore: bump ClickHouse images to ${{ steps.bump.outputs.tag }}"
+          title: "chore: bump ClickHouse images to ${{ steps.bump.outputs.tag }}"
+          body: |
+            Moves the ClickHouse server and keeper images to `${{ steps.bump.outputs.tag }}`, the newest patch on the current LTS line.
+
+            CI runs on this PR wait for a maintainer to approve them.
+          branch: bump-clickhouse-image
+          delete-branch: true
