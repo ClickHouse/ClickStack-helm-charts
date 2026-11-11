@@ -42,7 +42,7 @@ tests:
 
   - it: should set custom replicas when provided
     set:
-      hyperdx:
+      clickstack:
         deployment:
           replicas: 3
     asserts:
@@ -52,7 +52,7 @@ tests:
 
   - it: should configure pod and managed container security contexts
     set:
-      hyperdx:
+      clickstack:
         deployment:
           podSecurityContext:
             runAsNonRoot: true
@@ -87,7 +87,7 @@ tests:
 
   - it: should preserve the deprecated annotations alias for pod annotations
     set:
-      hyperdx:
+      clickstack:
         deployment:
           annotations:
             prometheus.io/scrape: "true"
@@ -101,7 +101,7 @@ tests:
 
   - it: should add custom pod annotations when podAnnotations is provided
     set:
-      hyperdx:
+      clickstack:
         deployment:
           podAnnotations:
             example.com/pod: "enabled"
@@ -113,7 +113,7 @@ tests:
 
   - it: should keep deployment and pod annotations separate
     set:
-      hyperdx:
+      clickstack:
         deployment:
           deploymentAnnotations:
             example.com/configuration: deployment
@@ -131,7 +131,7 @@ tests:
 
   - it: should prefer podAnnotations over the deprecated annotations alias
     set:
-      hyperdx:
+      clickstack:
         deployment:
           annotations:
             example.com/configuration: legacy
@@ -147,7 +147,7 @@ tests:
             
   - it: should add custom labels when provided
     set:
-      hyperdx:
+      clickstack:
         deployment:
           labels:
             environment: production
@@ -161,7 +161,7 @@ tests:
 
   - it: should add custom pod labels when podLabels is provided
     set:
-      hyperdx:
+      clickstack:
         deployment:
           podLabels:
             environment: production
@@ -175,7 +175,7 @@ tests:
 
   - it: should keep deployment and pod labels separate
     set:
-      hyperdx:
+      clickstack:
         deployment:
           labels:
             example.com/scope: deployment
@@ -193,7 +193,7 @@ tests:
 
   - it: should add custom environment variables when provided
     set:
-      hyperdx:
+      clickstack:
         deployment:
           env:
             - name: CUSTOM_ENV
@@ -223,7 +223,7 @@ tests:
   
   - it: should use custom OpAMP port when provided
     set:
-      hyperdx:
+      clickstack:
         ports:
           opamp: 5320
     asserts:
@@ -260,7 +260,7 @@ tests:
     set:
       mongodb:
         enabled: true
-      hyperdx:
+      clickstack:
         deployment:
           waitForMongodb:
             image: busybox:1.36.1
@@ -285,7 +285,7 @@ tests:
     set:
       mongodb:
         enabled: false
-      hyperdx:
+      clickstack:
         deployment:
           initContainers:
             - name: fetch-cert
@@ -312,7 +312,7 @@ tests:
     set:
       mongodb:
         enabled: true
-      hyperdx:
+      clickstack:
         deployment:
           initContainers:
             - name: fetch-cert
@@ -336,7 +336,7 @@ tests:
 
   - it: should render user-provided volumes when set
     set:
-      hyperdx:
+      clickstack:
         deployment:
           volumes:
             - name: certs
@@ -369,7 +369,7 @@ tests:
 
   - it: should render user-provided volumeMounts on the app container including subPath and readOnly
     set:
-      hyperdx:
+      clickstack:
         deployment:
           volumeMounts:
             - name: certs
@@ -429,7 +429,7 @@ tests:
 
   - it: should not include livenessProbe when disabled
     set:
-      hyperdx:
+      clickstack:
         deployment:
           livenessProbe:
             enabled: false
@@ -439,7 +439,7 @@ tests:
 
   - it: should not include readinessProbe when disabled
     set:
-      hyperdx:
+      clickstack:
         deployment:
           readinessProbe:
             enabled: false
@@ -449,7 +449,7 @@ tests:
 
   - it: should use custom livenessProbe values when provided
     set:
-      hyperdx:
+      clickstack:
         deployment:
           livenessProbe:
             enabled: true
@@ -471,7 +471,7 @@ tests:
 
   - it: should use custom readinessProbe values when provided
     set:
-      hyperdx:
+      clickstack:
         deployment:
           readinessProbe:
             enabled: true
@@ -493,7 +493,7 @@ tests:
 
   - it: should use custom probe paths when provided
     set:
-      hyperdx:
+      clickstack:
         deployment:
           livenessProbe:
             enabled: true
@@ -511,7 +511,7 @@ tests:
 
   - it: should use custom apiPort in probes when provided
     set:
-      hyperdx:
+      clickstack:
         ports:
           api: 9000
     asserts:
@@ -529,7 +529,7 @@ tests:
 
   - it: should set serviceAccountName when serviceAccount.create is true
     set:
-      hyperdx:
+      clickstack:
         serviceAccount:
           create: true
     asserts:
@@ -539,7 +539,7 @@ tests:
 
   - it: should set serviceAccountName to existing SA when create is false but name is set
     set:
-      hyperdx:
+      clickstack:
         serviceAccount:
           create: false
           name: "my-existing-sa"
@@ -550,7 +550,7 @@ tests:
 
   - it: should use custom name in serviceAccountName when create is true and name is set
     set:
-      hyperdx:
+      clickstack:
         serviceAccount:
           create: true
           name: "my-custom-sa"

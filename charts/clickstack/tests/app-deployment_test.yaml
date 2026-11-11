@@ -4,7 +4,7 @@ templates:
 tests:
   - it: should render the app deployment correctly
     set:
-      hyperdx:
+      clickstack:
         ports:
           app: 3000
           api: 8000
@@ -40,7 +40,7 @@ tests:
   
   - it: should scale replicas when specified
     set:
-      hyperdx:
+      clickstack:
         deployment:
           image:
             repository: hyperdx/hyperdx
@@ -53,7 +53,7 @@ tests:
 
   - it: should set topology spread constraints when specified
     set:
-      hyperdx:
+      clickstack:
         deployment:
           topologySpreadConstraints:
             - maxSkew: 1
@@ -75,7 +75,7 @@ tests:
 
   - it: should set priority class name when specified
     set:
-      hyperdx:
+      clickstack:
         deployment:
           priorityClassName: system-node-critical
     asserts:
@@ -85,7 +85,7 @@ tests:
 
   - it: should set container resources when specified
     set:
-      hyperdx:
+      clickstack:
         deployment:
           resources:
             limits:

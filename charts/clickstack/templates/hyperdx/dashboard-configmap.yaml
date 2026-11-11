@@ -1,4 +1,5 @@
-{{- $dashboards := default (dict) .Values.hyperdx.dashboards -}}
+{{- include "clickstack.normalizeValues" . -}}
+{{- $dashboards := default (dict) .Values.clickstack.dashboards -}}
 {{- if and $dashboards.enabled $dashboards.configMaps }}
 {{- /*
   Inline dashboard ConfigMap; labeled for discovery by the dashboard provisioner

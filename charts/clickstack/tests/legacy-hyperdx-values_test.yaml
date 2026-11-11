@@ -1,0 +1,83 @@
+suite: Test Legacy hyperdx Values Key
+templates:
+  - hyperdx/deployment.yaml
+  - hyperdx/configmap.yaml
+  - hyperdx/secret.yaml
+  - NOTES.txt
+tests:
+  - it: should apply legacy hyperdx values over the clickstack defaults
+    set:
+      hyperdx:
+        deployment:
+          replicas: 3
+    asserts:
+      - equal:
+          path: spec.replicas
+          value: 3
+        template: hyperdx/deployment.yaml
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "^docker\\.hyperdx\\.io/hyperdx/hyperdx:"
+        template: hyperdx/deployment.yaml
+
+  - it: should let hyperdx win when both keys set the same value
+    set:
+      clickstack:
+        deployment:
+          replicas: 2
+      hyperdx:
+        deployment:
+          replicas: 5
+    asserts:
+      - equal:
+          path: spec.replicas
+          value: 5
+        template: hyperdx/deployment.yaml
+
+  - it: should treat a nested legacy null as removing the clickstack default
+    set:
+      hyperdx:
+        config:
+          HDX_EXPORTER_ENABLED: null
+    asserts:
+      - notExists:
+          path: data.HDX_EXPORTER_ENABLED
+        template: hyperdx/configmap.yaml
+
+  - it: should resolve .Values.hyperdx in tpl strings set under the legacy key
+    set:
+      hyperdx:
+        config:
+          LEGACY_TPL: "{{ .Values.hyperdx.ports.app }}"
+    asserts:
+      - equal:
+          path: data.LEGACY_TPL
+          value: "3000"
+        template: hyperdx/configmap.yaml
+
+  - it: should resolve .Values.hyperdx in tpl strings set under clickstack
+    set:
+      clickstack:
+        config:
+          LEGACY_TPL: "{{ .Values.hyperdx.ports.app }}"
+    asserts:
+      - equal:
+          path: data.LEGACY_TPL
+          value: "3000"
+        template: hyperdx/configmap.yaml
+
+  - it: should warn when the legacy key is set
+    set:
+      hyperdx:
+        deployment:
+          replicas: 3
+    asserts:
+      - matchRegexRaw:
+          pattern: "the top-level hyperdx values key is deprecated"
+        template: NOTES.txt
+
+  - it: should not warn without the legacy key
+    asserts:
+      - notMatchRegexRaw:
+          pattern: "hyperdx values key is deprecated"
+        template: NOTES.txt

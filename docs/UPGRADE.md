@@ -4,9 +4,10 @@ Each section lists what changes when you upgrade to that chart version and anyth
 
 ## Unreleased
 
-- `helm upgrade` fails while your values still set the 1.x key `hyperdx.usageStatsEnabled`, which the chart has ignored since 2.0. Remove it, and set `hyperdx.config.USAGE_STATS_ENABLED: "false"` to opt out of usage stats.
+- The top-level `hyperdx` values key is now `clickstack`. Values files and `--set hyperdx.*` flags still work and print a deprecation warning in the install notes; move them under `clickstack` before a future chart version removes `hyperdx`. Where both keys set the same value, `hyperdx` wins. Rendered resources don't change. `--reuse-values` keeps the release's stored `hyperdx` values, which then override anything you move under `clickstack`, so do the upgrade that moves them with `-f <your values file>` instead.
+- `helm upgrade` fails while your values still set the 1.x key `hyperdx.usageStatsEnabled`, which the chart has ignored since 2.0. Remove it, and set `clickstack.config.USAGE_STATS_ENABLED: "false"` to opt out of usage stats.
 - The ClickHouse system log tables' TTL rises from 7 to 30 days, to match the ClickHouse operator's default. ClickHouse recreates each of those tables and keeps the old rows in a renamed `system.<table>_N` table; drop it once you no longer need it.
-- The Next.js server and browser no longer send HyperDX's own telemetry unless `hyperdx.config.NEXT_PUBLIC_OTEL_EXPORTER_OTLP_ENDPOINT` is set to a collector URL browsers can reach. Set `hyperdx.config.HDX_EXPORTER_ENABLED: "true"` to keep the server's telemetry.
+- The Next.js server and browser no longer send HyperDX's own telemetry unless `clickstack.config.NEXT_PUBLIC_OTEL_EXPORTER_OTLP_ENDPOINT` is set to a collector URL browsers can reach. Set `clickstack.config.HDX_EXPORTER_ENABLED: "true"` to keep the server's telemetry.
 
 ## 3.5.0
 

@@ -1,4 +1,4 @@
-hyperdx:
+clickstack:
   deployment:
     livenessProbe:
       enabled: false

@@ -4,7 +4,7 @@ templates:
 tests:
   - it: should not render when tasks are disabled
     set:
-      hyperdx:
+      clickstack:
         tasks:
           enabled: false
     asserts:
@@ -13,7 +13,7 @@ tests:
 
   - it: should render correctly when tasks are enabled
     set:
-      hyperdx:
+      clickstack:
         tasks:
           enabled: true
           checkAlerts:
@@ -72,7 +72,7 @@ tests:
 
   - it: should configure pod and container security contexts
     set:
-      hyperdx:
+      clickstack:
         deployment:
           podSecurityContext:
             runAsNonRoot: true
@@ -102,7 +102,7 @@ tests:
 
   - it: should use default schedule when not provided
     set:
-      hyperdx:
+      clickstack:
         tasks:
           enabled: true
     asserts:
@@ -112,7 +112,7 @@ tests:
 
   - it: should not include imagePullSecrets when not configured
     set:
-      hyperdx:
+      clickstack:
         tasks:
           enabled: true
     asserts:
@@ -121,7 +121,7 @@ tests:
 
   - it: should include imagePullSecrets when configured
     set:
-      hyperdx:
+      clickstack:
         tasks:
           enabled: true
       global:
@@ -136,7 +136,7 @@ tests:
 
   - it: should use esbuild command path for versions before 2.7.0
     set:
-      hyperdx:
+      clickstack:
         tasks:
           enabled: true
         deployment:
@@ -149,7 +149,7 @@ tests:
 
   - it: should use esbuild command path for version 2.6.0
     set:
-      hyperdx:
+      clickstack:
         tasks:
           enabled: true
         deployment:
@@ -162,7 +162,7 @@ tests:
 
   - it: should use post-esbuild command path for version 2.7.0
     set:
-      hyperdx:
+      clickstack:
         tasks:
           enabled: true
         deployment:
@@ -175,7 +175,7 @@ tests:
 
   - it: should use post-esbuild command path for versions after 2.7.0
     set:
-      hyperdx:
+      clickstack:
         tasks:
           enabled: true
         deployment:
@@ -188,7 +188,7 @@ tests:
 
   - it: should use bin/hyperdx command for version 3.0.0
     set:
-      hyperdx:
+      clickstack:
         tasks:
           enabled: true
         deployment:
@@ -201,7 +201,7 @@ tests:
 
   - it: should use post-esbuild command path for version 2.21.9
     set:
-      hyperdx:
+      clickstack:
         tasks:
           enabled: true
         deployment:
@@ -214,7 +214,7 @@ tests:
 
   - it: should use bin/hyperdx command for version 2.22.0
     set:
-      hyperdx:
+      clickstack:
         tasks:
           enabled: true
         deployment:
@@ -227,7 +227,7 @@ tests:
 
   - it: should use bin/hyperdx command for the default appVersion
     set:
-      hyperdx:
+      clickstack:
         tasks:
           enabled: true
     asserts:
@@ -237,7 +237,7 @@ tests:
 
   - it: should include additionalArgs in bin/hyperdx command
     set:
-      hyperdx:
+      clickstack:
         tasks:
           enabled: true
           checkAlerts:
@@ -253,7 +253,7 @@ tests:
 
   - it: should not include additionalArgs when empty
     set:
-      hyperdx:
+      clickstack:
         tasks:
           enabled: true
           checkAlerts:
@@ -268,7 +268,7 @@ tests:
 
   - it: should include additionalArgs with -- prefix in command
     set:
-      hyperdx:
+      clickstack:
         tasks:
           enabled: true
           checkAlerts:
@@ -294,7 +294,7 @@ tests:
 
   - it: should include additionalArgs in pre-esbuild command path
     set:
-      hyperdx:
+      clickstack:
         tasks:
           enabled: true
           checkAlerts:

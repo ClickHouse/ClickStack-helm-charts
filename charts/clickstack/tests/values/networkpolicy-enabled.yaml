@@ -1,4 +1,4 @@
-hyperdx:
+clickstack:
   networkPolicy:
     enabled: true
     spec:

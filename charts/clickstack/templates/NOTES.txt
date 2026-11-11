@@ -1,3 +1,4 @@
+{{- include "clickstack.normalizeValues" . -}}
 ClickStack has been installed.
 
 By default, this chart deploys the full ClickStack platform: HyperDX, ClickHouse
@@ -11,10 +12,10 @@ To disable a built-in component, set its enabled flag to false:
     --set mongodb.enabled=false \
     --set otel-collector.enabled=false
 
-When disabling a component, override the corresponding endpoints in hyperdx.config
+When disabling a component, override the corresponding endpoints in clickstack.config
 to point at your external service (e.g. CLICKHOUSE_ENDPOINT, MONGO_URI).
 
-{{- if .Values.hyperdx.ingress.enabled }}
+{{- if .Values.clickstack.ingress.enabled }}
 Ingress is enabled. Check your ingress resource for the configured host:
   kubectl get ingress -l "app.kubernetes.io/name={{ include "clickstack.name" . }}"
 {{- else }}
@@ -23,20 +24,20 @@ Application Access:
   Choose one of the following access methods:
   
   1. Enable Ingress (Recommended for Production):
-     Configure hyperdx.ingress with your annotations and spec.
+     Configure clickstack.ingress with your annotations and spec.
      See the chart documentation for nginx and ALB examples.
   
   2. Port Forward (Development/Testing):
-     kubectl port-forward svc/{{ include "clickstack.hyperdx.fullname" . }} {{ .Values.hyperdx.ports.app }}:{{ .Values.hyperdx.ports.app }}
-     Then access: http://localhost:{{ .Values.hyperdx.ports.app }}
+     kubectl port-forward svc/{{ include "clickstack.hyperdx.fullname" . }} {{ .Values.clickstack.ports.app }}:{{ .Values.clickstack.ports.app }}
+     Then access: http://localhost:{{ .Values.clickstack.ports.app }}
   
   Note: This application handles sensitive telemetry data and should not be exposed
   directly to the internet without proper authentication and encryption.
 {{- end }}
 
-{{- if and (default (dict) .Values.hyperdx.dashboards).enabled (ne (include "clickstack.hyperdx.dashboardsRbacCreate" .) "true") }}
+{{- if and (default (dict) .Values.clickstack.dashboards).enabled (ne (include "clickstack.hyperdx.dashboardsRbacCreate" .) "true") }}
 
-WARNING: hyperdx.dashboards.rbac.create is false. The dashboard watcher needs
+WARNING: clickstack.dashboards.rbac.create is false. The dashboard watcher needs
 read access (list/get/watch) to ConfigMaps in its discovery scope. Grant it
 out-of-band (e.g. a Role/RoleBinding bound to the HyperDX ServiceAccount)
 before installing: without it the watcher fails its startup sync and
@@ -50,3 +51,10 @@ To verify the deployment status, run:
 
 Production hardening (Ingress controller pinning, NetworkPolicy, resource limits):
   https://github.com/ClickHouse/ClickStack-helm-charts/blob/main/docs/SECURITY-HARDENING.md
+{{- if .Values.hyperdxKeyUsed }}
+
+WARNING: the top-level hyperdx values key is deprecated and will be removed in a
+future chart version. Move those settings under clickstack. While both are set,
+hyperdx wins wherever they set the same value. --reuse-values keeps the stored
+hyperdx values, so upgrade with -f <your values file> when you move them.
+{{- end }}

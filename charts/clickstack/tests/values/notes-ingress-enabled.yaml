@@ -1,4 +1,4 @@
-hyperdx:
+clickstack:
   ingress:
     enabled: true
     spec:

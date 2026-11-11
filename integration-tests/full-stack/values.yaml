@@ -1,4 +1,4 @@
-hyperdx:
+clickstack:
   secrets:
     HYPERDX_API_KEY: "test-api-key-for-ci"
   config:
