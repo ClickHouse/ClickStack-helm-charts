@@ -27,7 +27,7 @@ tests:
 
   - it: should contain OPAMP_SERVER_URL with default service name
     set:
-      hyperdx:
+      clickstack:
         opampPort: 4320
     release:
       name: test-release
@@ -38,7 +38,7 @@ tests:
 
   - it: should contain CLICKHOUSE_USER from config
     set:
-      hyperdx:
+      clickstack:
         config:
           CLICKHOUSE_USER: "myuser"
     asserts:

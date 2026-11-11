@@ -4,7 +4,7 @@ templates:
 tests:
   - it: should add DEFAULT_CONNECTIONS env var when configured with secrets
     set:
-      hyperdx:
+      clickstack:
         deployment:
           env:
             - name: DEFAULT_CONNECTIONS
@@ -24,7 +24,7 @@ tests:
 
   - it: should add DEFAULT_SOURCES env var when configured with plain value
     set:
-      hyperdx:
+      clickstack:
         deployment:
           env:
             - name: DEFAULT_SOURCES
@@ -38,7 +38,7 @@ tests:
 
   - it: should add DEFAULT_SOURCES env var when configured with secrets
     set:
-      hyperdx:
+      clickstack:
         deployment:
           env:
             - name: DEFAULT_SOURCES
@@ -58,7 +58,7 @@ tests:
 
   - it: should add both DEFAULT_CONNECTIONS and DEFAULT_SOURCES when configured
     set:
-      hyperdx:
+      clickstack:
         deployment:
           env:
             - name: DEFAULT_CONNECTIONS
@@ -98,7 +98,7 @@ tests:
 
   - it: should not include DEFAULT_CONNECTIONS when set to empty string
     set:
-      hyperdx:
+      clickstack:
         deployment:
           defaultConnections: ""
     asserts:
@@ -129,7 +129,7 @@ tests:
 
   - it: should not include DEFAULT_SOURCES when set to empty string
     set:
-      hyperdx:
+      clickstack:
         deployment:
           defaultSources: ""
     asserts:
@@ -140,7 +140,7 @@ tests:
 
   - it: should work with multiline JSON value for DEFAULT_SOURCES
     set:
-      hyperdx:
+      clickstack:
         deployment:
           env:
             - name: DEFAULT_SOURCES

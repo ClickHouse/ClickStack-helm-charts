@@ -81,7 +81,7 @@ tests:
           path: data.CUSTOM_OTELCOL_CONFIG_FILE
           value: "/etc/otelcol-contrib/custom/custom.config.yaml"
 
-  - it: should let hyperdx.config override CUSTOM_OTELCOL_CONFIG_FILE
+  - it: should let clickstack.config override CUSTOM_OTELCOL_CONFIG_FILE
     template: hyperdx/configmap.yaml
     set:
       global:
@@ -89,7 +89,7 @@ tests:
           customConfig: |
             receivers:
               hostmetrics:
-      hyperdx:
+      clickstack:
         config:
           CUSTOM_OTELCOL_CONFIG_FILE: "/custom/path/config.yaml"
     asserts:

@@ -160,18 +160,19 @@ Requires: `kind`, `helm`, `kubectl`, `yq`.
 
 ### Template Files
 - Organized by component: `templates/hyperdx/`, `templates/clickhouse/`, `templates/mongodb/`
+- Start every template with `{{- include "clickstack.normalizeValues" . -}}` so the deprecated `hyperdx` key is merged into `clickstack` before anything reads it
 - Use `nindent` for indentation in template pipelines: `{{- include "clickstack.labels" . | nindent 4 }}`
 - Quote string values with `| quote`; use `toYaml` for complex values
 - Guard optional sections with `{{- if .Values.x.y }}` blocks
 - Use `tpl` for values that may contain template expressions (see configmap.yaml)
 
 ### Values Structure (`values.yaml`)
-- Top-level keys: `global`, `hyperdx`, `clickhouse`, `mongodb`, `otel-collector`
+- Top-level keys: `global`, `clickstack` (formerly `hyperdx`, still accepted with a deprecation warning), `clickhouse`, `mongodb`, `otel-collector`
 - Document user-facing values with `# --` comments directly above each key (helm-docs format)
 - `make docs` omits undocumented keys (`--ignore-non-descriptions`); prefer commenting parent keys for operator/subchart passthrough specs
-- `hyperdx.config` — non-sensitive env vars (ConfigMap), supports `tpl` expressions
-- `hyperdx.secrets` — sensitive env vars (Secret); set to `null` to skip creation
-- `hyperdx.deployment` — Deployment spec (image, replicas, resources, probes, etc.)
+- `clickstack.config` — non-sensitive env vars (ConfigMap), supports `tpl` expressions
+- `clickstack.secrets` — sensitive env vars (Secret); set to `null` to skip creation
+- `clickstack.deployment` — Deployment spec (image, replicas, resources, probes, etc.)
 - Document all values with inline YAML comments
 
 ### Labels

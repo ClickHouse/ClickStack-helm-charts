@@ -30,7 +30,7 @@ OTLP/gRPC is HTTP/2 by definition. The chart wires HyperDX to talk to the collec
 The chart ships a NetworkPolicy template at `templates/hyperdx/networkpolicy.yaml`. Enable it and provide a deny-by-default spec, e.g.:
 
 ```yaml
-hyperdx:
+clickstack:
   networkPolicy:
     enabled: true
     spec:
@@ -59,10 +59,10 @@ For the OTel collector, configure the analogous NetworkPolicy through the sub-ch
 
 ## Cap container memory so cgroup OOM bounds any DoS
 
-The default `hyperdx.deployment.resources` is empty. Setting limits ensures that a memory-exhaustion attack (HTTP/2 bomb, slow-loris variants, large-result query) gets OOM-killed and respawned rather than dragging the host into swap. A conservative starting point:
+The default `clickstack.deployment.resources` is empty. Setting limits ensures that a memory-exhaustion attack (HTTP/2 bomb, slow-loris variants, large-result query) gets OOM-killed and respawned rather than dragging the host into swap. A conservative starting point:
 
 ```yaml
-hyperdx:
+clickstack:
   deployment:
     resources:
       requests:

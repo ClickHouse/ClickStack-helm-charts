@@ -19,9 +19,9 @@ tests:
           path: spec.settings.extraUsersConfig.users.otelcollector.profile
           value: default
 
-  - it: should resolve password template expressions from hyperdx.secrets
+  - it: should resolve password template expressions from clickstack.secrets
     set:
-      hyperdx:
+      clickstack:
         secrets:
           CLICKHOUSE_APP_PASSWORD: "test-app-pass"
           CLICKHOUSE_PASSWORD: "test-otel-pass"

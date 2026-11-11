@@ -1,4 +1,5 @@
-{{- if .Values.hyperdx.tasks.enabled }}
+{{- include "clickstack.normalizeValues" . -}}
+{{- if .Values.clickstack.tasks.enabled }}
 ---
 apiVersion: batch/v1
 kind: CronJob
@@ -7,7 +8,7 @@ metadata:
   labels:
     {{- include "clickstack.labels" . | nindent 4 }}
 spec:
-  schedule: {{ .Values.hyperdx.tasks.checkAlerts.schedule | quote }}
+  schedule: {{ .Values.clickstack.tasks.checkAlerts.schedule | quote }}
   concurrencyPolicy: Forbid
   jobTemplate:
     spec:
@@ -21,27 +22,27 @@ spec:
           imagePullSecrets:
             {{- toYaml .Values.global.imagePullSecrets | nindent 12 }}
           {{- end }}
-          {{- with .Values.hyperdx.deployment.podSecurityContext }}
+          {{- with .Values.clickstack.deployment.podSecurityContext }}
           securityContext:
             {{- toYaml . | nindent 12 }}
           {{- end }}
           restartPolicy: OnFailure
           containers:
             - name: task
-              image: "{{ .Values.hyperdx.deployment.image.repository }}:{{ .Values.hyperdx.deployment.image.tag | default .Chart.AppVersion }}"
-              imagePullPolicy: {{ .Values.hyperdx.deployment.image.pullPolicy }}
-              {{- with .Values.hyperdx.deployment.containerSecurityContext }}
+              image: "{{ .Values.clickstack.deployment.image.repository }}:{{ .Values.clickstack.deployment.image.tag | default .Chart.AppVersion }}"
+              imagePullPolicy: {{ .Values.clickstack.deployment.image.pullPolicy }}
+              {{- with .Values.clickstack.deployment.containerSecurityContext }}
               securityContext:
                 {{- toYaml . | nindent 16 }}
               {{- end }}
-              {{- $tag := .Values.hyperdx.deployment.image.tag | default .Chart.AppVersion -}}
+              {{- $tag := .Values.clickstack.deployment.image.tag | default .Chart.AppVersion -}}
               {{- $semver := regexMatch "^[0-9]+\\.[0-9]+\\.[0-9]+" $tag -}}
               {{- if and $semver (semverCompare "< 2.7.0" $tag) }}
               command:
                 - "node"
                 - "/app/packages/api/tasks/index"
                 - "check-alerts"
-                {{- range $key, $value := .Values.hyperdx.tasks.checkAlerts.additionalArgs }}
+                {{- range $key, $value := .Values.clickstack.tasks.checkAlerts.additionalArgs }}
                 - "--{{ $key }}"
                 - "{{ $value }}"
                 {{- end }}
@@ -50,7 +51,7 @@ spec:
                 - "node"
                 - "/app/packages/api/build/tasks/index.js"
                 - "check-alerts"
-                {{- range $key, $value := .Values.hyperdx.tasks.checkAlerts.additionalArgs }}
+                {{- range $key, $value := .Values.clickstack.tasks.checkAlerts.additionalArgs }}
                 - "--{{ $key }}"
                 - "{{ $value }}"
                 {{- end }}
@@ -60,7 +61,7 @@ spec:
                 - "/app/packages/api/bin/hyperdx"
                 - "task"
                 - "check-alerts"
-                {{- range $key, $value := .Values.hyperdx.tasks.checkAlerts.additionalArgs }}
+                {{- range $key, $value := .Values.clickstack.tasks.checkAlerts.additionalArgs }}
                 - "--{{ $key }}"
                 - "{{ $value }}"
                 {{- end }}
@@ -78,5 +79,5 @@ spec:
                 - name: APP_TYPE
                   value: "scheduled-task"
               resources:
-                {{- toYaml .Values.hyperdx.tasks.checkAlerts.resources | nindent 16 }}
+                {{- toYaml .Values.clickstack.tasks.checkAlerts.resources | nindent 16 }}
 {{- end }}

@@ -1,4 +1,5 @@
-{{- if .Values.hyperdx.podDisruptionBudget.enabled }}
+{{- include "clickstack.normalizeValues" . -}}
+{{- if .Values.clickstack.podDisruptionBudget.enabled }}
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
@@ -6,13 +7,13 @@ metadata:
   labels:
     {{- include "clickstack.labels" . | nindent 4 }}
     app: {{ include "clickstack.fullname" . }}
-    {{- if .Values.hyperdx.deployment.labels }}
-    {{- with .Values.hyperdx.deployment.labels }}
+    {{- if .Values.clickstack.deployment.labels }}
+    {{- with .Values.clickstack.deployment.labels }}
     {{- toYaml . | nindent 4 }}
     {{- end -}}
     {{- end }}
 spec:
-  minAvailable: {{ .Values.hyperdx.podDisruptionBudget.minAvailable | default 1 }}
+  minAvailable: {{ .Values.clickstack.podDisruptionBudget.minAvailable | default 1 }}
   selector:
     matchLabels:
       {{- include "clickstack.selectorLabels" . | nindent 6 }}

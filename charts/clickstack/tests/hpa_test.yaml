@@ -9,7 +9,7 @@ tests:
 
   - it: should render HPA when autoscaling is enabled
     set:
-      hyperdx:
+      clickstack:
         autoscaling:
           enabled: true
           spec:
@@ -44,7 +44,7 @@ tests:
   - it: should use fullnameOverride for scaleTargetRef name
     set:
       fullnameOverride: hyperdx-api
-      hyperdx:
+      clickstack:
         autoscaling:
           enabled: true
           spec:
@@ -57,7 +57,7 @@ tests:
 
   - it: should fail when spec includes scaleTargetRef
     set:
-      hyperdx:
+      clickstack:
         autoscaling:
           enabled: true
           spec:
@@ -69,11 +69,11 @@ tests:
             maxReplicas: 5
     asserts:
       - failedTemplate:
-          errorMessage: "hyperdx.autoscaling.spec must not include scaleTargetRef -- the chart auto-wires it to the HyperDX Deployment. Remove scaleTargetRef from your autoscaling.spec values."
+          errorMessage: "clickstack.autoscaling.spec must not include scaleTargetRef -- the chart auto-wires it to the HyperDX Deployment. Remove scaleTargetRef from your autoscaling.spec values."
 
   - it: should render HPA with memory metric
     set:
-      hyperdx:
+      clickstack:
         autoscaling:
           enabled: true
           spec:

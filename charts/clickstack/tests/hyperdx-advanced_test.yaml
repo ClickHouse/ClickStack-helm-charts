@@ -4,7 +4,7 @@ templates:
 tests:
   - it: should handle complex environment variables
     set:
-      hyperdx:
+      clickstack:
         deployment:
           env:
             - name: COMPLEX_VAR1

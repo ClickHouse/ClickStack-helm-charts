@@ -4,7 +4,7 @@ templates:
 tests:
   - it: should render the app pdb when enabled
     set:
-      hyperdx:
+      clickstack:
         podDisruptionBudget:
           enabled: true
     asserts:
@@ -19,7 +19,7 @@ tests:
 
   - it: should override minimum available replicas when specified
     set:
-      hyperdx:
+      clickstack:
         podDisruptionBudget:
           enabled: true
           minAvailable: 5

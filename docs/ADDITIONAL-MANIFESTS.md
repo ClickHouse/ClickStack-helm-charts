@@ -158,7 +158,7 @@ additionalManifests:
 When using the [AWS Load Balancer Controller](https://kubernetes-sigs.github.io/aws-load-balancer-controller/), disable the chart's built-in nginx Ingress and define a custom ALB Ingress:
 
 ```yaml
-hyperdx:
+clickstack:
   ingress:
     enabled: false
 
@@ -224,7 +224,7 @@ metadata:
   labels:
     {{- include "clickstack.labels" . | nindent 4 }}
 data:
-  appPort: "{{ .Values.hyperdx.ports.app }}"
+  appPort: "{{ .Values.clickstack.ports.app }}"
 ```
 
 ## Tips

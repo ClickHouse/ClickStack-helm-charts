@@ -1,29 +1,30 @@
-{{- $podAnnotations := mergeOverwrite (dict) (default (dict) .Values.hyperdx.deployment.annotations) (default (dict) .Values.hyperdx.deployment.podAnnotations) -}}
+{{- include "clickstack.normalizeValues" . -}}
+{{- $podAnnotations := mergeOverwrite (dict) (default (dict) .Values.clickstack.deployment.annotations) (default (dict) .Values.clickstack.deployment.podAnnotations) -}}
 {{- $_ := set $podAnnotations "checksum/clickstack-config" (include "clickstack.hyperdx.configmap" . | sha256sum) -}}
-{{- if ne .Values.hyperdx.secrets nil -}}
+{{- if ne .Values.clickstack.secrets nil -}}
 {{- $_ := set $podAnnotations "checksum/clickstack-secret" (include "clickstack.hyperdx.secret" . | sha256sum) -}}
 {{- end -}}
-{{- $dashboards := default (dict) .Values.hyperdx.dashboards -}}
+{{- $dashboards := default (dict) .Values.clickstack.dashboards -}}
 {{- include "clickstack.hyperdx.validateDashboards" . -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "clickstack.hyperdx.fullname" . }}
-  {{- with .Values.hyperdx.deployment.deploymentAnnotations }}
+  {{- with .Values.clickstack.deployment.deploymentAnnotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
   {{- end }}
   labels:
     {{- include "clickstack.labels" . | nindent 4 }}
     app: {{ include "clickstack.fullname" . }}
-    {{- if .Values.hyperdx.deployment.labels }}
-    {{- with .Values.hyperdx.deployment.labels }}
+    {{- if .Values.clickstack.deployment.labels }}
+    {{- with .Values.clickstack.deployment.labels }}
     {{- toYaml . | nindent 4 }} 
     {{- end -}}
     {{- end }}
 spec:
-  {{- if not .Values.hyperdx.autoscaling.enabled }}
-  replicas: {{ .Values.hyperdx.deployment.replicas | default 1 }}
+  {{- if not .Values.clickstack.autoscaling.enabled }}
+  replicas: {{ .Values.clickstack.deployment.replicas | default 1 }}
   {{- end }}
   selector:
     matchLabels:
@@ -34,7 +35,7 @@ spec:
       labels:
         {{- include "clickstack.selectorLabels" . | nindent 8 }}
         app: {{ include "clickstack.fullname" . }}
-        {{- with .Values.hyperdx.deployment.podLabels }}
+        {{- with .Values.clickstack.deployment.podLabels }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
       annotations:
@@ -44,25 +45,25 @@ spec:
         {{- end -}}
       {{- end }}
     spec:
-      {{- if .Values.hyperdx.deployment.nodeSelector }}
+      {{- if .Values.clickstack.deployment.nodeSelector }}
       nodeSelector:
-        {{- toYaml .Values.hyperdx.deployment.nodeSelector | nindent 8 }}
+        {{- toYaml .Values.clickstack.deployment.nodeSelector | nindent 8 }}
       {{- end }}
-      {{- if .Values.hyperdx.deployment.tolerations }}
+      {{- if .Values.clickstack.deployment.tolerations }}
       tolerations:
-        {{- toYaml .Values.hyperdx.deployment.tolerations | nindent 8 }}
+        {{- toYaml .Values.clickstack.deployment.tolerations | nindent 8 }}
       {{- end }}
-      {{- if .Values.hyperdx.deployment.topologySpreadConstraints }}
+      {{- if .Values.clickstack.deployment.topologySpreadConstraints }}
       topologySpreadConstraints:
-        {{- toYaml .Values.hyperdx.deployment.topologySpreadConstraints | nindent 8 }}
+        {{- toYaml .Values.clickstack.deployment.topologySpreadConstraints | nindent 8 }}
       {{- end }}
-      {{- if .Values.hyperdx.deployment.priorityClassName }}
-      priorityClassName: {{ .Values.hyperdx.deployment.priorityClassName | quote }}
+      {{- if .Values.clickstack.deployment.priorityClassName }}
+      priorityClassName: {{ .Values.clickstack.deployment.priorityClassName | quote }}
       {{- end }}
-      {{- if or .Values.hyperdx.serviceAccount.create .Values.hyperdx.serviceAccount.name }}
+      {{- if or .Values.clickstack.serviceAccount.create .Values.clickstack.serviceAccount.name }}
       serviceAccountName: {{ include "clickstack.hyperdx.serviceAccountName" . }}
       {{- end }}
-      {{- with .Values.hyperdx.deployment.podSecurityContext }}
+      {{- with .Values.clickstack.deployment.podSecurityContext }}
       securityContext:
         {{- toYaml . | nindent 8 }}
       {{- end }}
@@ -70,25 +71,25 @@ spec:
       imagePullSecrets:
         {{- toYaml .Values.global.imagePullSecrets | nindent 8 }}
       {{- end }}
-      {{- if or .Values.mongodb.enabled .Values.hyperdx.deployment.initContainers }}
+      {{- if or .Values.mongodb.enabled .Values.clickstack.deployment.initContainers }}
       initContainers:
         {{- if .Values.mongodb.enabled }}
         - name: wait-for-mongodb
-          image: {{ .Values.hyperdx.deployment.waitForMongodb.image }}
-          imagePullPolicy: {{ .Values.hyperdx.deployment.waitForMongodb.pullPolicy }}
-          {{- with .Values.hyperdx.deployment.containerSecurityContext }}
+          image: {{ .Values.clickstack.deployment.waitForMongodb.image }}
+          imagePullPolicy: {{ .Values.clickstack.deployment.waitForMongodb.pullPolicy }}
+          {{- with .Values.clickstack.deployment.containerSecurityContext }}
           securityContext:
             {{- toYaml . | nindent 12 }}
           {{- end }}
           command: ['sh', '-c', 'until nc -z {{ include "clickstack.mongodb.svc" . }} 27017; do echo waiting for mongodb; sleep 2; done;']
         {{- end }}
-        {{- with .Values.hyperdx.deployment.initContainers }}
+        {{- with .Values.clickstack.deployment.initContainers }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
       {{- end }}
-      {{- if or .Values.hyperdx.deployment.volumes $dashboards.enabled }}
+      {{- if or .Values.clickstack.deployment.volumes $dashboards.enabled }}
       volumes:
-        {{- with .Values.hyperdx.deployment.volumes }}
+        {{- with .Values.clickstack.deployment.volumes }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
         {{- if $dashboards.enabled }}
@@ -98,46 +99,46 @@ spec:
       {{- end }}
       containers:
         - name: app
-          image: "{{ .Values.hyperdx.deployment.image.repository }}:{{ .Values.hyperdx.deployment.image.tag | default .Chart.AppVersion }}"
-          imagePullPolicy: {{ .Values.hyperdx.deployment.image.pullPolicy }}
-          {{- with .Values.hyperdx.deployment.containerSecurityContext }}
+          image: "{{ .Values.clickstack.deployment.image.repository }}:{{ .Values.clickstack.deployment.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.clickstack.deployment.image.pullPolicy }}
+          {{- with .Values.clickstack.deployment.containerSecurityContext }}
           securityContext:
             {{- toYaml . | nindent 12 }}
           {{- end }}
           ports:
             - name: app-port
-              containerPort: {{ .Values.hyperdx.ports.app }}
+              containerPort: {{ .Values.clickstack.ports.app }}
             - name: api-port
-              containerPort: {{ .Values.hyperdx.ports.api }}
+              containerPort: {{ .Values.clickstack.ports.api }}
             - name: opamp-port
-              containerPort: {{ .Values.hyperdx.ports.opamp }}
-          {{- if .Values.hyperdx.deployment.resources }}
+              containerPort: {{ .Values.clickstack.ports.opamp }}
+          {{- if .Values.clickstack.deployment.resources }}
           resources:
-            {{- toYaml .Values.hyperdx.deployment.resources | nindent 12 }}
+            {{- toYaml .Values.clickstack.deployment.resources | nindent 12 }}
           {{- end }}
-          {{- if .Values.hyperdx.deployment.livenessProbe.enabled }}
+          {{- if .Values.clickstack.deployment.livenessProbe.enabled }}
           livenessProbe:
             httpGet:
-              path: {{ .Values.hyperdx.deployment.livenessProbe.path | default "/health" }}
-              port: {{ .Values.hyperdx.ports.api }}
-            initialDelaySeconds: {{ .Values.hyperdx.deployment.livenessProbe.initialDelaySeconds }}
-            periodSeconds: {{ .Values.hyperdx.deployment.livenessProbe.periodSeconds }}
-            timeoutSeconds: {{ .Values.hyperdx.deployment.livenessProbe.timeoutSeconds }}
-            failureThreshold: {{ .Values.hyperdx.deployment.livenessProbe.failureThreshold }}
+              path: {{ .Values.clickstack.deployment.livenessProbe.path | default "/health" }}
+              port: {{ .Values.clickstack.ports.api }}
+            initialDelaySeconds: {{ .Values.clickstack.deployment.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.clickstack.deployment.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.clickstack.deployment.livenessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.clickstack.deployment.livenessProbe.failureThreshold }}
           {{- end }}
-          {{- if .Values.hyperdx.deployment.readinessProbe.enabled }}
+          {{- if .Values.clickstack.deployment.readinessProbe.enabled }}
           readinessProbe:
             httpGet:
-              path: {{ .Values.hyperdx.deployment.readinessProbe.path | default "/ready" }}
-              port: {{ .Values.hyperdx.ports.api }}
-            initialDelaySeconds: {{ .Values.hyperdx.deployment.readinessProbe.initialDelaySeconds }}
-            periodSeconds: {{ .Values.hyperdx.deployment.readinessProbe.periodSeconds }}
-            timeoutSeconds: {{ .Values.hyperdx.deployment.readinessProbe.timeoutSeconds }}
-            failureThreshold: {{ .Values.hyperdx.deployment.readinessProbe.failureThreshold }}
+              path: {{ .Values.clickstack.deployment.readinessProbe.path | default "/ready" }}
+              port: {{ .Values.clickstack.ports.api }}
+            initialDelaySeconds: {{ .Values.clickstack.deployment.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.clickstack.deployment.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.clickstack.deployment.readinessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.clickstack.deployment.readinessProbe.failureThreshold }}
           {{- end }}
-          {{- if or .Values.hyperdx.deployment.volumeMounts $dashboards.enabled }}
+          {{- if or .Values.clickstack.deployment.volumeMounts $dashboards.enabled }}
           volumeMounts:
-            {{- with .Values.hyperdx.deployment.volumeMounts }}
+            {{- with .Values.clickstack.deployment.volumeMounts }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
             {{- if $dashboards.enabled }}
@@ -151,32 +152,32 @@ spec:
           envFrom:
             - configMapRef:
                 name: clickstack-config
-            {{- if ne .Values.hyperdx.secrets nil }}
+            {{- if ne .Values.clickstack.secrets nil }}
             - secretRef:
                 name: clickstack-secret
             {{- end }}
           env:
-            {{- if .Values.hyperdx.deployment.useExistingConfigSecret }}
+            {{- if .Values.clickstack.deployment.useExistingConfigSecret }}
             - name: DEFAULT_CONNECTIONS
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.hyperdx.deployment.existingConfigSecret | quote }}
-                  key: {{ .Values.hyperdx.deployment.existingConfigConnectionsKey | quote }}
+                  name: {{ .Values.clickstack.deployment.existingConfigSecret | quote }}
+                  key: {{ .Values.clickstack.deployment.existingConfigConnectionsKey | quote }}
                   optional: false
             - name: DEFAULT_SOURCES
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.hyperdx.deployment.existingConfigSecret | quote }}
-                  key: {{ .Values.hyperdx.deployment.existingConfigSourcesKey | quote }}
+                  name: {{ .Values.clickstack.deployment.existingConfigSecret | quote }}
+                  key: {{ .Values.clickstack.deployment.existingConfigSourcesKey | quote }}
                   optional: false
             {{- else }}
-            {{- if and .Values.hyperdx.deployment.defaultConnections (ne .Values.hyperdx.secrets nil) }}
+            {{- if and .Values.clickstack.deployment.defaultConnections (ne .Values.clickstack.secrets nil) }}
             - name: DEFAULT_CONNECTIONS
-              value: {{ tpl .Values.hyperdx.deployment.defaultConnections . | quote }}
+              value: {{ tpl .Values.clickstack.deployment.defaultConnections . | quote }}
             {{- end }}
-            {{- if .Values.hyperdx.deployment.defaultSources }}
+            {{- if .Values.clickstack.deployment.defaultSources }}
             - name: DEFAULT_SOURCES
-              value: {{ tpl .Values.hyperdx.deployment.defaultSources . | quote }}
+              value: {{ tpl .Values.clickstack.deployment.defaultSources . | quote }}
             {{- end }}
             {{- end }}
             {{- if $dashboards.enabled }}
@@ -187,14 +188,14 @@ spec:
             - name: DASHBOARD_PROVISIONER_ALL_TEAMS
               value: "true"
             {{- end }}
-            {{- with .Values.hyperdx.deployment.env }}
+            {{- with .Values.clickstack.deployment.env }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
         {{- if $dashboards.enabled }}
         - name: dashboard-watcher
           image: {{ $dashboards.sidecarImage | quote }}
           imagePullPolicy: {{ $dashboards.sidecarPullPolicy | default "IfNotPresent" }}
-          {{- with .Values.hyperdx.deployment.containerSecurityContext }}
+          {{- with .Values.clickstack.deployment.containerSecurityContext }}
           securityContext:
             {{- toYaml . | nindent 12 }}
           {{- end }}

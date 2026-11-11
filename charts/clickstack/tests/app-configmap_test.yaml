@@ -36,7 +36,7 @@ tests:
 
   - it: should enable HyperDX's own telemetry when a browser endpoint is set
     set:
-      hyperdx:
+      clickstack:
         config:
           NEXT_PUBLIC_OTEL_EXPORTER_OTLP_ENDPOINT: "https://otel.example.com"
     asserts:
@@ -49,7 +49,7 @@ tests:
 
   - it: should let an explicit HDX_EXPORTER_ENABLED win
     set:
-      hyperdx:
+      clickstack:
         config:
           HDX_EXPORTER_ENABLED: "true"
     asserts:
@@ -67,7 +67,7 @@ tests:
 
   - it: should render USAGE_STATS_ENABLED false when opted out
     set:
-      hyperdx:
+      clickstack:
         config:
           USAGE_STATS_ENABLED: false
     asserts:
@@ -77,7 +77,7 @@ tests:
 
   - it: should render user-provided config values
     set:
-      hyperdx:
+      clickstack:
         config:
           HYPERDX_LOG_LEVEL: "debug"
           CUSTOM_VAR: "custom-value"
@@ -91,7 +91,7 @@ tests:
 
   - it: should render FRONTEND_URL from config override
     set:
-      hyperdx:
+      clickstack:
         config:
           FRONTEND_URL: "https://my-domain.com"
     asserts:
@@ -113,7 +113,7 @@ tests:
 
   - it: should render per-signal TTL and reconcile overrides from config
     set:
-      hyperdx:
+      clickstack:
         config:
           HYPERDX_OTEL_EXPORTER_LOGS_TTL: "180d"
           HYPERDX_OTEL_EXPORTER_RECONCILE_TABLE_TTL: "true"
@@ -124,3 +124,14 @@ tests:
       - equal:
           path: data.HYPERDX_OTEL_EXPORTER_RECONCILE_TABLE_TTL
           value: "true"
+
+  - it: should render from hyperdx values alone, as --reuse-values from a release made before the rename does
+    set:
+      clickstack: null
+      hyperdx:
+        config:
+          LEGACY_ONLY: "from-hyperdx"
+    asserts:
+      - equal:
+          path: data.LEGACY_ONLY
+          value: "from-hyperdx"

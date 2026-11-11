@@ -1,3 +1,4 @@
+{{- include "clickstack.normalizeValues" . -}}
 {{- if .Values.clickhouse.enabled }}
 apiVersion: clickhouse.com/v1alpha1
 kind: ClickHouseCluster

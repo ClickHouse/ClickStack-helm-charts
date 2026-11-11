@@ -9,7 +9,7 @@ values:
 tests:
   - it: should not render RBAC or ConfigMap when dashboards are disabled
     set:
-      hyperdx:
+      clickstack:
         dashboards:
           enabled: false
     asserts:
@@ -22,7 +22,7 @@ tests:
 
   - it: should not add sidecar when dashboards are disabled
     set:
-      hyperdx:
+      clickstack:
         dashboards:
           enabled: false
     asserts:
@@ -33,7 +33,7 @@ tests:
 
   - it: should not render dashboard volumes, mounts, or env when disabled
     set:
-      hyperdx:
+      clickstack:
         dashboards:
           enabled: false
     asserts:
@@ -52,7 +52,7 @@ tests:
 
   - it: should keep user volumes and mounts without a dashboards entry when disabled
     set:
-      hyperdx:
+      clickstack:
         dashboards:
           enabled: false
         deployment:
@@ -99,7 +99,7 @@ tests:
 
   - it: should add dashboard-watcher sidecar when enabled
     set:
-      hyperdx:
+      clickstack:
         dashboards:
           enabled: true
     asserts:
@@ -114,7 +114,7 @@ tests:
 
   - it: should set DASHBOARD_PROVISIONER_DIR on the app container
     set:
-      hyperdx:
+      clickstack:
         dashboards:
           enabled: true
     asserts:
@@ -127,7 +127,7 @@ tests:
 
   - it: should use the configured sidecar image and pull policy for the watcher
     set:
-      hyperdx:
+      clickstack:
         dashboards:
           enabled: true
           sidecarImage: "example.com/mirror/k8s-sidecar:9.9.9"
@@ -144,7 +144,7 @@ tests:
 
   - it: should default the watcher pull policy and apply the container security context
     set:
-      hyperdx:
+      clickstack:
         dashboards:
           enabled: true
         deployment:
@@ -167,7 +167,7 @@ tests:
 
   - it: should set the discovery label on the watcher
     set:
-      hyperdx:
+      clickstack:
         dashboards:
           enabled: true
     asserts:
@@ -186,7 +186,7 @@ tests:
 
   - it: should configure the watcher's discovery behavior env
     set:
-      hyperdx:
+      clickstack:
         dashboards:
           enabled: true
     asserts:
@@ -219,7 +219,7 @@ tests:
     release:
       namespace: observability
     set:
-      hyperdx:
+      clickstack:
         dashboards:
           enabled: true
     asserts:
@@ -234,7 +234,7 @@ tests:
     release:
       namespace: observability
     set:
-      hyperdx:
+      clickstack:
         dashboards:
           enabled: true
           namespaces:
@@ -250,7 +250,7 @@ tests:
 
   - it: should watch all namespaces when ALL is listed
     set:
-      hyperdx:
+      clickstack:
         dashboards:
           enabled: true
           namespaces:
@@ -265,7 +265,7 @@ tests:
 
   - it: should share dashboards volume between app and watcher
     set:
-      hyperdx:
+      clickstack:
         dashboards:
           enabled: true
     asserts:
@@ -293,7 +293,7 @@ tests:
 
   - it: should merge user volumes and volumeMounts with dashboards entries without duplicate keys
     set:
-      hyperdx:
+      clickstack:
         dashboards:
           enabled: true
         deployment:
@@ -340,7 +340,7 @@ tests:
 
   - it: should set DASHBOARD_PROVISIONER_ALL_TEAMS on the app container
     set:
-      hyperdx:
+      clickstack:
         dashboards:
           enabled: true
     asserts:
@@ -353,7 +353,7 @@ tests:
 
   - it: should apply configured resources to the dashboard-watcher sidecar
     set:
-      hyperdx:
+      clickstack:
         dashboards:
           enabled: true
           resources:
@@ -375,7 +375,7 @@ tests:
 
   - it: should apply the default watcher resources when not overridden
     set:
-      hyperdx:
+      clickstack:
         dashboards:
           enabled: true
     asserts:
@@ -398,7 +398,7 @@ tests:
 
   - it: should fail when dashboards are enabled without a ServiceAccount
     set:
-      hyperdx:
+      clickstack:
         dashboards:
           enabled: true
         serviceAccount:
@@ -406,12 +406,12 @@ tests:
           name: ""
     asserts:
       - failedTemplate:
-          errorMessage: "hyperdx.dashboards: the dashboard watcher needs a ServiceAccount to bind RBAC to; set hyperdx.serviceAccount.create=true or provide hyperdx.serviceAccount.name"
+          errorMessage: "clickstack.dashboards: the dashboard watcher needs a ServiceAccount to bind RBAC to; set clickstack.serviceAccount.create=true or provide clickstack.serviceAccount.name"
         template: hyperdx/deployment.yaml
 
   - it: should create the SA and set serviceAccountName when create is true
     set:
-      hyperdx:
+      clickstack:
         dashboards:
           enabled: true
     asserts:
@@ -425,7 +425,7 @@ tests:
 
   - it: should use existing user SA and not create a new one
     set:
-      hyperdx:
+      clickstack:
         dashboards:
           enabled: true
         serviceAccount:
@@ -444,7 +444,7 @@ tests:
     release:
       namespace: observability
     set:
-      hyperdx:
+      clickstack:
         dashboards:
           enabled: true
     asserts:
@@ -487,7 +487,7 @@ tests:
 
   - it: should grant configmap list, get, and watch on the default Role
     set:
-      hyperdx:
+      clickstack:
         dashboards:
           enabled: true
     asserts:
@@ -499,7 +499,7 @@ tests:
 
   - it: should bind the default Role to the user SA when configured
     set:
-      hyperdx:
+      clickstack:
         dashboards:
           enabled: true
         serviceAccount:
@@ -513,7 +513,7 @@ tests:
 
   - it: should bind the default Role to the generated SA when no user SA configured
     set:
-      hyperdx:
+      clickstack:
         dashboards:
           enabled: true
     asserts:
@@ -527,7 +527,7 @@ tests:
     release:
       namespace: observability
     set:
-      hyperdx:
+      clickstack:
         dashboards:
           enabled: true
           namespaces:
@@ -614,7 +614,7 @@ tests:
     release:
       namespace: observability
     set:
-      hyperdx:
+      clickstack:
         dashboards:
           enabled: true
           namespaces:
@@ -635,7 +635,7 @@ tests:
     release:
       namespace: observability
     set:
-      hyperdx:
+      clickstack:
         dashboards:
           enabled: true
           namespaces:
@@ -658,7 +658,7 @@ tests:
     release:
       namespace: observability
     set:
-      hyperdx:
+      clickstack:
         dashboards:
           enabled: true
           namespaces:
@@ -684,7 +684,7 @@ tests:
 
   - it: should create a ClusterRole and ClusterRoleBinding when ALL is listed
     set:
-      hyperdx:
+      clickstack:
         dashboards:
           enabled: true
           namespaces:
@@ -723,7 +723,7 @@ tests:
     release:
       namespace: observability
     set:
-      hyperdx:
+      clickstack:
         dashboards:
           enabled: true
           namespaces:
@@ -754,7 +754,7 @@ tests:
     release:
       namespace: observability
     set:
-      hyperdx:
+      clickstack:
         dashboards:
           enabled: true
           namespaces:
@@ -776,7 +776,7 @@ tests:
 
   - it: should bind the ClusterRoleBinding to the user SA when ALL is listed
     set:
-      hyperdx:
+      clickstack:
         dashboards:
           enabled: true
           namespaces:
@@ -792,7 +792,7 @@ tests:
 
   - it: should fail when ALL is combined with specific namespaces
     set:
-      hyperdx:
+      clickstack:
         dashboards:
           enabled: true
           namespaces:
@@ -800,12 +800,12 @@ tests:
             - team-a
     asserts:
       - failedTemplate:
-          errorMessage: 'hyperdx.dashboards.namespaces: "ALL" cannot be combined with specific namespaces (it already grants cluster-wide discovery)'
+          errorMessage: 'clickstack.dashboards.namespaces: "ALL" cannot be combined with specific namespaces (it already grants cluster-wide discovery)'
         template: hyperdx/deployment.yaml
 
   - it: should fail when a namespace entry is empty or blank
     set:
-      hyperdx:
+      clickstack:
         dashboards:
           enabled: true
           namespaces:
@@ -813,12 +813,12 @@ tests:
             - team-a
     asserts:
       - failedTemplate:
-          errorMessage: "hyperdx.dashboards.namespaces: entries must be non-empty namespace names"
+          errorMessage: "clickstack.dashboards.namespaces: entries must be non-empty namespace names"
         template: hyperdx/deployment.yaml
 
   - it: should fail when a namespace entry is whitespace-only
     set:
-      hyperdx:
+      clickstack:
         dashboards:
           enabled: true
           namespaces:
@@ -826,36 +826,36 @@ tests:
             - team-a
     asserts:
       - failedTemplate:
-          errorMessage: "hyperdx.dashboards.namespaces: entries must be non-empty namespace names"
+          errorMessage: "clickstack.dashboards.namespaces: entries must be non-empty namespace names"
         template: hyperdx/deployment.yaml
 
   - it: should fail on a case or whitespace variant of the ALL sentinel
     set:
-      hyperdx:
+      clickstack:
         dashboards:
           enabled: true
           namespaces:
             - all
     asserts:
       - failedTemplate:
-          errorMessage: 'hyperdx.dashboards.namespaces: use exactly "ALL" (uppercase, no surrounding spaces) for cluster-wide discovery'
+          errorMessage: 'clickstack.dashboards.namespaces: use exactly "ALL" (uppercase, no surrounding spaces) for cluster-wide discovery'
         template: hyperdx/deployment.yaml
 
   - it: should fail when a namespace entry is not a valid DNS-1123 label
     set:
-      hyperdx:
+      clickstack:
         dashboards:
           enabled: true
           namespaces:
             - Team_A
     asserts:
       - failedTemplate:
-          errorMessage: "hyperdx.dashboards.namespaces: entries must be valid DNS-1123 labels (lowercase alphanumeric and '-')"
+          errorMessage: "clickstack.dashboards.namespaces: entries must be valid DNS-1123 labels (lowercase alphanumeric and '-')"
         template: hyperdx/deployment.yaml
 
   - it: should not validate namespaces when dashboards are disabled
     set:
-      hyperdx:
+      clickstack:
         dashboards:
           enabled: false
           namespaces:
@@ -875,7 +875,7 @@ tests:
       namespace: observability
     set:
       fullnameOverride: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-      hyperdx:
+      clickstack:
         dashboards:
           enabled: true
           namespaces:
@@ -889,7 +889,7 @@ tests:
 
   - it: should not render any RBAC when rbac.create is false
     set:
-      hyperdx:
+      clickstack:
         dashboards:
           enabled: true
           rbac:
@@ -901,7 +901,7 @@ tests:
 
   - it: should still render the watcher sidecar when rbac.create is false
     set:
-      hyperdx:
+      clickstack:
         dashboards:
           enabled: true
           rbac:
@@ -914,7 +914,7 @@ tests:
 
   - it: should not render inline ConfigMap when configMaps is empty
     set:
-      hyperdx:
+      clickstack:
         dashboards:
           enabled: true
           configMaps: {}
@@ -925,7 +925,7 @@ tests:
 
   - it: should render inline ConfigMap with discovery label
     set:
-      hyperdx:
+      clickstack:
         dashboards:
           enabled: true
           configMaps:
@@ -943,7 +943,7 @@ tests:
 
   - it: should include multiple dashboard files in inline ConfigMap
     set:
-      hyperdx:
+      clickstack:
         dashboards:
           enabled: true
           configMaps:
@@ -961,7 +961,7 @@ tests:
 
   - it: should render without dashboard artifacts when the dashboards subtree is null
     set:
-      hyperdx:
+      clickstack:
         dashboards: null
     asserts:
       - lengthEqual:
@@ -982,7 +982,7 @@ tests:
     release:
       namespace: observability
     set:
-      hyperdx:
+      clickstack:
         dashboards:
           enabled: true
           namespaces: null
@@ -1000,30 +1000,30 @@ tests:
 
   - it: should fail when namespaces is not a list
     set:
-      hyperdx:
+      clickstack:
         dashboards:
           enabled: true
           namespaces: ALL
     asserts:
       - failedTemplate:
-          errorMessage: "hyperdx.dashboards.namespaces: must be a list of namespace names"
+          errorMessage: "clickstack.dashboards.namespaces: must be a list of namespace names"
         template: hyperdx/deployment.yaml
 
   - it: should fail when a namespace entry is not a string
     set:
-      hyperdx:
+      clickstack:
         dashboards:
           enabled: true
           namespaces:
             - 123
     asserts:
       - failedTemplate:
-          errorMessage: "hyperdx.dashboards.namespaces: entries must be quoted strings"
+          errorMessage: "clickstack.dashboards.namespaces: entries must be quoted strings"
         template: hyperdx/deployment.yaml
 
   - it: should fail when a configMaps value is not a string
     set:
-      hyperdx:
+      clickstack:
         dashboards:
           enabled: true
           configMaps:
@@ -1031,12 +1031,12 @@ tests:
               name: Test
     asserts:
       - failedTemplate:
-          errorMessage: "hyperdx.dashboards.configMaps[test.json]: value must be a JSON string — use a YAML block scalar (|)"
+          errorMessage: "clickstack.dashboards.configMaps[test.json]: value must be a JSON string — use a YAML block scalar (|)"
         template: hyperdx/deployment.yaml
 
   - it: should fail when a configMaps key does not end in .json
     set:
-      hyperdx:
+      clickstack:
         dashboards:
           enabled: true
           configMaps:
@@ -1044,12 +1044,12 @@ tests:
               { "name": "Kubernetes Overview", "tiles": [] }
     asserts:
       - failedTemplate:
-          errorMessage: 'hyperdx.dashboards.configMaps: key "k8s-overview" must be a valid ConfigMap key ending in .json (the provisioner only reads *.json files)'
+          errorMessage: 'clickstack.dashboards.configMaps: key "k8s-overview" must be a valid ConfigMap key ending in .json (the provisioner only reads *.json files)'
         template: hyperdx/deployment.yaml
 
   - it: should fail when a user volume is named dashboards
     set:
-      hyperdx:
+      clickstack:
         dashboards:
           enabled: true
         deployment:
@@ -1058,12 +1058,12 @@ tests:
               emptyDir: {}
     asserts:
       - failedTemplate:
-          errorMessage: 'hyperdx.deployment.volumes: the name "dashboards" is reserved by the dashboard provisioner'
+          errorMessage: 'clickstack.deployment.volumes: the name "dashboards" is reserved by the dashboard provisioner'
         template: hyperdx/deployment.yaml
 
   - it: should fail when a user volumeMount collides with /dashboards
     set:
-      hyperdx:
+      clickstack:
         dashboards:
           enabled: true
         deployment:
@@ -1075,5 +1075,5 @@ tests:
               mountPath: /dashboards
     asserts:
       - failedTemplate:
-          errorMessage: 'hyperdx.deployment.volumeMounts: the name "dashboards" and mountPath "/dashboards" are reserved by the dashboard provisioner'
+          errorMessage: 'clickstack.deployment.volumeMounts: the name "dashboards" and mountPath "/dashboards" are reserved by the dashboard provisioner'
         template: hyperdx/deployment.yaml

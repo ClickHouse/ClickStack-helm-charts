@@ -18,7 +18,7 @@ _selectors:
 tests:
   - it: should not render any ingress templates when disabled
     set:
-      hyperdx:
+      clickstack:
         ingress:
           enabled: false
     asserts:
@@ -27,7 +27,7 @@ tests:
 
   - it: should render primary ingress with passthrough annotations and spec
     set:
-      hyperdx:
+      clickstack:
         ingress:
           enabled: true
           annotations:
@@ -69,17 +69,17 @@ tests:
 
   - it: should fail when ingress is enabled but spec is empty
     set:
-      hyperdx:
+      clickstack:
         ingress:
           enabled: true
           spec: {}
     asserts:
       - failedTemplate:
-          errorMessage: "hyperdx.ingress.spec is required when ingress is enabled"
+          errorMessage: "clickstack.ingress.spec is required when ingress is enabled"
 
   - it: should render primary ingress with nginx configuration
     set:
-      hyperdx:
+      clickstack:
         ingress:
           enabled: true
           annotations:
@@ -114,7 +114,7 @@ tests:
 
   - it: should render primary ingress without annotations when empty
     set:
-      hyperdx:
+      clickstack:
         ingress:
           enabled: true
           annotations: {}
@@ -136,7 +136,7 @@ tests:
 
   - it: should render additional ingress templates alongside primary
     set:
-      hyperdx:
+      clickstack:
         ingress:
           enabled: true
           annotations:
@@ -189,7 +189,7 @@ tests:
 
   - it: should render additional ingress templates with TLS enabled
     set:
-      hyperdx:
+      clickstack:
         ingress:
           enabled: true
           spec:
@@ -231,7 +231,7 @@ tests:
 
   - it: should fail when annotations of the additional ingresses is not a map of strings
     set:
-      hyperdx:
+      clickstack:
         ingress:
           enabled: true
           spec:
@@ -264,7 +264,7 @@ tests:
 
   - it: should fail when TLS configuration specifies secretName without hosts
     set:
-      hyperdx:
+      clickstack:
         ingress:
           enabled: true
           spec:
@@ -296,7 +296,7 @@ tests:
 
   - it: should fail when paths object is missing required properties
     set:
-      hyperdx:
+      clickstack:
         ingress:
           enabled: true
           spec:
@@ -325,7 +325,7 @@ tests:
 
   - it: should use service name suffix when name is provided in additional ingress paths
     set:
-      hyperdx:
+      clickstack:
         ingress:
           enabled: true
           spec:

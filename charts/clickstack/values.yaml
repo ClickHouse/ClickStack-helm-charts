@@ -35,7 +35,8 @@ global:
     #         exporters: [clickhouse]
     customConfig: ""
 
-hyperdx:
+# HyperDX app settings. This key used to be called hyperdx; that name still works but is deprecated.
+clickstack:
   # -- Ports shared across Deployment, Service, ConfigMap, and Ingress.
   ports:
     api: 8000
@@ -119,16 +120,16 @@ hyperdx:
     # Per-signal TTLs and reconcile need collector image 2.36.0 or newer.
     # Service endpoint defaults -- override to use external instances
     FRONTEND_URL: "http://localhost:3000"
-    MONGO_URI: 'mongodb://hyperdx:{{ .Values.hyperdx.secrets.MONGODB_PASSWORD }}@{{ include "clickstack.mongodb.svc" . }}:27017/hyperdx?authSource=hyperdx'
+    MONGO_URI: 'mongodb://hyperdx:{{ .Values.clickstack.secrets.MONGODB_PASSWORD }}@{{ include "clickstack.mongodb.svc" . }}:27017/hyperdx?authSource=hyperdx'
     OTEL_EXPORTER_OTLP_ENDPOINT: 'http://{{ include "clickstack.otel.fullname" . }}:4318'
     # HyperDX's own browser and Next.js server telemetry. Browsers can't reach the in-cluster
     # endpoint above, so this is on only when a browser-reachable collector URL is set:
     #   NEXT_PUBLIC_OTEL_EXPORTER_OTLP_ENDPOINT: "https://otel.example.com"
-    HDX_EXPORTER_ENABLED: '{{ if .Values.hyperdx.config.NEXT_PUBLIC_OTEL_EXPORTER_OTLP_ENDPOINT }}true{{ else }}false{{ end }}'
+    HDX_EXPORTER_ENABLED: '{{ if .Values.clickstack.config.NEXT_PUBLIC_OTEL_EXPORTER_OTLP_ENDPOINT }}true{{ else }}false{{ end }}'
     CLICKHOUSE_ENDPOINT: 'tcp://{{ include "clickstack.clickhouse.svc" . }}:{{ .Values.clickhouse.nativePort }}?dial_timeout=10s'
     CLICKHOUSE_SERVER_ENDPOINT: '{{ include "clickstack.clickhouse.svc" . }}:{{ .Values.clickhouse.nativePort }}'
     CLICKHOUSE_PROMETHEUS_METRICS_ENDPOINT: '{{ include "clickstack.clickhouse.svc" . }}:{{ .Values.clickhouse.prometheus.port }}'
-    OPAMP_SERVER_URL: 'http://{{ include "clickstack.hyperdx.fullname" . }}:{{ .Values.hyperdx.ports.opamp }}'
+    OPAMP_SERVER_URL: 'http://{{ include "clickstack.hyperdx.fullname" . }}:{{ .Values.clickstack.ports.opamp }}'
 
   # -- Shared sensitive environment variables (clickstack-secret).
   # Set to null to skip Secret creation (requires mongodb, clickhouse, and otel-collector disabled).
@@ -149,7 +150,7 @@ hyperdx:
       # -- Image tag. Defaults to Chart appVersion when empty.
       tag:
       pullPolicy: IfNotPresent
-    # -- Pod replica count. Ignored when hyperdx.autoscaling.enabled is true.
+    # -- Pod replica count. Ignored when clickstack.autoscaling.enabled is true.
     replicas: 1
     resources: {}
     livenessProbe:
@@ -210,7 +211,7 @@ hyperdx:
           "host": "http://{{ include "clickstack.clickhouse.svc" . }}:8123",
           "port": 8123,
           "username": "app",
-          "password": "{{ .Values.hyperdx.secrets.CLICKHOUSE_APP_PASSWORD }}"
+          "password": "{{ .Values.clickstack.secrets.CLICKHOUSE_APP_PASSWORD }}"
         }
       ]
     defaultSources: |
@@ -428,12 +429,12 @@ clickhouse:
         extraUsersConfig:
           users:
             app:
-              password: '{{ .Values.hyperdx.secrets.CLICKHOUSE_APP_PASSWORD }}'
+              password: '{{ .Values.clickstack.secrets.CLICKHOUSE_APP_PASSWORD }}'
               profile: default
               grants:
                 - query: "GRANT SHOW ON *.*, SELECT ON system.*, SELECT ON default.*"
             otelcollector:
-              password: '{{ .Values.hyperdx.secrets.CLICKHOUSE_PASSWORD }}'
+              password: '{{ .Values.clickstack.secrets.CLICKHOUSE_PASSWORD }}'
               profile: default
               grants:
                 - query: "GRANT SELECT,INSERT,CREATE,SHOW ON default.*"
@@ -481,7 +482,7 @@ otel-collector:
   # Merges with any user-provided podAnnotations.
   podAnnotations:
     checksum/custom-config: '{{ .Values.global.otelCollector.customConfig | default "" | sha256sum }}'
-    # Subchart tpl can't see hyperdx.config/secrets to hash them, so roll on every upgrade.
+    # Subchart tpl can't see clickstack.config/secrets to hash them, so roll on every upgrade.
     # helm template (Argo CD) always renders revision 1; restart the collector manually there.
     rollout/release-revision: '{{ .Release.Revision }}'
   # Mount for the optional custom config ConfigMap rendered from

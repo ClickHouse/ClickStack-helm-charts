@@ -1,4 +1,5 @@
-{{- if and (default (dict) .Values.hyperdx.dashboards).enabled (eq (include "clickstack.hyperdx.dashboardsRbacCreate" .) "true") }}
+{{- include "clickstack.normalizeValues" . -}}
+{{- if and (default (dict) .Values.clickstack.dashboards).enabled (eq (include "clickstack.hyperdx.dashboardsRbacCreate" .) "true") }}
 {{- $fullname := include "clickstack.fullname" . -}}
 {{- $saName := include "clickstack.hyperdx.serviceAccountName" . -}}
 {{- /* Cluster-scoped objects are namespace-qualified so two same-named releases don't collide. RBAC names allow 253 chars (not 63), so the qualifier always survives. */}}

@@ -1,7 +1,7 @@
 # Minimal fixture for deployment-tpl-defaults_test.yaml: exercises tpl
 # interpolation of the connection host and one log source table name only.
 # It is intentionally NOT a copy of the values.yaml defaults.
-hyperdx:
+clickstack:
   deployment:
     useExistingConfigSecret: false
     defaultConnections: |
@@ -11,7 +11,7 @@ hyperdx:
           "host": "http://{{ include "clickstack.clickhouse.svc" . }}:8123",
           "port": 8123,
           "username": "app",
-          "password": "{{ .Values.hyperdx.secrets.CLICKHOUSE_APP_PASSWORD }}"
+          "password": "{{ .Values.clickstack.secrets.CLICKHOUSE_APP_PASSWORD }}"
         }
       ]
     defaultSources: |
