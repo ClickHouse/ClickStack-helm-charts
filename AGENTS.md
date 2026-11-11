@@ -147,6 +147,9 @@ Requires: `kind`, `helm`, `kubectl`, `yq`.
 ### Changesets
 - Add a changeset for user-facing changes: `npx changeset`
 - Changesets live in `.changeset/` and drive version bumps on release
+- If a change needs action on upgrade or restarts pods, add a bullet under `## Unreleased` in
+  `docs/UPGRADE.md` (create the heading if the last release consumed it). The release renames it to
+  the new version. The Upgrade Notes check fails a `major` changeset without one and warns on `minor`.
 
 ## Helm Template Conventions
 
@@ -217,6 +220,7 @@ tests:
 | Integration Test | `chart-test.yml` | push/PR/nightly | Kind-based integration suites |
 | Release | `release.yml` | after tests pass on main | Changeset version + chart release |
 | Update App Version | `update-app-version.yml` | workflow_dispatch | Bump `appVersion` in Chart.yaml |
+| Bump ClickHouse Image | `bump-clickhouse-image.yml` | weekly/workflow_dispatch | PR moving the ClickHouse server and keeper tags to the newest patch on their LTS line |
 
 ## Key File Locations
 

@@ -92,6 +92,7 @@ hyperdx:
   # -- Shared non-sensitive environment variables (clickstack-config ConfigMap).
   # Used by HyperDX and OTEL collector via envFrom. Values support tpl expressions.
   # Override entries with plain strings to point at external services.
+  # Changes to the rendered ConfigMap roll the HyperDX Deployment; the otel-collector rolls on every helm upgrade.
   config:
     APP_PORT: "3000"
     API_PORT: "8000"
@@ -131,6 +132,8 @@ hyperdx:
 
   # -- Shared sensitive environment variables (clickstack-secret).
   # Set to null to skip Secret creation (requires mongodb, clickhouse, and otel-collector disabled).
+  # Changes to this Secret roll the HyperDX Deployment; the otel-collector rolls on every helm upgrade.
+  # External Secrets need a manual rollout.
   secrets:
     HYPERDX_API_KEY: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
     CLICKHOUSE_PASSWORD: "otelcollectorpass"
@@ -170,6 +173,8 @@ hyperdx:
     # Annotations applied to the HyperDX Deployment metadata.
     deploymentAnnotations: {}
     # Annotations applied to the HyperDX pod template metadata.
+    # checksum/clickstack-config and checksum/clickstack-secret are reserved for
+    # chart-generated rollout checksums and cannot be overridden.
     podAnnotations: {}
     # Deprecated: use podAnnotations. Retained for backward compatibility;
     # podAnnotations takes precedence when both maps contain the same key.
@@ -476,6 +481,9 @@ otel-collector:
   # Merges with any user-provided podAnnotations.
   podAnnotations:
     checksum/custom-config: '{{ .Values.global.otelCollector.customConfig | default "" | sha256sum }}'
+    # Subchart tpl can't see hyperdx.config/secrets to hash them, so roll on every upgrade.
+    # helm template (Argo CD) always renders revision 1; restart the collector manually there.
+    rollout/release-revision: '{{ .Release.Revision }}'
   # Mount for the optional custom config ConfigMap rendered from
   # global.otelCollector.customConfig. The volume is marked optional so it is
   # a no-op when no custom config is set.

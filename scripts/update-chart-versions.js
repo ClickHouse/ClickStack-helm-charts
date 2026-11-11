@@ -11,3 +11,10 @@ charts.forEach((chartPath) => {
   chart.version = version;
   fs.writeFileSync(chartFile, yaml.dump(chart));
 });
+
+// Notes written under "## Unreleased" become the notes for this version.
+const upgradeGuide = "./docs/UPGRADE.md";
+fs.writeFileSync(
+  upgradeGuide,
+  fs.readFileSync(upgradeGuide, "utf8").replace(/^## Unreleased$/gm, `## ${version}`)
+);

@@ -1,6 +1,6 @@
 name: Release Helm Charts
 on:
-  workflow_run:
+  workflow_run: # zizmor: ignore[dangerous-triggers] the release job only runs for pushes to main
     workflows: ["Helm Chart Tests", "Helm Chart Integration Test"]
     types:
       - completed
@@ -16,18 +16,21 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    # Only release for pushes to main; a fork PR from a branch named main also matches the branches filter.
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          # changesets writes its own ~/.netrc and chart-releaser pushes with CR_TOKEN, so keep the token out of .git/config while yarn runs.
+          persist-credentials: false
       - name: Configure Git user
         run: |
           git config user.name "$GITHUB_ACTOR"
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
       - name: Setup Node.js 20
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 20
       - name: Enable Corepack
@@ -36,7 +39,7 @@ jobs:
         run: yarn
       - name: Create Release Pull Request
         id: changesets
-        uses: changesets/action@v1
+        uses: changesets/action@ae32849d5ba541f9ae29e40e22a623bc13562f51 # v2.1.2
         with:
           commit: 'chore(release): bump version'
           title: 'Release ClickStack Helm Charts'
@@ -49,7 +52,7 @@ jobs:
         run: node scripts/extract-release-notes.js
       - name: Run chart-releaser job
         if: steps.changesets.outputs.hasChangesets == 'false'
-        uses: helm/chart-releaser-action@v1.7.0
+        uses: helm/chart-releaser-action@92c6b97fa9f664492a2592e0d1d80bc6bf378957 # v1.9.0
         with:
           skip_existing: true
           config: .github/cr.yaml

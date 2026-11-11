@@ -19,7 +19,7 @@ name: Deep Code Review
 # The review posts as a sticky comment (marker: <!-- deep-review -->).
 
 on:
-  pull_request_target:
+  pull_request_target: # zizmor: ignore[dangerous-triggers] reviews fork PRs without running their code, see the checkout step
     types: [opened, synchronize, ready_for_review]
   workflow_dispatch:
     inputs:
@@ -72,13 +72,13 @@ jobs:
     steps:
       - name: Resolve PR metadata
         id: pr
-        uses: actions/github-script@v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const prNumber =
               context.eventName === 'workflow_dispatch'
-                ? Number('${{ inputs.pr_number }}')
+                ? Number(context.payload.inputs.pr_number)
                 : context.payload.pull_request.number;
 
             const { data: pr } = await github.rest.pulls.get({
@@ -136,7 +136,7 @@ jobs:
       # env, not files on disk -- leaving a `pull-requests: write` token where
       # the reviewer's git tooling can read it. Nothing here pushes.
       - name: Checkout PR head
-        uses: actions/checkout@v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: ${{ steps.pr.outputs.head_repo }}
           ref: ${{ steps.pr.outputs.head_ref }}
@@ -217,7 +217,7 @@ jobs:
       # matches. Always review on manual dispatch, on ready_for_review, on the
       # first run, and when the plugin ref changed.
       - name: Find existing deep review comment
-        uses: peter-evans/find-comment@v4
+        uses: peter-evans/find-comment@b30e6a3c0ed37e7c023ccd3f1db5c6c0b0c23aad # v4.0.0
         id: find-comment
         with:
           issue-number: ${{ steps.pr.outputs.number }}
@@ -275,7 +275,7 @@ jobs:
       - name: Materialize prior review comments
         id: prior
         if: steps.gate.outputs.should_review == 'true'
-        uses: actions/github-script@v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -402,7 +402,7 @@ jobs:
       # Bump `ref` deliberately; do not track main.
       - name: Checkout compound-engineering plugin
         if: steps.gate.outputs.should_review == 'true'
-        uses: actions/checkout@v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: EveryInc/compound-engineering-plugin
           ref: ${{ env.PLUGIN_REF }}
@@ -432,7 +432,7 @@ jobs:
       # UNPIN once the upstream regression is fixed (tracked in HDX-4907).
       - name: Pin Claude Code CLI to a pre-regression version
         if: steps.gate.outputs.should_review == 'true'
-        run: |
+        run: | # zizmor: ignore[github-env] only adds the hash-verified CLI to PATH
           set -euo pipefail
           TARBALL="$RUNNER_TEMP/claude-code-$CLAUDE_CLI_VERSION.tgz"
           curl -fsSL -o "$TARBALL" \
@@ -472,7 +472,7 @@ jobs:
       - name: Run deep review
         id: review
         if: steps.gate.outputs.should_review == 'true'
-        uses: anthropics/claude-code-action@v1
+        uses: anthropics/claude-code-action@9eb012b6d0900c2b9eede65ee1758cec4d2973e9 # v1.0.270
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }} # bypasses OIDC auth (required for pull_request_target)
@@ -889,7 +889,7 @@ jobs:
         if: >-
           always() && steps.gate.outputs.should_review == 'true' &&
           steps.extract.outcome == 'success'
-        uses: peter-evans/create-or-update-comment@v5
+        uses: peter-evans/create-or-update-comment@e8674b075228eee787fea43ef493e45ece1004c9 # v5.0.0
         with:
           comment-id: ${{ steps.find-comment.outputs.comment-id }}
           issue-number: ${{ steps.pr.outputs.number }}

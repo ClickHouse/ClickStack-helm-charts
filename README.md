@@ -55,7 +55,7 @@ helm uninstall clickstack-operators     # Remove operators + CRDs
 
 ## Upgrading
 
-If you are upgrading from the inline-template chart (v1.x), see the [Upgrade Guide](docs/UPGRADE.md) for migration instructions.
+The [Upgrade Guide](docs/UPGRADE.md) lists what changes in each chart version and what to do before upgrading, including the migration from the inline-template chart (v1.x).
 
 ## Support
 
