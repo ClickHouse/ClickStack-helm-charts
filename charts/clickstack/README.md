@@ -1,6 +1,6 @@
 # clickstack
 
-![Version: 3.5.0](https://img.shields.io/badge/Version-3.5.0-informational?style=flat)
+![Version: 3.6.0](https://img.shields.io/badge/Version-3.6.0-informational?style=flat)
 ![Build Status](https://github.com/ClickHouse/ClickStack-helm-charts/actions/workflows/helm-test.yaml/badge.svg)
 
 A Helm chart for ClickStack - Full-stack observability with ClickHouse, OpenTelemetry, and HyperDX
