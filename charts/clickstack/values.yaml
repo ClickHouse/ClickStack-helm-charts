@@ -231,6 +231,8 @@ hyperdx:
           "resourceAttributesExpression": "ResourceAttributes",
           "defaultTableSelectExpression": "Timestamp,ServiceName,SeverityText,Body",
           "severityTextExpression": "SeverityText",
+          "severityNumberExpression": "SeverityNumber",
+          "eventNameExpression": "EventName",
           "traceIdExpression": "TraceId",
           "spanIdExpression": "SpanId",
           "connection": "Local ClickHouse",
