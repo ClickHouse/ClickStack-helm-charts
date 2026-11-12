@@ -149,6 +149,10 @@ hyperdx:
       # -- Image tag. Defaults to Chart appVersion when empty.
       tag:
       pullPolicy: IfNotPresent
+    # -- Override the HyperDX container entrypoint. Empty uses the image default.
+    command: []
+    # -- Override the HyperDX container arguments. Empty uses the image default.
+    args: []
     # -- Pod replica count. Ignored when hyperdx.autoscaling.enabled is true.
     replicas: 1
     resources: {}
