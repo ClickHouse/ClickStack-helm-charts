@@ -2,7 +2,7 @@ suite: Test HyperDX App PodDisruptionBudget
 templates:
   - hyperdx/pdb.yaml
 tests:
-  - it: should render the app pdb when enabled
+  - it: should default to maxUnavailable 1 so a single replica can still be drained
     set:
       hyperdx:
         podDisruptionBudget:
@@ -11,13 +11,15 @@ tests:
       - isKind:
           of: PodDisruptionBudget
       - equal:
-          path: spec.minAvailable
+          path: spec.maxUnavailable
           value: 1
+      - notExists:
+          path: spec.minAvailable
       - matchRegex:
           path: metadata.name
           pattern: -pdb$
 
-  - it: should override minimum available replicas when specified
+  - it: should use minAvailable instead when specified
     set:
       hyperdx:
         podDisruptionBudget:
@@ -27,3 +29,16 @@ tests:
       - equal:
           path: spec.minAvailable
           value: 5
+      - notExists:
+          path: spec.maxUnavailable
+
+  - it: should override maxUnavailable when specified
+    set:
+      hyperdx:
+        podDisruptionBudget:
+          enabled: true
+          maxUnavailable: 2
+    asserts:
+      - equal:
+          path: spec.maxUnavailable
+          value: 2
