@@ -19,7 +19,7 @@ permissions:
 
 jobs:
   version-script-smoke:
-    # The release scripts (update-chart-versions.js, extract-release-notes.js)
+    # The release scripts (changeset version, update-chart-versions.js, extract-release-notes.js)
     # otherwise only run post-merge in release.yml; exercise them at PR time so
     # dependency bumps (e.g. js-yaml) can't break chart releases silently.
     runs-on: ubuntu-latest
@@ -29,10 +29,10 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Setup Node.js 22
+      - name: Setup Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 22
+          node-version-file: .nvmrc
 
       - name: Enable Corepack
         run: corepack enable
@@ -58,6 +58,21 @@ jobs:
             console.log(`Chart.yaml round-trip OK (version ${chart.version})`);
           '
           git checkout -- charts/*/Chart.yaml
+
+      - name: Run the release version script
+        run: |
+          # A config or CLI change can make `changeset version` consume changesets without bumping the private root package.
+          printf -- '---\n"helm-charts": patch\n---\n\nsmoke test\n' > .changeset/version-smoke.md
+          before=$(node -p 'require("./package.json").version')
+          yarn run version
+          after=$(node -p 'require("./package.json").version')
+          chart=$(sed -n 's/^version: //p' charts/clickstack/Chart.yaml)
+          if [ "$after" = "$before" ] || [ "$chart" != "$after" ]; then
+            echo "package.json $before -> $after, Chart.yaml $chart"
+            exit 1
+          fi
+          echo "Version bump OK ($before -> $after)"
+          git checkout -- .
 
       - name: Run extract-release-notes script
         run: |

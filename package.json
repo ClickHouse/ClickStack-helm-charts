@@ -15,5 +15,8 @@
     "@changesets/cli": "^3.0.3",
     "js-yaml": "^5.4.1"
   },
-  "packageManager": "yarn@4.9.2"
+  "packageManager": "yarn@4.9.2",
+  "engines": {
+    "node": "^22.11 || ^24 || >=26"
+  }
 }
