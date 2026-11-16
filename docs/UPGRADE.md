@@ -2,7 +2,7 @@
 
 Each section lists what changes when you upgrade to that chart version and anything you have to do first, newest first. A version that isn't listed needs nothing beyond `helm upgrade`. The full list of changes is in [CHANGELOG.md](../CHANGELOG.md).
 
-## Unreleased
+## 3.6.0
 
 - `helm upgrade` fails while your values still set the 1.x key `hyperdx.usageStatsEnabled`, which the chart has ignored since 2.0. Remove it, and set `hyperdx.config.USAGE_STATS_ENABLED: "false"` to opt out of usage stats.
 - The ClickHouse system log tables' TTL rises from 7 to 30 days, to match the ClickHouse operator's default. ClickHouse recreates each of those tables and keeps the old rows in a renamed `system.<table>_N` table; drop it once you no longer need it.
