@@ -393,7 +393,7 @@ clickhouse:
       containerTemplate:
         image:
           repository: clickhouse/clickhouse-keeper
-          tag: "26.8.36.3-alpine"
+          tag: "26.8.37.168-alpine"
       replicas: 1
       dataVolumeClaimSpec:
         accessModes:
@@ -407,7 +407,7 @@ clickhouse:
       containerTemplate:
         image:
           repository: clickhouse/clickhouse-server
-          tag: "26.8.36.3-alpine"
+          tag: "26.8.37.168-alpine"
         resources:
           requests:
             cpu: 500m
