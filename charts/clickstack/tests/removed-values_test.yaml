@@ -1,0 +1,262 @@
+suite: Test Removed 1.x Values
+templates:
+  - hyperdx/configmap.yaml
+tests:
+  - it: should render with the default values
+    asserts:
+      - isKind:
+          of: ConfigMap
+
+  - it: should list every removed key that is set, with its replacement
+    set:
+      tasks:
+        enabled: true
+      hyperdx:
+        replicas: 3
+      mongodb:
+        password: secret
+      clickhouse:
+        config:
+          users:
+            appUserPassword: secret
+    asserts:
+      - failedTemplate:
+          errorPattern: "- clickhouse.config: set ClickHouse credentials in hyperdx.secrets \\(CLICKHOUSE_PASSWORD, CLICKHOUSE_APP_PASSWORD\\)\\n- hyperdx.replicas: use hyperdx.deployment.replicas\\n- mongodb.password: use hyperdx.secrets.MONGODB_PASSWORD\\n- tasks: use hyperdx.tasks$"
+
+  - it: should fail on the 1.x frontendUrl key
+    set:
+      hyperdx:
+        frontendUrl: https://hyperdx.example.com
+    asserts:
+      - failedTemplate:
+          errorPattern: "hyperdx.frontendUrl: use hyperdx.config.FRONTEND_URL"
+
+  - it: should fail on removed in-cluster database settings
+    set:
+      mongodb:
+        persistence:
+          enabled: true
+      clickhouse:
+        resources: {}
+    asserts:
+      - failedTemplate:
+          errorPattern: "clickhouse.resources: configure the ClickHouseCluster resource under clickhouse.cluster.spec\n- mongodb.persistence: configure the MongoDBCommunity resource under mongodb.spec"
+
+  - it: should fail on removed global storage settings
+    set:
+      global:
+        storageClassName: fast-ssd
+    asserts:
+      - failedTemplate:
+          errorPattern: "global.storageClassName: set storageClassName"
+
+  - it: should allow current keys that share a parent with removed ones
+    set:
+      clickhouse:
+        port: 8124
+      hyperdx:
+        deployment:
+          replicas: 2
+        tasks:
+          enabled: false
+    asserts:
+      - isKind:
+          of: ConfigMap
+
+  - it: should report every removed key with its replacement
+    set:
+      clickhouse:
+        config: x
+        image: x
+        livenessProbe: x
+        nodeSelector: x
+        persistence: x
+        prometheus:
+          endpoint: x
+        readinessProbe: x
+        resources: x
+        service: x
+        startupProbe: x
+        terminationGracePeriodSeconds: x
+        tolerations: x
+      global:
+        keepPVC: x
+        storageClassName: x
+      hyperdx:
+        annotations: x
+        apiKey: x
+        apiPort: x
+        appPort: x
+        appUrl: x
+        defaultConnections: x
+        defaultSources: x
+        env: x
+        existingConfigConnectionsKey: x
+        existingConfigSecret: x
+        existingConfigSourcesKey: x
+        frontendUrl: x
+        image: x
+        ingress:
+          host: x
+          ingressClassName: x
+          path: x
+          pathType: x
+          proxyBodySize: x
+          proxyConnectTimeout: x
+          proxyReadTimeout: x
+          proxySendTimeout: x
+          tls: x
+        labels: x
+        livenessProbe: x
+        logLevel: x
+        mongoUri: x
+        nodeSelector: x
+        opampPort: x
+        otelExporterEndpoint: x
+        readinessProbe: x
+        replicas: x
+        tolerations: x
+        usageStatsEnabled: x
+        useExistingConfigSecret: x
+        waitForMongodb: x
+      mongodb:
+        image: x
+        livenessProbe: x
+        nodeSelector: x
+        password: x
+        persistence: x
+        port: x
+        readinessProbe: x
+        strategy: x
+        tolerations: x
+      otel: x
+      tasks: x
+    asserts:
+      - failedTemplate:
+          errorPattern: "- global\\.storageClassName: set\\ storageClassName\\ in\\ the\\ volume\\ claim\\ specs\\ under\\ mongodb\\.spec,\\ clickhouse\\.keeper\\.spec\\ and\\ clickhouse\\.cluster\\.spec(\n|$)"
+      - failedTemplate:
+          errorPattern: "- global\\.keepPVC: remove\\ it;\\ operator\\-managed\\ PVCs\\ are\\ always\\ kept\\ on\\ uninstall(\n|$)"
+      - failedTemplate:
+          errorPattern: "- tasks: use\\ hyperdx\\.tasks(\n|$)"
+      - failedTemplate:
+          errorPattern: "- otel: configure\\ the\\ otel\\-collector\\ subchart,\\ and\\ set\\ collector\\ env\\ vars\\ in\\ hyperdx\\.config\\ and\\ hyperdx\\.secrets(\n|$)"
+      - failedTemplate:
+          errorPattern: "- hyperdx\\.apiKey: use\\ hyperdx\\.secrets\\.HYPERDX_API_KEY(\n|$)"
+      - failedTemplate:
+          errorPattern: "- hyperdx\\.apiPort: use\\ hyperdx\\.ports\\.api(\n|$)"
+      - failedTemplate:
+          errorPattern: "- hyperdx\\.appPort: use\\ hyperdx\\.ports\\.app(\n|$)"
+      - failedTemplate:
+          errorPattern: "- hyperdx\\.opampPort: use\\ hyperdx\\.ports\\.opamp(\n|$)"
+      - failedTemplate:
+          errorPattern: "- hyperdx\\.appUrl: use\\ hyperdx\\.config\\.FRONTEND_URL(\n|$)"
+      - failedTemplate:
+          errorPattern: "- hyperdx\\.frontendUrl: use\\ hyperdx\\.config\\.FRONTEND_URL(\n|$)"
+      - failedTemplate:
+          errorPattern: "- hyperdx\\.logLevel: use\\ hyperdx\\.config\\.HYPERDX_LOG_LEVEL(\n|$)"
+      - failedTemplate:
+          errorPattern: "- hyperdx\\.usageStatsEnabled: use\\ hyperdx\\.config\\.USAGE_STATS_ENABLED\\ \\(a\\ string,\\ e\\.g\\.\\ \"false\"\\)(\n|$)"
+      - failedTemplate:
+          errorPattern: "- hyperdx\\.otelExporterEndpoint: use\\ hyperdx\\.config\\.OTEL_EXPORTER_OTLP_ENDPOINT(\n|$)"
+      - failedTemplate:
+          errorPattern: "- hyperdx\\.mongoUri: use\\ hyperdx\\.config\\.MONGO_URI(\n|$)"
+      - failedTemplate:
+          errorPattern: "- hyperdx\\.ingress\\.ingressClassName: move\\ into\\ hyperdx\\.ingress\\.spec,\\ and\\ nginx\\ proxy\\ settings\\ into\\ hyperdx\\.ingress\\.annotations(\n|$)"
+      - failedTemplate:
+          errorPattern: "- hyperdx\\.ingress\\.host: move\\ into\\ hyperdx\\.ingress\\.spec,\\ and\\ nginx\\ proxy\\ settings\\ into\\ hyperdx\\.ingress\\.annotations(\n|$)"
+      - failedTemplate:
+          errorPattern: "- hyperdx\\.ingress\\.path: move\\ into\\ hyperdx\\.ingress\\.spec,\\ and\\ nginx\\ proxy\\ settings\\ into\\ hyperdx\\.ingress\\.annotations(\n|$)"
+      - failedTemplate:
+          errorPattern: "- hyperdx\\.ingress\\.pathType: move\\ into\\ hyperdx\\.ingress\\.spec,\\ and\\ nginx\\ proxy\\ settings\\ into\\ hyperdx\\.ingress\\.annotations(\n|$)"
+      - failedTemplate:
+          errorPattern: "- hyperdx\\.ingress\\.tls: move\\ into\\ hyperdx\\.ingress\\.spec,\\ and\\ nginx\\ proxy\\ settings\\ into\\ hyperdx\\.ingress\\.annotations(\n|$)"
+      - failedTemplate:
+          errorPattern: "- hyperdx\\.ingress\\.proxyBodySize: move\\ into\\ hyperdx\\.ingress\\.spec,\\ and\\ nginx\\ proxy\\ settings\\ into\\ hyperdx\\.ingress\\.annotations(\n|$)"
+      - failedTemplate:
+          errorPattern: "- hyperdx\\.ingress\\.proxyConnectTimeout: move\\ into\\ hyperdx\\.ingress\\.spec,\\ and\\ nginx\\ proxy\\ settings\\ into\\ hyperdx\\.ingress\\.annotations(\n|$)"
+      - failedTemplate:
+          errorPattern: "- hyperdx\\.ingress\\.proxySendTimeout: move\\ into\\ hyperdx\\.ingress\\.spec,\\ and\\ nginx\\ proxy\\ settings\\ into\\ hyperdx\\.ingress\\.annotations(\n|$)"
+      - failedTemplate:
+          errorPattern: "- hyperdx\\.ingress\\.proxyReadTimeout: move\\ into\\ hyperdx\\.ingress\\.spec,\\ and\\ nginx\\ proxy\\ settings\\ into\\ hyperdx\\.ingress\\.annotations(\n|$)"
+      - failedTemplate:
+          errorPattern: "- hyperdx\\.image: use\\ hyperdx\\.deployment\\.image(\n|$)"
+      - failedTemplate:
+          errorPattern: "- hyperdx\\.replicas: use\\ hyperdx\\.deployment\\.replicas(\n|$)"
+      - failedTemplate:
+          errorPattern: "- hyperdx\\.livenessProbe: use\\ hyperdx\\.deployment\\.livenessProbe(\n|$)"
+      - failedTemplate:
+          errorPattern: "- hyperdx\\.readinessProbe: use\\ hyperdx\\.deployment\\.readinessProbe(\n|$)"
+      - failedTemplate:
+          errorPattern: "- hyperdx\\.nodeSelector: use\\ hyperdx\\.deployment\\.nodeSelector(\n|$)"
+      - failedTemplate:
+          errorPattern: "- hyperdx\\.tolerations: use\\ hyperdx\\.deployment\\.tolerations(\n|$)"
+      - failedTemplate:
+          errorPattern: "- hyperdx\\.annotations: use\\ hyperdx\\.deployment\\.annotations(\n|$)"
+      - failedTemplate:
+          errorPattern: "- hyperdx\\.labels: use\\ hyperdx\\.deployment\\.labels(\n|$)"
+      - failedTemplate:
+          errorPattern: "- hyperdx\\.env: use\\ hyperdx\\.deployment\\.env(\n|$)"
+      - failedTemplate:
+          errorPattern: "- hyperdx\\.waitForMongodb: use\\ hyperdx\\.deployment\\.waitForMongodb(\n|$)"
+      - failedTemplate:
+          errorPattern: "- hyperdx\\.useExistingConfigSecret: use\\ hyperdx\\.deployment\\.useExistingConfigSecret(\n|$)"
+      - failedTemplate:
+          errorPattern: "- hyperdx\\.existingConfigSecret: use\\ hyperdx\\.deployment\\.existingConfigSecret(\n|$)"
+      - failedTemplate:
+          errorPattern: "- hyperdx\\.existingConfigConnectionsKey: use\\ hyperdx\\.deployment\\.existingConfigConnectionsKey(\n|$)"
+      - failedTemplate:
+          errorPattern: "- hyperdx\\.existingConfigSourcesKey: use\\ hyperdx\\.deployment\\.existingConfigSourcesKey(\n|$)"
+      - failedTemplate:
+          errorPattern: "- hyperdx\\.defaultConnections: use\\ hyperdx\\.deployment\\.defaultConnections(\n|$)"
+      - failedTemplate:
+          errorPattern: "- hyperdx\\.defaultSources: use\\ hyperdx\\.deployment\\.defaultSources(\n|$)"
+      - failedTemplate:
+          errorPattern: "- mongodb\\.password: use\\ hyperdx\\.secrets\\.MONGODB_PASSWORD(\n|$)"
+      - failedTemplate:
+          errorPattern: "- mongodb\\.image: configure\\ the\\ MongoDBCommunity\\ resource\\ under\\ mongodb\\.spec(\n|$)"
+      - failedTemplate:
+          errorPattern: "- mongodb\\.port: configure\\ the\\ MongoDBCommunity\\ resource\\ under\\ mongodb\\.spec(\n|$)"
+      - failedTemplate:
+          errorPattern: "- mongodb\\.strategy: configure\\ the\\ MongoDBCommunity\\ resource\\ under\\ mongodb\\.spec(\n|$)"
+      - failedTemplate:
+          errorPattern: "- mongodb\\.nodeSelector: configure\\ the\\ MongoDBCommunity\\ resource\\ under\\ mongodb\\.spec(\n|$)"
+      - failedTemplate:
+          errorPattern: "- mongodb\\.tolerations: configure\\ the\\ MongoDBCommunity\\ resource\\ under\\ mongodb\\.spec(\n|$)"
+      - failedTemplate:
+          errorPattern: "- mongodb\\.persistence: configure\\ the\\ MongoDBCommunity\\ resource\\ under\\ mongodb\\.spec(\n|$)"
+      - failedTemplate:
+          errorPattern: "- mongodb\\.livenessProbe: configure\\ the\\ MongoDBCommunity\\ resource\\ under\\ mongodb\\.spec(\n|$)"
+      - failedTemplate:
+          errorPattern: "- mongodb\\.readinessProbe: configure\\ the\\ MongoDBCommunity\\ resource\\ under\\ mongodb\\.spec(\n|$)"
+      - failedTemplate:
+          errorPattern: "- clickhouse\\.prometheus\\.endpoint: remove\\ it;\\ only\\ clickhouse\\.prometheus\\.port\\ is\\ read(\n|$)"
+      - failedTemplate:
+          errorPattern: "- clickhouse\\.config: set\\ ClickHouse\\ credentials\\ in\\ hyperdx\\.secrets\\ \\(CLICKHOUSE_PASSWORD,\\ CLICKHOUSE_APP_PASSWORD\\)(\n|$)"
+      - failedTemplate:
+          errorPattern: "- clickhouse\\.image: configure\\ the\\ ClickHouseCluster\\ resource\\ under\\ clickhouse\\.cluster\\.spec(\n|$)"
+      - failedTemplate:
+          errorPattern: "- clickhouse\\.terminationGracePeriodSeconds: configure\\ the\\ ClickHouseCluster\\ resource\\ under\\ clickhouse\\.cluster\\.spec(\n|$)"
+      - failedTemplate:
+          errorPattern: "- clickhouse\\.resources: configure\\ the\\ ClickHouseCluster\\ resource\\ under\\ clickhouse\\.cluster\\.spec(\n|$)"
+      - failedTemplate:
+          errorPattern: "- clickhouse\\.livenessProbe: configure\\ the\\ ClickHouseCluster\\ resource\\ under\\ clickhouse\\.cluster\\.spec(\n|$)"
+      - failedTemplate:
+          errorPattern: "- clickhouse\\.readinessProbe: configure\\ the\\ ClickHouseCluster\\ resource\\ under\\ clickhouse\\.cluster\\.spec(\n|$)"
+      - failedTemplate:
+          errorPattern: "- clickhouse\\.startupProbe: configure\\ the\\ ClickHouseCluster\\ resource\\ under\\ clickhouse\\.cluster\\.spec(\n|$)"
+      - failedTemplate:
+          errorPattern: "- clickhouse\\.nodeSelector: configure\\ the\\ ClickHouseCluster\\ resource\\ under\\ clickhouse\\.cluster\\.spec(\n|$)"
+      - failedTemplate:
+          errorPattern: "- clickhouse\\.tolerations: configure\\ the\\ ClickHouseCluster\\ resource\\ under\\ clickhouse\\.cluster\\.spec(\n|$)"
+      - failedTemplate:
+          errorPattern: "- clickhouse\\.service: configure\\ the\\ ClickHouseCluster\\ resource\\ under\\ clickhouse\\.cluster\\.spec(\n|$)"
+      - failedTemplate:
+          errorPattern: "- clickhouse\\.persistence: configure\\ the\\ ClickHouseCluster\\ resource\\ under\\ clickhouse\\.cluster\\.spec(\n|$)"
+
+  - it: should treat a removed key set to null as unset
+    set:
+      hyperdx:
+        replicas: null
+    asserts:
+      - isKind:
+          of: ConfigMap

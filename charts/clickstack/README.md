@@ -63,7 +63,7 @@ Documented values below. Undocumented keys (operator CRD passthrough fields, sub
 | hyperdx.deployment.volumes | list | `[]` | Additional volumes to attach to the pod. |
 | hyperdx.ingress | object | `{"additionalIngresses":[],"annotations":{},"enabled":false,"spec":{}}` | Ingress for HyperDX. annotations and spec are rendered verbatim (nginx, ALB, Traefik, etc.). Use additionalIngresses for multi-ingress setups (e.g. separate OTEL collector ingress). |
 | hyperdx.networkPolicy | object | `{"enabled":false,"spec":{}}` | NetworkPolicy for HyperDX. spec is passed through verbatim. |
-| hyperdx.podDisruptionBudget | object | `{"enabled":false}` | PodDisruptionBudget for the HyperDX Deployment. |
+| hyperdx.podDisruptionBudget | object | `{"enabled":false}` | PodDisruptionBudget for the HyperDX Deployment. Defaults to maxUnavailable: 1, which never blocks a node drain; set minAvailable or maxUnavailable to override. |
 | hyperdx.ports | object | `{"api":8000,"app":3000,"opamp":4320}` | Ports shared across Deployment, Service, ConfigMap, and Ingress. |
 | hyperdx.secrets | object | `{"CLICKHOUSE_APP_PASSWORD":"hyperdx","CLICKHOUSE_PASSWORD":"otelcollectorpass","HYPERDX_API_KEY":"xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx","MONGODB_PASSWORD":"hyperdx"}` | Shared sensitive environment variables (clickstack-secret). Set to null to skip Secret creation (requires mongodb, clickhouse, and otel-collector disabled). Changes to this Secret roll the HyperDX Deployment; the otel-collector rolls on every helm upgrade. External Secrets need a manual rollout. |
 | hyperdx.service | object | `{"annotations":{},"apiPort":{"enabled":false},"type":"ClusterIP"}` | HyperDX Service (ClusterIP by default). |
