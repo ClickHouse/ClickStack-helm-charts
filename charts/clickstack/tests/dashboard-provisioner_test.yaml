@@ -1077,3 +1077,347 @@ tests:
       - failedTemplate:
           errorMessage: 'hyperdx.deployment.volumeMounts: the name "dashboards" and mountPath "/dashboards" are reserved by the dashboard provisioner'
         template: hyperdx/deployment.yaml
+
+  - it: should keep the release namespace in scope when includeReleaseNamespace is explicitly true
+    release:
+      namespace: observability
+    set:
+      hyperdx:
+        dashboards:
+          enabled: true
+          includeReleaseNamespace: true
+          namespaces:
+            - team-a
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[1].env
+          content:
+            name: NAMESPACE
+            value: observability,team-a
+        template: hyperdx/deployment.yaml
+      - hasDocuments:
+          count: 3
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      - isKind:
+          of: ClusterRole
+        documentIndex: 0
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      - equal:
+          path: metadata.namespace
+          value: observability
+        documentIndex: 1
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+
+  - it: should default to including the release namespace when the includeReleaseNamespace key is missing
+    release:
+      namespace: observability
+    set:
+      hyperdx:
+        dashboards:
+          enabled: true
+          includeReleaseNamespace: null
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[1].env
+          content:
+            name: NAMESPACE
+            value: observability
+        template: hyperdx/deployment.yaml
+      - isKind:
+          of: Role
+        documentIndex: 0
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      - equal:
+          path: metadata.namespace
+          value: observability
+        documentIndex: 0
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+
+  - it: should watch and grant only the listed namespace when includeReleaseNamespace is false
+    release:
+      namespace: observability
+    set:
+      hyperdx:
+        dashboards:
+          enabled: true
+          includeReleaseNamespace: false
+          namespaces:
+            - dashboards
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[1].env
+          content:
+            name: NAMESPACE
+            value: dashboards
+        template: hyperdx/deployment.yaml
+      # A namespaced Role + RoleBinding in the target namespace only: no ClusterRole,
+      # and nothing in the release namespace.
+      - hasDocuments:
+          count: 2
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      - isKind:
+          of: Role
+        documentIndex: 0
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      - equal:
+          path: metadata.namespace
+          value: dashboards
+        documentIndex: 0
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      - equal:
+          path: rules
+          value:
+            - apiGroups: [""]
+              resources: ["configmaps"]
+              verbs: ["list", "get", "watch"]
+        documentIndex: 0
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      - isKind:
+          of: RoleBinding
+        documentIndex: 1
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      - equal:
+          path: metadata.namespace
+          value: dashboards
+        documentIndex: 1
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      - equal:
+          path: roleRef
+          value:
+            apiGroup: rbac.authorization.k8s.io
+            kind: Role
+            name: RELEASE-NAME-clickstack-observability-dashboard-provisioner
+        documentIndex: 1
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      - equal:
+          path: subjects
+          value:
+            - kind: ServiceAccount
+              name: RELEASE-NAME-clickstack-app
+              namespace: observability
+        documentIndex: 1
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      # Outside the release namespace the names are namespace-qualified, so two
+      # same-named releases sharing a target namespace can't collide.
+      - equal:
+          path: metadata.name
+          value: RELEASE-NAME-clickstack-observability-dashboard-provisioner
+        documentIndex: 0
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+
+  - it: should render a namespaced Role and RoleBinding per listed namespace when includeReleaseNamespace is false
+    release:
+      namespace: observability
+    set:
+      hyperdx:
+        dashboards:
+          enabled: true
+          includeReleaseNamespace: false
+          namespaces:
+            - team-a
+            - team-b
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[1].env
+          content:
+            name: NAMESPACE
+            value: team-a,team-b
+        template: hyperdx/deployment.yaml
+      - hasDocuments:
+          count: 4
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      - isKind:
+          of: Role
+        documentIndex: 0
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      - equal:
+          path: metadata.namespace
+          value: team-a
+        documentIndex: 0
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      - isKind:
+          of: RoleBinding
+        documentIndex: 1
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      - equal:
+          path: metadata.namespace
+          value: team-a
+        documentIndex: 1
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      - isKind:
+          of: Role
+        documentIndex: 2
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      - equal:
+          path: metadata.namespace
+          value: team-b
+        documentIndex: 2
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      - isKind:
+          of: RoleBinding
+        documentIndex: 3
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      - equal:
+          path: metadata.namespace
+          value: team-b
+        documentIndex: 3
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      - equal:
+          path: roleRef.kind
+          value: Role
+        documentIndex: 3
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      - equal:
+          path: subjects[0].namespace
+          value: observability
+        documentIndex: 3
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+
+  - it: should keep the ClusterRole path when includeReleaseNamespace is false but the release namespace is listed
+    release:
+      namespace: observability
+    set:
+      hyperdx:
+        dashboards:
+          enabled: true
+          includeReleaseNamespace: false
+          namespaces:
+            - observability
+            - team-a
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[1].env
+          content:
+            name: NAMESPACE
+            value: observability,team-a
+        template: hyperdx/deployment.yaml
+      - hasDocuments:
+          count: 3
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      - isKind:
+          of: ClusterRole
+        documentIndex: 0
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+
+  - it: should still watch all namespaces with ALL when includeReleaseNamespace is false
+    set:
+      hyperdx:
+        dashboards:
+          enabled: true
+          includeReleaseNamespace: false
+          namespaces:
+            - ALL
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[1].env
+          content:
+            name: NAMESPACE
+            value: "ALL"
+        template: hyperdx/deployment.yaml
+      - isKind:
+          of: ClusterRole
+        documentIndex: 0
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      - isKind:
+          of: ClusterRoleBinding
+        documentIndex: 1
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+
+  - it: should render no RBAC but scope the watcher when includeReleaseNamespace is false and rbac.create is false
+    set:
+      hyperdx:
+        dashboards:
+          enabled: true
+          includeReleaseNamespace: false
+          namespaces:
+            - dashboards
+          rbac:
+            create: false
+    asserts:
+      - hasDocuments:
+          count: 0
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      - contains:
+          path: spec.template.spec.containers[1].env
+          content:
+            name: NAMESPACE
+            value: dashboards
+        template: hyperdx/deployment.yaml
+
+  - it: should fail when includeReleaseNamespace is false and no namespaces are listed
+    set:
+      hyperdx:
+        dashboards:
+          enabled: true
+          includeReleaseNamespace: false
+    asserts:
+      - failedTemplate:
+          errorMessage: "hyperdx.dashboards.includeReleaseNamespace: false requires at least one entry in hyperdx.dashboards.namespaces (otherwise the watcher has nothing to watch)"
+        template: hyperdx/deployment.yaml
+
+  - it: should fail when includeReleaseNamespace is false and namespaces is null
+    set:
+      hyperdx:
+        dashboards:
+          enabled: true
+          includeReleaseNamespace: false
+          namespaces: null
+    asserts:
+      - failedTemplate:
+          errorMessage: "hyperdx.dashboards.includeReleaseNamespace: false requires at least one entry in hyperdx.dashboards.namespaces (otherwise the watcher has nothing to watch)"
+        template: hyperdx/deployment.yaml
+
+  - it: should fail when inline configMaps are set but the release namespace is excluded from discovery
+    set:
+      hyperdx:
+        dashboards:
+          enabled: true
+          includeReleaseNamespace: false
+          namespaces:
+            - dashboards
+          configMaps:
+            test.json: |
+              { "name": "Test", "tiles": [] }
+    asserts:
+      - failedTemplate:
+          errorMessage: "hyperdx.dashboards.configMaps: inline dashboards are created in the release namespace, which includeReleaseNamespace: false excludes from discovery; list the release namespace in hyperdx.dashboards.namespaces or ship the dashboards as labeled ConfigMaps in a watched namespace"
+        template: hyperdx/deployment.yaml
+
+  - it: should allow inline configMaps when includeReleaseNamespace is false but the release namespace is listed
+    release:
+      namespace: observability
+    set:
+      hyperdx:
+        dashboards:
+          enabled: true
+          includeReleaseNamespace: false
+          namespaces:
+            - observability
+          configMaps:
+            test.json: |
+              { "name": "Test", "tiles": [] }
+    asserts:
+      - hasDocuments:
+          count: 1
+        template: hyperdx/dashboard-configmap.yaml
+      - contains:
+          path: spec.template.spec.containers[1].env
+          content:
+            name: NAMESPACE
+            value: observability
+        template: hyperdx/deployment.yaml
+
+  - it: should not enforce the includeReleaseNamespace guard when dashboards are disabled
+    set:
+      hyperdx:
+        dashboards:
+          enabled: false
+          includeReleaseNamespace: false
+    asserts:
+      - lengthEqual:
+          path: spec.template.spec.containers
+          count: 1
+        template: hyperdx/deployment.yaml
+      - hasDocuments:
+          count: 0
+        template: hyperdx/dashboard-provisioner-rbac.yaml

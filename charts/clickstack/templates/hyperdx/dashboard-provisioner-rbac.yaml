@@ -56,31 +56,37 @@ subjects:
     namespace: {{ $.Release.Namespace }}
 {{- end }}
 {{- else }}
-{{- /* Default: discovery scoped to the release namespace only — a namespaced Role, no cluster-scoped objects. */}}
+{{- /* Default: discovery scoped to the release namespace only — a namespaced Role, no cluster-scoped objects. With includeReleaseNamespace: false, the same namespaced Role + RoleBinding pair is rendered in each target namespace instead, and nothing in the release namespace. Outside the release namespace the names are namespace-qualified like the cluster-scoped objects above, so two same-named releases can't collide in a shared target namespace. */}}
+{{- range $i, $ns := (include "clickstack.hyperdx.effectiveNamespaces" . | splitList ",") }}
+{{- $name := ternary (printf "%s-dashboard-provisioner" $fullname) $clusterName (eq $ns $.Release.Namespace) }}
+{{- if $i }}
+---
+{{- end }}
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: {{ $fullname }}-dashboard-provisioner
-  namespace: {{ .Release.Namespace }}
+  name: {{ $name }}
+  namespace: {{ $ns }}
   labels:
-    {{- include "clickstack.labels" . | nindent 4 }}
+    {{- include "clickstack.labels" $ | nindent 4 }}
 rules:
-  {{- include "clickstack.hyperdx.dashboardRbacRules" . | nindent 2 }}
+  {{- include "clickstack.hyperdx.dashboardRbacRules" $ | nindent 2 }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: {{ $fullname }}-dashboard-provisioner
-  namespace: {{ .Release.Namespace }}
+  name: {{ $name }}
+  namespace: {{ $ns }}
   labels:
-    {{- include "clickstack.labels" . | nindent 4 }}
+    {{- include "clickstack.labels" $ | nindent 4 }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: {{ $fullname }}-dashboard-provisioner
+  name: {{ $name }}
 subjects:
   - kind: ServiceAccount
     name: {{ $saName }}
-    namespace: {{ .Release.Namespace }}
+    namespace: {{ $.Release.Namespace }}
+{{- end }}
 {{- end }}
 {{- end }}

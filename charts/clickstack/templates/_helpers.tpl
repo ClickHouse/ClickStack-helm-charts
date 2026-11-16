@@ -62,7 +62,8 @@ the namespaced Role and the cluster-scoped ClusterRole branches.
 {{/*
 Fail fast on invalid dashboards input instead of surfacing Go template panics or
 API-server rejections: unusable ServiceAccount config, a non-list or ill-typed
-namespaces value, the contradictory ALL-plus-named-namespaces scope, malformed
+namespaces value, the contradictory ALL-plus-named-namespaces scope, an empty scope
+or unwatched inline dashboards when the release namespace is excluded, malformed
 configMaps entries, and volume/mount names that collide with the provisioner's.
 */}}
 {{- define "clickstack.hyperdx.validateDashboards" -}}
@@ -79,6 +80,12 @@ configMaps entries, and volume/mount names that collide with the provisioner's.
 {{- if not (kindIs "string" .) -}}
 {{- fail "hyperdx.dashboards.namespaces: entries must be quoted strings" -}}
 {{- end -}}
+{{- end -}}
+{{- if and (ne (include "clickstack.hyperdx.dashboardsIncludeReleaseNamespace" .) "true") (not $namespaces) -}}
+{{- fail "hyperdx.dashboards.includeReleaseNamespace: false requires at least one entry in hyperdx.dashboards.namespaces (otherwise the watcher has nothing to watch)" -}}
+{{- end -}}
+{{- if and $dashboards.configMaps (ne (include "clickstack.hyperdx.dashboardsClusterWide" .) "true") (not (has .Release.Namespace (include "clickstack.hyperdx.effectiveNamespaces" . | splitList ","))) -}}
+{{- fail "hyperdx.dashboards.configMaps: inline dashboards are created in the release namespace, which includeReleaseNamespace: false excludes from discovery; list the release namespace in hyperdx.dashboards.namespaces or ship the dashboards as labeled ConfigMaps in a watched namespace" -}}
 {{- end -}}
 {{- if and (eq (include "clickstack.hyperdx.dashboardsClusterWide" .) "true") (gt (len $namespaces) 1) -}}
 {{- fail "hyperdx.dashboards.namespaces: \"ALL\" cannot be combined with specific namespaces (it already grants cluster-wide discovery)" -}}
@@ -117,15 +124,16 @@ configMaps entries, and volume/mount names that collide with the provisioner's.
 
 {{/*
 Namespaces the watcher discovers in for the non-ALL scope: the release namespace
-plus any configured extras, deduped and comma-joined. Single source for both the
-watcher NAMESPACE env and the per-namespace RoleBindings so watch scope and granted
-scope can't drift.
+(unless includeReleaseNamespace is false) plus any configured extras, deduped and
+comma-joined. Single source for both the watcher NAMESPACE env and the per-namespace
+RBAC objects so watch scope and granted scope can't drift.
 */}}
 {{- define "clickstack.hyperdx.effectiveNamespaces" -}}
 {{- $raw := default (list) (default (dict) .Values.hyperdx.dashboards).namespaces -}}
 {{- $namespaces := ternary $raw (list) (kindIs "slice" $raw) -}}
+{{- $base := ternary (list .Release.Namespace) (list) (eq (include "clickstack.hyperdx.dashboardsIncludeReleaseNamespace" .) "true") -}}
 {{- $trimmed := list -}}
-{{- range (concat (list .Release.Namespace) $namespaces) -}}
+{{- range (concat $base $namespaces) -}}
 {{- $trimmed = append $trimmed (trim (toString .)) -}}
 {{- end -}}
 {{- $trimmed | uniq | join "," -}}
@@ -142,12 +150,26 @@ Deployment, so the granted scope and the watched scope can't diverge. Renders "t
 {{- end -}}
 
 {{/*
-Whether discovery spans more than one namespace (the effective, deduped set is larger
-than just the release namespace). Selects the scoped ClusterRole + per-namespace
-RoleBinding path over a plain namespaced Role. Renders "true" or "".
+Whether discovery spans the release namespace plus at least one other namespace.
+Selects the scoped ClusterRole + per-namespace RoleBinding path over namespaced
+Roles. An effective set without the release namespace (includeReleaseNamespace:
+false) gets a namespaced Role + RoleBinding in each target namespace instead, so
+nothing is granted in the release namespace and no cluster-scoped object is
+created. Renders "true" or "".
 */}}
 {{- define "clickstack.hyperdx.dashboardsCrossNamespace" -}}
-{{- if gt (len (include "clickstack.hyperdx.effectiveNamespaces" . | splitList ",")) 1 }}true{{- end -}}
+{{- $effective := include "clickstack.hyperdx.effectiveNamespaces" . | splitList "," -}}
+{{- if and (gt (len $effective) 1) (has .Release.Namespace $effective) }}true{{- end -}}
+{{- end -}}
+
+{{/*
+Whether the release namespace is part of the watcher's discovery scope. A missing
+key (e.g. an upgrade with --reuse-values from a chart version without it) keeps the
+chart default of true. Renders "true" or "".
+*/}}
+{{- define "clickstack.hyperdx.dashboardsIncludeReleaseNamespace" -}}
+{{- $dashboards := default (dict) .Values.hyperdx.dashboards -}}
+{{- if or (not (hasKey $dashboards "includeReleaseNamespace")) $dashboards.includeReleaseNamespace }}true{{- end -}}
 {{- end -}}
 
 {{/*
