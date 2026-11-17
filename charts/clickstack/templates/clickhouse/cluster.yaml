@@ -1,4 +1,13 @@
 {{- if .Values.clickhouse.enabled }}
+{{- $spec := deepCopy .Values.clickhouse.cluster.spec }}
+{{- if include "clickstack.clickhouse.promqlEnabled" . }}
+{{- /* Chart defaults go first so anything the user sets under settings wins. */}}
+{{- $promql := include "clickstack.clickhouse.promqlSettings" . | fromYaml }}
+{{- $settings := default (dict) $spec.settings }}
+{{- $_ := set $settings "extraConfig" (mergeOverwrite (dict) $promql.extraConfig (default (dict) $settings.extraConfig)) }}
+{{- $_ := set $settings "extraUsersConfig" (mergeOverwrite (dict) $promql.extraUsersConfig (default (dict) $settings.extraUsersConfig)) }}
+{{- $_ := set $spec "settings" $settings }}
+{{- end }}
 apiVersion: clickhouse.com/v1alpha1
 kind: ClickHouseCluster
 metadata:
@@ -6,5 +15,5 @@ metadata:
   labels:
     {{- include "clickstack.labels" . | nindent 4 }}
 spec:
-  {{- tpl (toYaml .Values.clickhouse.cluster.spec) . | nindent 2 }}
+  {{- tpl (toYaml $spec) . | nindent 2 }}
 {{- end }}
