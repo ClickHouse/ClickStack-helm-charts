@@ -132,7 +132,7 @@ Requires: `kind`, `helm`, `kubectl`, `yq`.
 ## Git Conventions
 
 ### Branch Naming
-- Always prefix with the author's name: `<author>/HDX-3588-otel-autoscaling`, `<author>/fix-rbac-regression`
+- Always prefix with the author's name or handle: `<author>/HDX-3588-otel-autoscaling`, `<author>/fix-rbac-regression`
 
 ### Commits
 - Conventional commits: `feat:`, `fix:`, `chore:`, `refactor:`, `docs:`, `test:`, `ci:`
