@@ -1,5 +1,28 @@
 # helm-charts
 
+## 3.6.0
+
+### Minor Changes
+
+- 0abc547: fix: fail rendering when a 1.x value the chart no longer reads is still set (for example `hyperdx.replicas`, `mongodb.password`, `hyperdx.frontendUrl`, `hyperdx.ingress.tls`, the `otel:` block), listing each key with its replacement. Before, these were ignored and the chart fell back to its defaults, including default database passwords. Values files that still carry any of these keys must drop or move them before upgrading.
+
+  fix: `hyperdx.podDisruptionBudget` now defaults to `maxUnavailable: 1` instead of `minAvailable: 1`, which blocked node drains on a single replica. Set `minAvailable` or `maxUnavailable` to override.
+
+  docs: the upgrade guide now points `hyperdx.appUrl` and `hyperdx.frontendUrl` at `hyperdx.config.FRONTEND_URL`, and lists the moved ingress and deployment keys.
+
+- 5dbebec: Automatically roll HyperDX pods when the chart-managed ConfigMap or Secret content changes. The first upgrade containing this change adds checksum annotations and triggers a one-time HyperDX rollout.
+
+  The bundled otel-collector now rolls on every `helm upgrade`, so it picks up changes to `clickstack-config` and `clickstack-secret` such as a new `CLICKHOUSE_PASSWORD`.
+
+### Patch Changes
+
+- fb991e6: fix: stop the HyperDX UI sending its own telemetry to the in-cluster collector address, which browsers can't reach (#110, #158). `HDX_EXPORTER_ENABLED` now defaults to on only when `hyperdx.config.NEXT_PUBLIC_OTEL_EXPORTER_OTLP_ENDPOINT` is set to a browser-reachable collector URL. This also turns off the Next.js server's own telemetry by default; set `HDX_EXPORTER_ENABLED: "true"` to keep it.
+- 7bd924f: chore: bump ClickHouse server and keeper images to 26.8.37.168-alpine
+- 789c949: fix(clickstack): start the check-alerts CronJob through `bin/hyperdx` on HyperDX images 2.22.0 and newer, so the task loads the image's own self-telemetry preload. Images built after the switch to the ClickStack Node SDK need this. Older image tags keep their previous command.
+- b1e7326: fix: raise the system log table TTL from 7 to 30 days to match the ClickHouse operator's `systemLogsTTLDays` default (ClickHouse/clickhouse-operator#329). ClickHouse recreates each system table whose TTL changed and keeps the old rows in `system.<table>_0`; drop those once you no longer need them.
+- f33c69b: chore: update appVersion to 2.45.0
+- de4ecc9: fix: fail rendering when the removed 1.x `hyperdx.usageStatsEnabled` key is set, instead of ignoring it and leaving usage stats on. Set `hyperdx.config.USAGE_STATS_ENABLED: "false"` to opt out. The upgrade guide now lists the other 1.x `hyperdx.*` keys that moved.
+
 ## 3.5.0
 
 ### Minor Changes
