@@ -100,6 +100,14 @@ spec:
         - name: app
           image: "{{ .Values.hyperdx.deployment.image.repository }}:{{ .Values.hyperdx.deployment.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.hyperdx.deployment.image.pullPolicy }}
+          {{- with .Values.hyperdx.deployment.command }}
+          command:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.hyperdx.deployment.args }}
+          args:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           {{- with .Values.hyperdx.deployment.containerSecurityContext }}
           securityContext:
             {{- toYaml . | nindent 12 }}
