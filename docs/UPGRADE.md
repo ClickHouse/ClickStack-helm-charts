@@ -54,6 +54,8 @@ helm install clickstack-operators clickstack/clickstack-operators
 helm install my-clickstack clickstack/clickstack
 ```
 
+These commands use the `clickstack` Helm repo. To install from GHCR instead, replace `clickstack/<chart>` with `oci://ghcr.io/clickhouse/charts/<chart>`. See the [Quick Start](../README.md#quick-start).
+
 Uninstall in reverse order:
 
 ```bash
