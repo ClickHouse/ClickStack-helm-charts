@@ -24,6 +24,12 @@ helm repo update
 helm install my-clickstack clickstack/clickstack
 ```
 
+Or install from GHCR as an OCI artifact, with no `helm repo add`:
+
+```bash
+helm install my-clickstack oci://ghcr.io/clickhouse/charts/clickstack
+```
+
 See the [ClickStack Helm documentation](https://clickhouse.com/docs/use-cases/observability/clickstack/deployment/helm) for cloud-specific guides, ingress setup, and troubleshooting.
 
 ## Requirements

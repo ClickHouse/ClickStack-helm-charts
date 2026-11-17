@@ -14,6 +14,13 @@ helm install clickstack-operators clickstack/clickstack-operators
 helm install my-clickstack clickstack/clickstack
 ```
 
+Both charts are also published to GHCR as OCI artifacts, which needs no `helm repo add`:
+
+```bash
+helm install clickstack-operators oci://ghcr.io/clickhouse/charts/clickstack-operators
+helm install my-clickstack oci://ghcr.io/clickhouse/charts/clickstack
+```
+
 For configuration, cloud deployment, ingress setup, and troubleshooting, see the [official documentation](https://clickhouse.com/docs/use-cases/observability/clickstack/deployment/helm).
 
 ## Charts

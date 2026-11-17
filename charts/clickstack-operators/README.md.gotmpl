@@ -15,6 +15,12 @@ helm repo update
 helm install clickstack-operators clickstack/clickstack-operators
 ```
 
+Or install from GHCR as an OCI artifact, with no `helm repo add`:
+
+```bash
+helm install clickstack-operators oci://ghcr.io/clickhouse/charts/clickstack-operators
+```
+
 After the operators are ready, install the [clickstack](../clickstack) chart.
 
 {{ template "chart.requirementsSection" . }}
