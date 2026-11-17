@@ -218,7 +218,7 @@ tests:
 |----------|------|---------|---------|
 | Helm Chart Tests | `helm-test.yaml` | push/PR to main | `helm-unittest` job (unit tests + example validation + docs check) and `helmcov` job (template coverage; PR comment with line/branch coverage) |
 | Integration Test | `chart-test.yml` | push/PR/nightly | Kind-based integration suites |
-| Release | `release.yml` | after tests pass on main | Changeset version + chart release |
+| Release | `release.yml` | after tests pass on main | Changeset version + chart release; syncs `pages/` to the gh-pages landing page |
 | Update App Version | `update-app-version.yml` | workflow_dispatch | Bump `appVersion` in Chart.yaml |
 | Bump ClickHouse Image | `bump-clickhouse-image.yml` | weekly/workflow_dispatch | PR moving the ClickHouse server and keeper tags to the newest patch on their LTS line |
 
