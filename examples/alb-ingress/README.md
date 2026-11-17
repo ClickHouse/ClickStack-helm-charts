@@ -20,6 +20,8 @@ The primary ingress uses the chart's passthrough pattern: `annotations` and `spe
 
 ## Usage
 
+These commands use the `clickstack` Helm repo. To install from GHCR instead, replace `clickstack/<chart>` with `oci://ghcr.io/clickhouse/charts/<chart>`. See the [Quick Start](../../README.md#quick-start).
+
 ```bash
 # Install operators first (if not already installed)
 helm install clickstack-operators clickstack/clickstack-operators
