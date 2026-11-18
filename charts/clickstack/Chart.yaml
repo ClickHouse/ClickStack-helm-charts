@@ -27,7 +27,7 @@ annotations:
       url: https://github.com/ClickHouse/ClickStack-helm-charts/blob/main/docs/UPGRADE.md
 type: application
 version: 3.6.0
-appVersion: 2.45.0
+appVersion: 2.46.0
 dependencies:
   - name: opentelemetry-collector
     version: ~0.146.0
