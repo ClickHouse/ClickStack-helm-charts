@@ -26,5 +26,6 @@ helm install my-clickstack clickstack/clickstack
 
 - [Deploying with Helm](https://clickhouse.com/docs/use-cases/observability/clickstack/deployment/helm): configuration, cloud providers, ingress and troubleshooting
 - [Upgrade guide](https://github.com/ClickHouse/ClickStack-helm-charts/blob/main/docs/UPGRADE.md): what to change when moving between chart versions
+- [Artifact Hub](https://artifacthub.io/packages/search?repo=clickstack): both charts with their versions, default values and security reports
 - [Releases](https://github.com/ClickHouse/ClickStack-helm-charts/releases): chart packages and release notes
 - [Source and issues](https://github.com/ClickHouse/ClickStack-helm-charts)

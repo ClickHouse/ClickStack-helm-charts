@@ -2,6 +2,7 @@
 
 ![Version: 1.1.1](https://img.shields.io/badge/Version-1.1.1-informational?style=flat)
 ![Build Status](https://github.com/ClickHouse/ClickStack-helm-charts/actions/workflows/helm-test.yaml/badge.svg)
+[![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/clickstack)](https://artifacthub.io/packages/helm/clickstack/clickstack-operators)
 
 Operator dependencies for ClickStack. Install this chart before installing clickstack/clickstack to ensure CRDs are registered.
 
