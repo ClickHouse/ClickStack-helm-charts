@@ -42,6 +42,14 @@ hyperdx:
     app: 3000
     opamp: 4320
 
+  # -- PromQL support. Turns on the HyperDX PromQL UI and API, adds the PromQL default source,
+  # and configures ClickHouse with Prometheus remote write/read handlers, the `prometheus_api_v1`
+  # HTTP handler and `allow_experimental_time_series_table` (an experimental ClickHouse setting).
+  # The ClickHouse part needs ClickHouse 26.6 or newer and is skipped when
+  # `clickhouse.cluster.spec.containerTemplate.image.tag` is an older version.
+  promql:
+    enabled: true
+
   # -- Dashboard provisioning: upserts dashboard JSON into MongoDB (matched by name, never deletes).
   # Provide dashboards inline via configMaps, or label ConfigMaps hyperdx.io/dashboard: "true"
   # for a k8s-sidecar watcher to discover.
@@ -129,6 +137,9 @@ hyperdx:
     CLICKHOUSE_SERVER_ENDPOINT: '{{ include "clickstack.clickhouse.svc" . }}:{{ .Values.clickhouse.nativePort }}'
     CLICKHOUSE_PROMETHEUS_METRICS_ENDPOINT: '{{ include "clickstack.clickhouse.svc" . }}:{{ .Values.clickhouse.prometheus.port }}'
     OPAMP_SERVER_URL: 'http://{{ include "clickstack.hyperdx.fullname" . }}:{{ .Values.hyperdx.ports.opamp }}'
+    # PromQL feature flags, driven by hyperdx.promql.enabled.
+    ENABLE_PROMQL: '{{ if .Values.hyperdx.promql.enabled }}true{{ else }}false{{ end }}'
+    NEXT_PUBLIC_ENABLE_PROMQL: '{{ if .Values.hyperdx.promql.enabled }}true{{ else }}false{{ end }}'
 
   # -- Shared sensitive environment variables (clickstack-secret).
   # Set to null to skip Secret creation (requires mongodb, clickhouse, and otel-collector disabled).
@@ -297,6 +308,16 @@ hyperdx:
           "resourceAttributesExpression": "ResourceAttributes",
           "connection": "Local ClickHouse",
           "traceSourceId": "Traces"
+        },
+        {
+          "from": {
+            "databaseName": "default",
+            "tableName": "metrics_ts"
+          },
+          "kind": "promql",
+          "timestampValueExpression": "timestamp",
+          "name": "PromQL",
+          "connection": "Local ClickHouse"
         }
       ]
 
@@ -432,7 +453,9 @@ clickhouse:
               password: '{{ .Values.hyperdx.secrets.CLICKHOUSE_APP_PASSWORD }}'
               profile: default
               grants:
-                - query: "GRANT SHOW ON *.*, SELECT ON system.*, SELECT ON default.*"
+                # The prometheus_api_v1 handler reads via the timeSeriesSelector() table function,
+                # and ClickHouse gates every table function behind CREATE TEMPORARY TABLE.
+                - query: "GRANT SHOW ON *.*, SELECT ON system.*, SELECT ON default.*, CREATE TEMPORARY TABLE ON *.*"
             otelcollector:
               password: '{{ .Values.hyperdx.secrets.CLICKHOUSE_PASSWORD }}'
               profile: default
