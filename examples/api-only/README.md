@@ -32,6 +32,8 @@ The chart will fail to render if `secrets: null` is used while any subchart (Mon
 
 ## Usage
 
+These commands use the `clickstack` Helm repo. To install from GHCR instead, replace `clickstack/<chart>` with `oci://ghcr.io/clickhouse/charts/<chart>`. See the [Quick Start](../../README.md#quick-start).
+
 ```bash
 helm install my-api clickstack/clickstack \
   -f examples/api-only/values.yaml
