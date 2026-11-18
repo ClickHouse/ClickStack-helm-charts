@@ -4,16 +4,27 @@ description: >-
   A Helm chart for ClickStack - Full-stack observability with ClickHouse,
   OpenTelemetry, and HyperDX
 home: https://clickhouse.com/docs/use-cases/observability/clickstack
+icon: https://raw.githubusercontent.com/hyperdxio/hyperdx/main/packages/app/public/favicons/clickstack/favicon.svg
 sources:
+  - https://github.com/ClickHouse/ClickStack-helm-charts
   - https://github.com/hyperdxio/hyperdx
-  - https://github.com/hyperdxio/helm-charts
+keywords:
+  - observability
+  - opentelemetry
+  - clickhouse
+  - logs
+  - traces
+  - metrics
 annotations:
+  artifacthub.io/category: monitoring-logging
   artifacthub.io/license: MIT
   artifacthub.io/links: |
     - name: Chart Source
-      url: https://github.com/hyperdxio/helm-charts
+      url: https://github.com/ClickHouse/ClickStack-helm-charts
     - name: Upstream Project
       url: https://github.com/hyperdxio/hyperdx
+    - name: Upgrade Guide
+      url: https://github.com/ClickHouse/ClickStack-helm-charts/blob/main/docs/UPGRADE.md
 type: application
 version: 3.6.0
 appVersion: 2.45.0

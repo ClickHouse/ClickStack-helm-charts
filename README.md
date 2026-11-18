@@ -1,5 +1,8 @@
 # ClickStack Helm Charts
 
+[![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/clickstack)](https://artifacthub.io/packages/search?repo=clickstack)
+[![Build Status](https://github.com/ClickHouse/ClickStack-helm-charts/actions/workflows/helm-test.yaml/badge.svg)](https://github.com/ClickHouse/ClickStack-helm-charts/actions/workflows/helm-test.yaml)
+
 **ClickStack** is an open-source observability stack combining ClickHouse, HyperDX, and OpenTelemetry for logs, metrics, and traces.
 
 ## Quick Start

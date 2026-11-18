@@ -2,6 +2,7 @@
 
 ![Version: 3.6.0](https://img.shields.io/badge/Version-3.6.0-informational?style=flat)
 ![Build Status](https://github.com/ClickHouse/ClickStack-helm-charts/actions/workflows/helm-test.yaml/badge.svg)
+[![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/clickstack)](https://artifacthub.io/packages/helm/clickstack/clickstack)
 
 A Helm chart for ClickStack - Full-stack observability with ClickHouse, OpenTelemetry, and HyperDX
 
@@ -9,8 +10,8 @@ A Helm chart for ClickStack - Full-stack observability with ClickHouse, OpenTele
 
 ## Source Code
 
+* <https://github.com/ClickHouse/ClickStack-helm-charts>
 * <https://github.com/hyperdxio/hyperdx>
-* <https://github.com/hyperdxio/helm-charts>
 
 ## Prerequisites
 

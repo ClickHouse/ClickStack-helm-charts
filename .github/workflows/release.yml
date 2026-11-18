@@ -79,3 +79,20 @@ jobs:
               helm push "$pkgs/$tag.tgz" "$OCI_REPO"
             fi
           done
+      - name: Sync Pages landing page
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # The Pages site is the gh-pages branch; its landing page lives in pages/ so it is reviewed on main.
+        run: |
+          site=$(mktemp -d)
+          git fetch --no-tags origin gh-pages
+          git worktree add --detach "$site" FETCH_HEAD
+          cp -R pages/. "$site/"
+          cd "$site"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Pages landing page is up to date"
+            exit 0
+          fi
+          git commit -m "docs: sync Pages landing page from ${GITHUB_SHA::7}"
+          git push "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:gh-pages
