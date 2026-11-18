@@ -2,7 +2,7 @@
 
 Each section lists what changes when you upgrade to that chart version and anything you have to do first, newest first. A version that isn't listed needs nothing beyond `helm upgrade`. The full list of changes is in [CHANGELOG.md](../CHANGELOG.md).
 
-## Unreleased
+## 3.7.0
 
 - PromQL is on by default via `hyperdx.promql.enabled`. The chart adds Prometheus remote write/read handlers, the `prometheus_api_v1` HTTP handler and the experimental `allow_experimental_time_series_table` setting to the ClickHouse config, so the ClickHouse pods restart once. If you pin `clickhouse.cluster.spec.containerTemplate.image.tag` to a version older than 26.6, the ClickHouse settings are skipped but the HyperDX PromQL UI still shows; set `hyperdx.promql.enabled: false` there. New installs also get a `PromQL` default source; existing sources are not modified.
 
