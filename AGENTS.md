@@ -221,7 +221,7 @@ tests:
 |----------|------|---------|---------|
 | Helm Chart Tests | `helm-test.yaml` | push/PR to main | `helm-unittest` job (unit tests + example validation + docs check), `helmcov` job (template coverage; PR comment with line/branch coverage), and `version-script-smoke` job (changeset version and release-notes scripts) |
 | Helm Chart Integration Test | `chart-test.yml` | push/PR/nightly | Kind-based integration suites |
-| Release Helm Charts | `release.yml` | after either test workflow succeeds on a push to main | Changeset version + chart release |
+| Release Helm Charts | `release.yml` | after either test workflow succeeds on a push to main | Changeset version + chart release; syncs `pages/` to the gh-pages landing page |
 | Upgrade Notes | `upgrade-notes.yml` | PR to main | Requires a `docs/UPGRADE.md` note for `major` changesets; warns on `minor` |
 | Lint Workflows | `lint-workflows.yml` | push/PR to main touching workflows | `actionlint` and `zizmor` |
 | Deep Code Review | `deep-review.yml` | non-draft PR opened/updated, workflow_dispatch | Multi-agent Claude review posted as a sticky PR comment |
