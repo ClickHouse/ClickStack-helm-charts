@@ -9,8 +9,8 @@ A Helm chart for ClickStack - Full-stack observability with ClickHouse, OpenTele
 
 ## Source Code
 
+* <https://github.com/ClickHouse/ClickStack-helm-charts>
 * <https://github.com/hyperdxio/hyperdx>
-* <https://github.com/hyperdxio/helm-charts>
 
 ## Prerequisites
 
