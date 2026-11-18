@@ -10,7 +10,3 @@ updates:
     groups:
       github-actions:
         patterns: ["*"]
-    ignore:
-      # v2 needs @changesets/cli v3; drop this when package.json moves to v3.
-      - dependency-name: changesets/action
-        update-types: ["version-update:semver-major"]
