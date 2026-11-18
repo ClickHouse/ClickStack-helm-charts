@@ -1,5 +1,18 @@
 # helm-charts
 
+## 3.7.0
+
+### Minor Changes
+
+- 3827716: feat: add PromQL support behind `hyperdx.promql.enabled` (on by default). Sets `ENABLE_PROMQL` and `NEXT_PUBLIC_ENABLE_PROMQL`, adds a PromQL default source on the `metrics_ts` TimeSeries table, and configures ClickHouse with Prometheus remote write/read handlers, the `prometheus_api_v1` HTTP handler and `allow_experimental_time_series_table` on the default profile, and grants the `app` user `CREATE TEMPORARY TABLE` so the handler can evaluate queries. The ClickHouse settings need ClickHouse 26.6 or newer and are skipped automatically on older image tags.
+
+### Patch Changes
+
+- 8a312e9: chore: chart metadata now points at the ClickHouse/ClickStack-helm-charts repo instead of the old hyperdxio/helm-charts location, and adds an icon, keywords and Artifact Hub category so both charts show up properly on Artifact Hub.
+- 9f9aedf: fix: raise the dashboard watcher's default memory to a 128Mi limit and a 64Mi request (were 64Mi and 32Mi). At 64Mi the `kiwigrid/k8s-sidecar` watcher was OOMKilled about once a minute even with only a few small dashboards, so its initial sync never finished and the pod never became Ready; at 128Mi its working set stayed near 72Mi with a 95Mi peak and it did not restart. Override `hyperdx.dashboards.resources` to keep the old values.
+- b37d395: docs: the READMEs now show how to install both charts from GHCR (`oci://ghcr.io/clickhouse/charts`) as well as from the Helm repo.
+- 6403f07: chore: update appVersion to 2.46.0
+
 ## 3.6.0
 
 ### Minor Changes
