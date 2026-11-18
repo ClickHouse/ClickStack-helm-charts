@@ -13,16 +13,18 @@ Package manager: Yarn 4 (via Corepack). Versioning: Changesets.
 Use the Makefile for tool setup, unit tests, and template coverage:
 
 ```bash
-make setup      # install helm-unittest, helm-docs, chart deps, and git hooks
-make test       # helm-unittest + example values validation
-make coverage   # helmcov template coverage
+make setup        # install helm-unittest, helm-docs, chart deps, and git hooks
+make test         # helm-unittest + example values validation
+make coverage     # helmcov template coverage
+make docs         # regenerate chart READMEs via helm-docs
 make integration  # Kind integration suites (SUITES=api-only for one)
-make ci         # test + coverage + docs verification
+make ci           # test + coverage + docs verification
 ```
 
 The pre-commit hook runs `make test` when staged files under `charts/` change, and
-`make docs` when chart values, templates, or README templates change. Install hooks
-with `make setup` or `make hooks`.
+`make docs-check` (fails if the chart READMEs are stale) when `Chart.yaml`, `values.yaml`,
+templates, or README templates change. It skips both with a warning if `helm` is not
+installed. Install hooks with `make setup` or `make hooks`.
 
 ## Build & Dependency Commands
 
@@ -60,7 +62,7 @@ helm unittest -f 'tests/clickhouse-*_test.yaml' charts/clickstack
 ```
 
 Test files live in `charts/clickstack/tests/` and follow the naming convention
-`<component>_test.yaml`. Snapshots are stored in `tests/__snapshot__/`.
+`<component>_test.yaml`.
 
 Shared value fixtures live in `charts/clickstack/tests/values/<case>.yaml` and are
 loaded with the suite-level `values:` key when a test needs more data than inline
@@ -110,9 +112,9 @@ make docs
 ```
 
 Regenerates `charts/*/README.md` from `values.yaml` using [helm-docs](https://github.com/norwoodj/helm-docs).
-Only values with `#` comments in `values.yaml` appear in the README (`--ignore-non-descriptions`).
+Only values with `# --` comments in `values.yaml` appear in the README (`--ignore-non-descriptions`).
 Each chart README includes version and CI build status badges.
-The pre-commit hook verifies docs are up to date when values or templates change.
+The pre-commit hook and CI (`make docs-check`) fail when the READMEs are out of date.
 
 ### Integration Tests (Kind cluster)
 
@@ -127,12 +129,13 @@ make integration SUITES=api-only # one suite
 Each suite creates a `test-<suite>` Kind cluster and deletes it afterwards. The
 full-stack suite also runs `scripts/smoke-test.sh` and the Playwright checks in `scripts/e2e/`.
 
-Requires: `kind`, `helm`, `kubectl`, `yq`.
+Requires: `kind`, `helm`, `kubectl`, `yq`. The full-stack suite also needs Node.js and npm
+for Playwright.
 
 ## Git Conventions
 
 ### Branch Naming
-- Always prefix with `warren/`: `warren/HDX-3588-otel-autoscaling`, `warren/fix-rbac-regression`
+- Always prefix with the author's name or handle: `<author>/HDX-3588-otel-autoscaling`, `<author>/fix-rbac-regression`
 
 ### Commits
 - Conventional commits: `feat:`, `fix:`, `chore:`, `refactor:`, `docs:`, `test:`, `ci:`
@@ -140,12 +143,13 @@ Requires: `kind`, `helm`, `kubectl`, `yq`.
 - Reference Linear ticket when applicable: `fix: make -app suffix conditional on fullnameOverride (HDX-3850)`
 
 ### Pull Requests
-- Title: `[HDX-<ticket>] <description>`
-- Include Linear ticket link in description
+- Title: conventional-commit style, same as commits: `fix(ci): pin changesets/action to v1`.
+  Kodiak uses the PR title as the squash commit subject.
+- Include Linear ticket link in description when there is one
 - Merge strategy: squash merge (Kodiak auto-merge with `automerge` label)
 
 ### Changesets
-- Add a changeset for user-facing changes: `npx changeset`
+- Add a changeset for user-facing changes: `yarn changeset`
 - Changesets live in `.changeset/` and drive version bumps on release
 - If a change needs action on upgrade or restarts pods, add a bullet under `## Unreleased` in
   `docs/UPGRADE.md` (create the heading if the last release consumed it). The release renames it to
@@ -159,20 +163,19 @@ Requires: `kind`, `helm`, `kubectl`, `yq`.
 - Always use `include` (not `template`) so output can be piped to functions
 
 ### Template Files
-- Organized by component: `templates/hyperdx/`, `templates/clickhouse/`, `templates/mongodb/`
+- Organized by component: `templates/hyperdx/`, `templates/clickhouse/`, `templates/mongodb/`, `templates/otel-collector/`
 - Use `nindent` for indentation in template pipelines: `{{- include "clickstack.labels" . | nindent 4 }}`
 - Quote string values with `| quote`; use `toYaml` for complex values
 - Guard optional sections with `{{- if .Values.x.y }}` blocks
-- Use `tpl` for values that may contain template expressions (see configmap.yaml)
+- Use `tpl` for values that may contain template expressions (see `clickstack.hyperdx.configmap` in `_helpers.tpl`)
 
 ### Values Structure (`values.yaml`)
-- Top-level keys: `global`, `hyperdx`, `clickhouse`, `mongodb`, `otel-collector`
+- Top-level keys: `global`, `hyperdx`, `mongodb`, `clickhouse`, `additionalManifests`, `otel-collector`
 - Document user-facing values with `# --` comments directly above each key (helm-docs format)
 - `make docs` omits undocumented keys (`--ignore-non-descriptions`); prefer commenting parent keys for operator/subchart passthrough specs
 - `hyperdx.config` — non-sensitive env vars (ConfigMap), supports `tpl` expressions
 - `hyperdx.secrets` — sensitive env vars (Secret); set to `null` to skip creation
 - `hyperdx.deployment` — Deployment spec (image, replicas, resources, probes, etc.)
-- Document all values with inline YAML comments
 
 ### Labels
 - Always include common labels via `{{- include "clickstack.labels" . | nindent 4 }}`
@@ -207,18 +210,22 @@ tests:
 
 ## Shell Script Conventions
 
-- Always start with `#!/usr/bin/env bash` and `set -euo pipefail`
+- Always start with `#!/usr/bin/env bash` and `set -euo pipefail` (see `scripts/helmcov.sh`)
 - Use uppercase for exported env vars: `RELEASE_NAME`, `NAMESPACE`, `SUITE_DIR`
-- Use functions for reusable logic (see `smoke-test.sh`, `run-suite.sh`)
+- Use functions for reusable logic (see `scripts/smoke-test.sh`, `integration-tests/run-suite.sh`)
 - Default variables with `${VAR:-default}` or `${1:?Usage message}`
 
 ## CI Workflows
 
 | Workflow | File | Trigger | Purpose |
 |----------|------|---------|---------|
-| Helm Chart Tests | `helm-test.yaml` | push/PR to main | `helm-unittest` job (unit tests + example validation + docs check) and `helmcov` job (template coverage; PR comment with line/branch coverage) |
-| Integration Test | `chart-test.yml` | push/PR/nightly | Kind-based integration suites |
-| Release | `release.yml` | after tests pass on main | Changeset version + chart release |
+| Helm Chart Tests | `helm-test.yaml` | push/PR to main | `helm-unittest` job (unit tests + example validation + docs check), `helmcov` job (template coverage; PR comment with line/branch coverage), and `version-script-smoke` job (changeset version and release-notes scripts) |
+| Helm Chart Integration Test | `chart-test.yml` | push/PR/nightly | Kind-based integration suites |
+| Release Helm Charts | `release.yml` | after either test workflow succeeds on a push to main | Changeset version + chart release |
+| Upgrade Notes | `upgrade-notes.yml` | PR to main | Requires a `docs/UPGRADE.md` note for `major` changesets; warns on `minor` |
+| Lint Workflows | `lint-workflows.yml` | push/PR to main touching workflows | `actionlint` and `zizmor` |
+| Deep Code Review | `deep-review.yml` | non-draft PR opened/updated, workflow_dispatch | Multi-agent Claude review posted as a sticky PR comment |
+| Alert on external contributions | `external-contributor-alerts.yml` | issue/PR opened | Labels external issues/PRs and posts them to Slack |
 | Update App Version | `update-app-version.yml` | workflow_dispatch | Bump `appVersion` in Chart.yaml |
 | Bump ClickHouse Image | `bump-clickhouse-image.yml` | weekly/workflow_dispatch | PR moving the ClickHouse server and keeper tags to the newest patch on their LTS line |
 
@@ -232,4 +239,6 @@ tests:
 - Example values: `examples/*/values.yaml`
 - Version sync script: `scripts/update-chart-versions.js`
 - Smoke test: `scripts/smoke-test.sh`
-- Makefile: `make setup`, `make test`, `make coverage`
+- Makefile: `Makefile`
+- Pinned tool versions and coverage thresholds: `scripts/tool-versions.env`
+- Upgrade guide: `docs/UPGRADE.md`

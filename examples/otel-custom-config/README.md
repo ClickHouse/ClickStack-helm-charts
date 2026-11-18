@@ -33,6 +33,8 @@ The custom config is merged **leaf-by-leaf** on top of the collector's built-in 
 
 ## Usage
 
+These commands use the `clickstack` Helm repo. To install from GHCR instead, replace `clickstack/<chart>` with `oci://ghcr.io/clickhouse/charts/<chart>`. See the [Quick Start](../../README.md#quick-start).
+
 ```bash
 helm install my-clickstack clickstack/clickstack -f values.yaml
 ```
