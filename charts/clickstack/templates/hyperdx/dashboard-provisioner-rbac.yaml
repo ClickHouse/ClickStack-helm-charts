@@ -56,9 +56,9 @@ subjects:
     namespace: {{ $.Release.Namespace }}
 {{- end }}
 {{- else }}
-{{- /* Default: discovery scoped to the release namespace only — a namespaced Role, no cluster-scoped objects. With includeReleaseNamespace: false, the same namespaced Role + RoleBinding pair is rendered in each target namespace instead, and nothing in the release namespace. Outside the release namespace the names are namespace-qualified like the cluster-scoped objects above, so two same-named releases can't collide in a shared target namespace. */}}
+{{- /* Default: discovery scoped to the release namespace only — a namespaced Role, no cluster-scoped objects. With includeReleaseNamespace: false, the same namespaced Role + RoleBinding pair is rendered in each target namespace instead, and nothing in the release namespace. Outside the release namespace the names are namespace-qualified like the cluster-scoped objects above, so two same-named releases can't collide in a shared target namespace, and carry a -scoped suffix so they never reuse the name of the cross-namespace path's RoleBinding (roleRef ClusterRole) in that namespace: roleRef is immutable, so flipping includeReleaseNamespace on an existing install would otherwise fail the upgrade. The suffix always survives: $clusterName is at most 149 characters (fullname and namespace are at most 63 each), well under the 253 RBAC names allow. */}}
 {{- range $i, $ns := (include "clickstack.hyperdx.effectiveNamespaces" . | splitList ",") }}
-{{- $name := ternary (printf "%s-dashboard-provisioner" $fullname) $clusterName (eq $ns $.Release.Namespace) }}
+{{- $name := ternary (printf "%s-dashboard-provisioner" $fullname) (printf "%s-scoped" $clusterName) (eq $ns $.Release.Namespace) }}
 {{- if $i }}
 ---
 {{- end }}

@@ -1186,7 +1186,7 @@ tests:
           value:
             apiGroup: rbac.authorization.k8s.io
             kind: Role
-            name: RELEASE-NAME-clickstack-observability-dashboard-provisioner
+            name: RELEASE-NAME-clickstack-observability-dashboard-provisioner-scoped
         documentIndex: 1
         template: hyperdx/dashboard-provisioner-rbac.yaml
       - equal:
@@ -1198,11 +1198,57 @@ tests:
         documentIndex: 1
         template: hyperdx/dashboard-provisioner-rbac.yaml
       # Outside the release namespace the names are namespace-qualified, so two
-      # same-named releases sharing a target namespace can't collide.
+      # same-named releases sharing a target namespace can't collide, and carry
+      # -scoped so they never reuse the cross-namespace RoleBinding's name (see the
+      # next-but-one test): roleRef is immutable.
+      - equal:
+          path: metadata.name
+          value: RELEASE-NAME-clickstack-observability-dashboard-provisioner-scoped
+        documentIndex: 0
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      - equal:
+          path: metadata.name
+          value: RELEASE-NAME-clickstack-observability-dashboard-provisioner-scoped
+        documentIndex: 1
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+
+  # Flipping includeReleaseNamespace on an existing install must not change the
+  # roleRef of an existing RoleBinding: the API server rejects that ("roleRef:
+  # Invalid value"), so the upgrade would fail. With the same target namespace,
+  # the cross-namespace path (true) binds it with a RoleBinding to the ClusterRole
+  # and the Role path (false) with a RoleBinding to a Role, so the two must have
+  # different names in that namespace.
+  - it: should not reuse the cross-namespace RoleBinding name in a target namespace when includeReleaseNamespace flips
+    release:
+      namespace: observability
+    set:
+      hyperdx:
+        dashboards:
+          enabled: true
+          includeReleaseNamespace: true
+          namespaces:
+            - dashboards
+    asserts:
+      # includeReleaseNamespace: true -> {observability, dashboards}: one ClusterRole,
+      # then a RoleBinding per namespace; the one in `dashboards` is document 2.
+      - isKind:
+          of: RoleBinding
+        documentIndex: 2
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      - equal:
+          path: metadata.namespace
+          value: dashboards
+        documentIndex: 2
+        template: hyperdx/dashboard-provisioner-rbac.yaml
       - equal:
           path: metadata.name
           value: RELEASE-NAME-clickstack-observability-dashboard-provisioner
-        documentIndex: 0
+        documentIndex: 2
+        template: hyperdx/dashboard-provisioner-rbac.yaml
+      - equal:
+          path: roleRef.kind
+          value: ClusterRole
+        documentIndex: 2
         template: hyperdx/dashboard-provisioner-rbac.yaml
 
   - it: should render a namespaced Role and RoleBinding per listed namespace when includeReleaseNamespace is false
