@@ -11,6 +11,14 @@ tests:
           path: spec.settings.extraUsersConfig.users.app.profile
           value: default
 
+  # The prometheus_api_v1 handler reads through the timeSeriesSelector() table function,
+  # and ClickHouse requires CREATE TEMPORARY TABLE to use any table function.
+  - it: should grant the app user CREATE TEMPORARY TABLE for PromQL queries
+    asserts:
+      - matchRegex:
+          path: spec.settings.extraUsersConfig.users.app.grants[0].query
+          pattern: CREATE TEMPORARY TABLE ON \*\.\*
+
   - it: should include otelcollector user in extraUsersConfig
     asserts:
       - isNotNull:

@@ -57,6 +57,28 @@ tests:
           path: data.HDX_EXPORTER_ENABLED
           value: "true"
 
+  - it: should enable the PromQL feature flags by default
+    asserts:
+      - equal:
+          path: data.ENABLE_PROMQL
+          value: "true"
+      - equal:
+          path: data.NEXT_PUBLIC_ENABLE_PROMQL
+          value: "true"
+
+  - it: should disable the PromQL feature flags when hyperdx.promql.enabled is false
+    set:
+      hyperdx:
+        promql:
+          enabled: false
+    asserts:
+      - equal:
+          path: data.ENABLE_PROMQL
+          value: "false"
+      - equal:
+          path: data.NEXT_PUBLIC_ENABLE_PROMQL
+          value: "false"
+
   - it: should fail when the removed 1.x usageStatsEnabled key is set
     set:
       hyperdx:

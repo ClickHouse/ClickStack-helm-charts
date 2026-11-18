@@ -335,6 +335,68 @@ ClickHouse headless service name. The operator creates a headless service named 
 {{- end }}
 
 {{/*
+Whether the ClickHouse PromQL config is injected into the ClickHouseCluster CR.
+Needs hyperdx.promql.enabled and a ClickHouse server image of 26.6 or newer, the
+first release with the prometheus_api_v1 handler. The tag is read from
+clickhouse.cluster.spec.containerTemplate.image.tag; a four-part ClickHouse version
+and an image-variant suffix such as "-alpine" are reduced to semver first. A tag
+that carries no version (e.g. "latest") is assumed new enough. Renders "true" or "".
+*/}}
+{{- define "clickstack.clickhouse.promqlEnabled" -}}
+{{- if .Values.hyperdx.promql.enabled -}}
+{{- $tag := toString (dig "containerTemplate" "image" "tag" "" .Values.clickhouse.cluster.spec) -}}
+{{- $version := regexFind "^[0-9]+\\.[0-9]+(\\.[0-9]+)?" $tag -}}
+{{- if or (not $version) (semverCompare ">= 26.6" $version) }}true{{- end -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+ClickHouse settings that back PromQL, merged under the user's
+clickhouse.cluster.spec.settings by clickhouse/cluster.yaml. Mirrors the upstream
+ClickStack config.xml/users.xml: Prometheus remote write/read into the TimeSeries
+table the otel-collector creates, the Prometheus HTTP API on the main HTTP port, and
+the experimental setting the TimeSeries engine needs. The metrics handler is
+repeated because ClickHouse ignores its legacy prometheus.endpoint settings once a
+handlers block exists.
+*/}}
+{{- define "clickstack.clickhouse.promqlSettings" -}}
+{{- $database := .Values.hyperdx.config.HYPERDX_OTEL_EXPORTER_CLICKHOUSE_DATABASE | default "default" }}
+extraConfig:
+  prometheus:
+    handlers:
+      metrics_handler:
+        url: /metrics
+        handler:
+          type: expose_metrics
+          metrics: true
+          asynchronous_metrics: true
+          events: true
+          errors: true
+      remote_write_handler:
+        url: /write
+        handler:
+          type: remote_write
+          database: {{ $database | quote }}
+          table: metrics_ts
+      remote_read_handler:
+        url: /read
+        handler:
+          type: remote_read
+          database: {{ $database | quote }}
+          table: metrics_ts
+  http_handlers:
+    rule:
+      url_prefix: /prometheus/api/v1
+      handler:
+        type: prometheus_api_v1
+    defaults: ""
+extraUsersConfig:
+  profiles:
+    default:
+      allow_experimental_time_series_table: 1
+{{- end }}
+
+{{/*
 Render the chart-managed HyperDX ConfigMap from one canonical template so the
 manifest and the Deployment rollout checksum cannot drift.
 */}}

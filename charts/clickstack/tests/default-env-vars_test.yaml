@@ -127,6 +127,17 @@ tests:
           path: spec.template.spec.containers[0].env[?(@.name == "DEFAULT_SOURCES")].value
           pattern: '"exponential histogram": "otel_metrics_exponential_histogram"'
 
+  # HyperDX only creates promql-kind default sources when ENABLE_PROMQL is true,
+  # so the entry is safe to ship regardless of hyperdx.promql.enabled.
+  - it: should include a PromQL source backed by the TimeSeries table
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].env[?(@.name == "DEFAULT_SOURCES")].value
+          pattern: '"tableName": "metrics_ts"[^}]*}[^}]*"kind": "promql"'
+      - matchRegex:
+          path: spec.template.spec.containers[0].env[?(@.name == "DEFAULT_SOURCES")].value
+          pattern: '"kind": "promql",[^}]*"timestampValueExpression": "timestamp"'
+
   - it: should not include DEFAULT_SOURCES when set to empty string
     set:
       hyperdx:
