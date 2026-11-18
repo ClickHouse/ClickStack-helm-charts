@@ -2,6 +2,45 @@ apiVersion: v1
 entries:
   clickstack:
   - annotations:
+      artifacthub.io/category: monitoring-logging
+      artifacthub.io/license: MIT
+      artifacthub.io/links: |
+        - name: Chart Source
+          url: https://github.com/ClickHouse/ClickStack-helm-charts
+        - name: Upstream Project
+          url: https://github.com/hyperdxio/hyperdx
+        - name: Upgrade Guide
+          url: https://github.com/ClickHouse/ClickStack-helm-charts/blob/main/docs/UPGRADE.md
+    apiVersion: v2
+    appVersion: 2.46.0
+    created: "2026-11-18T20:16:49.146699462Z"
+    dependencies:
+    - alias: otel-collector
+      condition: otel-collector.enabled
+      name: opentelemetry-collector
+      repository: oci://ghcr.io/open-telemetry/opentelemetry-helm-charts
+      version: ~0.146.0
+    description: A Helm chart for ClickStack - Full-stack observability with ClickHouse,
+      OpenTelemetry, and HyperDX
+    digest: 289c49275170ded476eb82cf7c9bc3854a875895b41c7c1683ba5d1bae986d56
+    home: https://clickhouse.com/docs/use-cases/observability/clickstack
+    icon: https://raw.githubusercontent.com/hyperdxio/hyperdx/main/packages/app/public/favicons/clickstack/favicon.svg
+    keywords:
+    - observability
+    - opentelemetry
+    - clickhouse
+    - logs
+    - traces
+    - metrics
+    name: clickstack
+    sources:
+    - https://github.com/ClickHouse/ClickStack-helm-charts
+    - https://github.com/hyperdxio/hyperdx
+    type: application
+    urls:
+    - https://github.com/ClickHouse/ClickStack-helm-charts/releases/download/clickstack-3.7.0/clickstack-3.7.0.tgz
+    version: 3.7.0
+  - annotations:
       artifacthub.io/license: MIT
       artifacthub.io/links: |
         - name: Chart Source
@@ -437,6 +476,41 @@ entries:
     - https://github.com/hyperdxio/helm-charts/releases/download/clickstack-1.0.0/clickstack-1.0.0.tgz
     version: 1.0.0
   clickstack-operators:
+  - annotations:
+      artifacthub.io/category: monitoring-logging
+      artifacthub.io/license: MIT
+      artifacthub.io/links: |
+        - name: Chart Source
+          url: https://github.com/ClickHouse/ClickStack-helm-charts
+    apiVersion: v2
+    appVersion: 1.0.0
+    created: "2026-11-18T20:16:49.310079272Z"
+    dependencies:
+    - alias: mongodb-operator
+      name: mongodb-kubernetes
+      repository: oci://quay.io/mongodb/helm-charts
+      version: ~1.7.0
+    - alias: clickhouse-operator
+      name: clickhouse-operator-helm
+      repository: oci://ghcr.io/clickhouse
+      version: ~0.0.7
+    description: Operator dependencies for ClickStack. Install this chart before installing
+      clickstack/clickstack to ensure CRDs are registered.
+    digest: d26f5e3eb3af53a37e640f2bb3c9fd21a2ee0746bb6bedbbf819bb5f62221528
+    home: https://clickhouse.com/docs/use-cases/observability/clickstack
+    icon: https://raw.githubusercontent.com/hyperdxio/hyperdx/main/packages/app/public/favicons/clickstack/favicon.svg
+    keywords:
+    - clickstack
+    - operator
+    - clickhouse
+    - mongodb
+    name: clickstack-operators
+    sources:
+    - https://github.com/ClickHouse/ClickStack-helm-charts
+    type: application
+    urls:
+    - https://github.com/ClickHouse/ClickStack-helm-charts/releases/download/clickstack-operators-1.1.1/clickstack-operators-1.1.1.tgz
+    version: 1.1.1
   - apiVersion: v2
     appVersion: 1.0.0
     created: "2026-07-20T21:59:20.268144092Z"
@@ -740,4 +814,4 @@ entries:
     urls:
     - https://github.com/hyperdxio/helm-charts/releases/download/hdx-oss-v2-0.1.0/hdx-oss-v2-0.1.0.tgz
     version: 0.1.0
-generated: "2026-11-16T22:33:24.70010665Z"
+generated: "2026-11-18T20:16:49.310237849Z"
