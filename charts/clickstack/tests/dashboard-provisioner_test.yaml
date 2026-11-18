@@ -381,7 +381,7 @@ tests:
     asserts:
       - equal:
           path: spec.template.spec.containers[1].resources.limits.memory
-          value: 64Mi
+          value: 128Mi
         template: hyperdx/deployment.yaml
       - equal:
           path: spec.template.spec.containers[1].resources.limits.cpu
@@ -389,7 +389,7 @@ tests:
         template: hyperdx/deployment.yaml
       - equal:
           path: spec.template.spec.containers[1].resources.requests.memory
-          value: 32Mi
+          value: 64Mi
         template: hyperdx/deployment.yaml
       - equal:
           path: spec.template.spec.containers[1].resources.requests.cpu
