@@ -326,7 +326,8 @@ hyperdx:
     spec: {}
     additionalIngresses: []
 
-  # -- PodDisruptionBudget for the HyperDX Deployment.
+  # -- PodDisruptionBudget for the HyperDX Deployment. Defaults to maxUnavailable: 1, which never blocks
+  # a node drain; set minAvailable or maxUnavailable to override.
   podDisruptionBudget:
     enabled: false
 
@@ -403,7 +404,7 @@ clickhouse:
       containerTemplate:
         image:
           repository: clickhouse/clickhouse-keeper
-          tag: "26.8.36.3-alpine"
+          tag: "26.8.37.168-alpine"
       replicas: 1
       dataVolumeClaimSpec:
         accessModes:
@@ -417,7 +418,7 @@ clickhouse:
       containerTemplate:
         image:
           repository: clickhouse/clickhouse-server
-          tag: "26.8.36.3-alpine"
+          tag: "26.8.37.168-alpine"
         resources:
           requests:
             cpu: 500m
@@ -481,7 +482,7 @@ otel-collector:
   mode: deployment
   image:
     repository: docker.clickhouse.com/clickhouse/clickstack-otel-collector
-    tag: "2.39.1"
+    tag: "2.45.0"
   extraEnvsFrom:
     - configMapRef:
         name: clickstack-config

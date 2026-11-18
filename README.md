@@ -1,5 +1,8 @@
 # ClickStack Helm Charts
 
+[![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/clickstack)](https://artifacthub.io/packages/search?repo=clickstack)
+[![Build Status](https://github.com/ClickHouse/ClickStack-helm-charts/actions/workflows/helm-test.yaml/badge.svg)](https://github.com/ClickHouse/ClickStack-helm-charts/actions/workflows/helm-test.yaml)
+
 **ClickStack** is an open-source observability stack combining ClickHouse, HyperDX, and OpenTelemetry for logs, metrics, and traces.
 
 ## Quick Start
@@ -12,6 +15,13 @@ helm install clickstack-operators clickstack/clickstack-operators
 
 # Step 2: Install ClickStack (after operators are ready)
 helm install my-clickstack clickstack/clickstack
+```
+
+Both charts are also published to GHCR as OCI artifacts, which needs no `helm repo add`:
+
+```bash
+helm install clickstack-operators oci://ghcr.io/clickhouse/charts/clickstack-operators
+helm install my-clickstack oci://ghcr.io/clickhouse/charts/clickstack
 ```
 
 For configuration, cloud deployment, ingress setup, and troubleshooting, see the [official documentation](https://clickhouse.com/docs/use-cases/observability/clickstack/deployment/helm).

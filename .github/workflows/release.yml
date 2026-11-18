@@ -23,16 +23,16 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-          # changesets writes its own ~/.netrc and chart-releaser pushes with CR_TOKEN, so keep the token out of .git/config while yarn runs.
+          # changesets pushes through the GitHub API and chart-releaser with CR_TOKEN, so keep the token out of .git/config while yarn runs.
           persist-credentials: false
       - name: Configure Git user
         run: |
           git config user.name "$GITHUB_ACTOR"
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
-      - name: Setup Node.js 20
+      - name: Setup Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 20
+          node-version-file: .nvmrc
       - name: Enable Corepack
         run: corepack enable
       - name: Install Dependencies
@@ -41,17 +41,17 @@ jobs:
         id: changesets
         uses: changesets/action@ae32849d5ba541f9ae29e40e22a623bc13562f51 # v2.1.2
         with:
-          commit: 'chore(release): bump version'
-          title: 'Release ClickStack Helm Charts'
-          version: yarn run version
-          publish: yarn run release
+          commit-message: 'chore(release): bump version'
+          pr-title: 'Release ClickStack Helm Charts'
+          version-script: yarn run version
+          publish-script: yarn run release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Generate release notes from CHANGELOG.md
-        if: steps.changesets.outputs.hasChangesets == 'false'
+        if: steps.changesets.outputs.has-changesets == 'false'
         run: node scripts/extract-release-notes.js
       - name: Run chart-releaser job
-        if: steps.changesets.outputs.hasChangesets == 'false'
+        if: steps.changesets.outputs.has-changesets == 'false'
         uses: helm/chart-releaser-action@92c6b97fa9f664492a2592e0d1d80bc6bf378957 # v1.9.0
         with:
           skip_existing: true
@@ -59,7 +59,7 @@ jobs:
         env:
           CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
       - name: Push charts to GHCR
-        if: steps.changesets.outputs.hasChangesets == 'false'
+        if: steps.changesets.outputs.has-changesets == 'false'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OCI_REPO: oci://ghcr.io/clickhouse/charts
@@ -79,3 +79,20 @@ jobs:
               helm push "$pkgs/$tag.tgz" "$OCI_REPO"
             fi
           done
+      - name: Sync Pages landing page
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # The Pages site is the gh-pages branch; its landing page lives in pages/ so it is reviewed on main.
+        run: |
+          site=$(mktemp -d)
+          git fetch --no-tags origin gh-pages
+          git worktree add --detach "$site" FETCH_HEAD
+          cp -R pages/. "$site/"
+          cd "$site"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Pages landing page is up to date"
+            exit 0
+          fi
+          git commit -m "docs: sync Pages landing page from ${GITHUB_SHA::7}"
+          git push "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:gh-pages

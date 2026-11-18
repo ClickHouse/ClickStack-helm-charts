@@ -63,7 +63,7 @@ tests:
         usageStatsEnabled: false
     asserts:
       - failedTemplate:
-          errorPattern: "hyperdx.usageStatsEnabled was removed in chart 2.0"
+          errorPattern: "hyperdx.usageStatsEnabled: use hyperdx.config.USAGE_STATS_ENABLED"
 
   - it: should render USAGE_STATS_ENABLED false when opted out
     set:
