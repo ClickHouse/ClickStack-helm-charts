@@ -2,7 +2,7 @@
 
 Each section lists what changes when you upgrade to that chart version and anything you have to do first, newest first. A version that isn't listed needs nothing beyond `helm upgrade`. The full list of changes is in [CHANGELOG.md](../CHANGELOG.md).
 
-## Unreleased
+## 3.8.0
 
 - The top-level `hyperdx` values key is now `clickstack`. Values files and `--set hyperdx.*` flags still work and print a deprecation warning in the install notes; move them under `clickstack` before a future chart version removes `hyperdx`. Where both keys set the same value, `hyperdx` wins. Rendered resources don't change. `--reuse-values` keeps the release's stored `hyperdx` values, which then override anything you move under `clickstack`, so do the upgrade that moves them with `-f <your values file>` instead.
 
