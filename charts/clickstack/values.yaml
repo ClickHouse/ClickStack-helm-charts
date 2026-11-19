@@ -60,7 +60,8 @@ clickstack:
     # ── Discovery scope ──────────────────────────────────────
     # Namespaces the watcher discovers labeled ConfigMaps in:
     #   []           only the release namespace (a namespaced Role; no cluster-wide access)
-    #   [ns-a, ns-b] those namespaces plus the release namespace. A cluster-scoped ClusterRole
+    #   [ns-a, ns-b] those namespaces plus the release namespace (see includeReleaseNamespace
+    #                below to drop the release namespace). A cluster-scoped ClusterRole
     #                rule-template is created, but access stays namespace-scoped — it is bound
     #                only via a RoleBinding in each namespace, never a ClusterRoleBinding.
     #   [ALL]        every namespace cluster-wide (creates a ClusterRole + ClusterRoleBinding)
@@ -74,6 +75,15 @@ clickstack:
     # watched namespace can upsert dashboards into the shared HyperDX. Prefer [ALL] only on
     # single-tenant clusters; a wider scope is a wider blast radius.
     namespaces: []
+    # Whether the release namespace is always part of the discovery scope above. Set to false
+    # to watch (and grant ConfigMap read in) only the listed namespaces, e.g. a dedicated
+    # dashboards namespace when the release namespace holds other components' ConfigMaps.
+    # The chart then creates a namespaced Role + RoleBinding in each listed namespace (no
+    # ClusterRole) and nothing in the release namespace. Requires a non-empty `namespaces`,
+    # and inline `configMaps` (created in the release namespace) would not be discovered, so
+    # the render fails if they are set while the release namespace is not listed. No effect
+    # with [ALL].
+    includeReleaseNamespace: true
     rbac:
       # Create the Role/ClusterRole and binding(s) the watcher needs. Set to false to
       # grant access out-of-band (e.g. a RoleBinding applied by each namespace owner).
