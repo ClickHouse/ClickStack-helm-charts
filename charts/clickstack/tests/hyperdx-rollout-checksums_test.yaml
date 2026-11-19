@@ -28,7 +28,7 @@ tests:
   - it: should change only the ConfigMap checksum when config content changes
     template: hyperdx/deployment.yaml
     set:
-      hyperdx:
+      clickstack:
         config:
           FRONTEND_URL: https://changed.example
     asserts:
@@ -42,7 +42,7 @@ tests:
   - it: should change only the Secret checksum when independent secret content changes
     template: hyperdx/deployment.yaml
     set:
-      hyperdx:
+      clickstack:
         secrets:
           HYPERDX_API_KEY: changed
     asserts:
@@ -62,7 +62,7 @@ tests:
         enabled: false
       otel-collector:
         enabled: false
-      hyperdx:
+      clickstack:
         secrets: null
         config:
           MONGO_URI: mongodb://external
@@ -93,7 +93,7 @@ tests:
   - it: should preserve user annotations while reserving generated checksum keys
     template: hyperdx/deployment.yaml
     set:
-      hyperdx:
+      clickstack:
         deployment:
           annotations:
             example.com/legacy: preserved
@@ -124,7 +124,7 @@ tests:
   - it: should keep checksums stable when unrelated values change
     template: hyperdx/deployment.yaml
     set:
-      hyperdx:
+      clickstack:
         deployment:
           replicas: 3
     asserts:

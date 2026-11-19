@@ -10,7 +10,7 @@ tests:
 
   - it: should use custom OTEL_EXPORTER_OTLP_ENDPOINT when explicitly set in config
     set:
-      hyperdx:
+      clickstack:
         config:
           OTEL_EXPORTER_OTLP_ENDPOINT: "http://custom-otel-collector:4318"
     asserts:
@@ -20,7 +20,7 @@ tests:
 
   - it: should set empty string when OTEL_EXPORTER_OTLP_ENDPOINT is empty in config
     set:
-      hyperdx:
+      clickstack:
         config:
           OTEL_EXPORTER_OTLP_ENDPOINT: ""
     asserts:

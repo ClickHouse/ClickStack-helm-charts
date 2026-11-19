@@ -63,7 +63,7 @@ tests:
 
   - it: should point remote write at the configured collector database
     set:
-      hyperdx:
+      clickstack:
         config:
           HYPERDX_OTEL_EXPORTER_CLICKHOUSE_DATABASE: otel
     asserts:
@@ -76,7 +76,7 @@ tests:
 
   - it: should fall back to the default database when the collector database is empty
     set:
-      hyperdx:
+      clickstack:
         config:
           HYPERDX_OTEL_EXPORTER_CLICKHOUSE_DATABASE: ""
     asserts:
@@ -152,7 +152,7 @@ tests:
 
   - it: should not inject settings when PromQL is disabled
     set:
-      hyperdx:
+      clickstack:
         promql:
           enabled: false
     asserts:

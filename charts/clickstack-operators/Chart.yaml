@@ -4,7 +4,7 @@ description: >-
   Operator dependencies for ClickStack. Install this chart before
   installing clickstack/clickstack to ensure CRDs are registered.
 home: https://clickhouse.com/docs/use-cases/observability/clickstack
-icon: https://raw.githubusercontent.com/hyperdxio/hyperdx/main/packages/app/public/favicons/clickstack/favicon.svg
+icon: https://raw.githubusercontent.com/ClickHouse/ClickStack/main/packages/app/public/favicons/clickstack/favicon.svg
 sources:
   - https://github.com/ClickHouse/ClickStack-helm-charts
 keywords:

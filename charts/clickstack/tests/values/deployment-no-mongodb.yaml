@@ -1,6 +1,6 @@
 mongodb:
   enabled: false
-hyperdx:
+clickstack:
   deployment:
     initContainers:
       - name: custom-init

@@ -2,6 +2,10 @@
 
 Each section lists what changes when you upgrade to that chart version and anything you have to do first, newest first. A version that isn't listed needs nothing beyond `helm upgrade`. The full list of changes is in [CHANGELOG.md](../CHANGELOG.md).
 
+## Unreleased
+
+- The top-level `hyperdx` values key is now `clickstack`. Values files and `--set hyperdx.*` flags still work and print a deprecation warning in the install notes; move them under `clickstack` before a future chart version removes `hyperdx`. Where both keys set the same value, `hyperdx` wins. Rendered resources don't change. `--reuse-values` keeps the release's stored `hyperdx` values, which then override anything you move under `clickstack`, so do the upgrade that moves them with `-f <your values file>` instead.
+
 ## 3.7.0
 
 - PromQL is on by default via `hyperdx.promql.enabled`. The chart adds Prometheus remote write/read handlers, the `prometheus_api_v1` HTTP handler and the experimental `allow_experimental_time_series_table` setting to the ClickHouse config, so the ClickHouse pods restart once. If you pin `clickhouse.cluster.spec.containerTemplate.image.tag` to a version older than 26.6, the ClickHouse settings are skipped but the HyperDX PromQL UI still shows; set `hyperdx.promql.enabled: false` there. New installs also get a `PromQL` default source; existing sources are not modified.

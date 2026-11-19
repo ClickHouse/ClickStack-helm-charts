@@ -18,7 +18,7 @@ tests:
 
   - it: should apply nodeSelector to HyperDX deployment when configured
     set:
-      hyperdx:
+      clickstack:
         deployment:
           nodeSelector:
             disktype: ssd
@@ -35,7 +35,7 @@ tests:
 
   - it: should apply tolerations to HyperDX deployment when configured
     set:
-      hyperdx:
+      clickstack:
         deployment:
           tolerations:
             - key: hyperdx-key
@@ -63,7 +63,7 @@ tests:
 
   - it: should apply correct nodeSelector and tolerations to HyperDX deployment
     set:
-      hyperdx:
+      clickstack:
         deployment:
           nodeSelector:
             component: api
@@ -95,7 +95,7 @@ tests:
         enabled: false
       otel:
         enabled: false
-      hyperdx:
+      clickstack:
         tasks:
           enabled: false
         deployment:

@@ -20,7 +20,7 @@
 #   - Replace clickstack.example.com with your domain
 #   - Adjust ALB annotations as needed (scheme, target-type, etc.)
 
-hyperdx:
+clickstack:
   ingress:
     enabled: true
     annotations:

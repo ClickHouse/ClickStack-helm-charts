@@ -1,6 +1,7 @@
-{{- if .Values.hyperdx.autoscaling.enabled }}
-{{- if hasKey .Values.hyperdx.autoscaling.spec "scaleTargetRef" }}
-{{- fail "hyperdx.autoscaling.spec must not include scaleTargetRef -- the chart auto-wires it to the HyperDX Deployment. Remove scaleTargetRef from your autoscaling.spec values." }}
+{{- include "clickstack.normalizeValues" . -}}
+{{- if .Values.clickstack.autoscaling.enabled }}
+{{- if hasKey .Values.clickstack.autoscaling.spec "scaleTargetRef" }}
+{{- fail "clickstack.autoscaling.spec must not include scaleTargetRef -- the chart auto-wires it to the HyperDX Deployment. Remove scaleTargetRef from your autoscaling.spec values." }}
 {{- end }}
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
@@ -13,7 +14,7 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: {{ include "clickstack.hyperdx.fullname" . }}
-  {{- with .Values.hyperdx.autoscaling.spec }}
+  {{- with .Values.clickstack.autoscaling.spec }}
   {{- toYaml . | nindent 2 }}
   {{- end }}
 {{- end }}

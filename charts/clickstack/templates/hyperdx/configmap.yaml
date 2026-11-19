@@ -1,2 +1,3 @@
+{{- include "clickstack.normalizeValues" . -}}
 {{- include "clickstack.validateRemovedValues" . }}
 {{- include "clickstack.hyperdx.configmap" . }}

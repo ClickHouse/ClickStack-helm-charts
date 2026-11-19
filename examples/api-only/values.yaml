@@ -24,7 +24,7 @@ clickhouse:
 otel-collector:
   enabled: false
 
-hyperdx:
+clickstack:
   secrets: null
 
   config:

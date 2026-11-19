@@ -1,4 +1,5 @@
-{{- if .Values.hyperdx.podDisruptionBudget.enabled }}
+{{- include "clickstack.normalizeValues" . -}}
+{{- if .Values.clickstack.podDisruptionBudget.enabled }}
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
@@ -6,17 +7,17 @@ metadata:
   labels:
     {{- include "clickstack.labels" . | nindent 4 }}
     app: {{ include "clickstack.fullname" . }}
-    {{- if .Values.hyperdx.deployment.labels }}
-    {{- with .Values.hyperdx.deployment.labels }}
+    {{- if .Values.clickstack.deployment.labels }}
+    {{- with .Values.clickstack.deployment.labels }}
     {{- toYaml . | nindent 4 }}
     {{- end -}}
     {{- end }}
 spec:
-  {{- with .Values.hyperdx.podDisruptionBudget.minAvailable }}
+  {{- with .Values.clickstack.podDisruptionBudget.minAvailable }}
   minAvailable: {{ . }}
   {{- else }}
   {{- /* Unlike minAvailable: 1, this still lets a single replica be evicted, so node drains finish. */}}
-  maxUnavailable: {{ .Values.hyperdx.podDisruptionBudget.maxUnavailable | default 1 }}
+  maxUnavailable: {{ .Values.clickstack.podDisruptionBudget.maxUnavailable | default 1 }}
   {{- end }}
   selector:
     matchLabels:

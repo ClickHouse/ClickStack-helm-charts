@@ -4,7 +4,7 @@ templates:
 tests:
   - it: should default to maxUnavailable 1 so a single replica can still be drained
     set:
-      hyperdx:
+      clickstack:
         podDisruptionBudget:
           enabled: true
     asserts:
@@ -21,7 +21,7 @@ tests:
 
   - it: should use minAvailable instead when specified
     set:
-      hyperdx:
+      clickstack:
         podDisruptionBudget:
           enabled: true
           minAvailable: 5
@@ -34,7 +34,7 @@ tests:
 
   - it: should override maxUnavailable when specified
     set:
-      hyperdx:
+      clickstack:
         podDisruptionBudget:
           enabled: true
           maxUnavailable: 2

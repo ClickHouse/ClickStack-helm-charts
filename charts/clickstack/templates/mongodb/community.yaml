@@ -1,3 +1,4 @@
+{{- include "clickstack.normalizeValues" . -}}
 {{- if .Values.mongodb.enabled }}
 apiVersion: mongodbcommunity.mongodb.com/v1
 kind: MongoDBCommunity

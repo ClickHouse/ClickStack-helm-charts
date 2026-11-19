@@ -9,17 +9,17 @@ tests:
 
   - it: should fail when networkPolicy is enabled but spec is empty
     set:
-      hyperdx:
+      clickstack:
         networkPolicy:
           enabled: true
           spec: {}
     asserts:
       - failedTemplate:
-          errorMessage: "hyperdx.networkPolicy.spec is required when networkPolicy is enabled"
+          errorMessage: "clickstack.networkPolicy.spec is required when networkPolicy is enabled"
 
   - it: should render NetworkPolicy with egress deny list
     set:
-      hyperdx:
+      clickstack:
         networkPolicy:
           enabled: true
           spec:
@@ -44,7 +44,7 @@ tests:
 
   - it: should render NetworkPolicy with ingress rules
     set:
-      hyperdx:
+      clickstack:
         networkPolicy:
           enabled: true
           spec:

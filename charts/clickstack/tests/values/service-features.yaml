@@ -1,4 +1,4 @@
-hyperdx:
+clickstack:
   service:
     type: LoadBalancer
     annotations:

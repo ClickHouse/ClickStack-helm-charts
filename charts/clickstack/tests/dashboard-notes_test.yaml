@@ -4,25 +4,25 @@ templates:
 tests:
   - it: should warn when rbac.create is false with dashboards enabled
     set:
-      hyperdx:
+      clickstack:
         dashboards:
           enabled: true
           rbac:
             create: false
     asserts:
       - matchRegexRaw:
-          pattern: "hyperdx.dashboards.rbac.create is false"
+          pattern: "clickstack.dashboards.rbac.create is false"
 
   - it: should not warn when rbac.create is true and dashboards enabled
     set:
-      hyperdx:
+      clickstack:
         dashboards:
           enabled: true
     asserts:
       - notMatchRegexRaw:
-          pattern: "hyperdx.dashboards.rbac.create is false"
+          pattern: "clickstack.dashboards.rbac.create is false"
 
   - it: should not warn when dashboards are disabled
     asserts:
       - notMatchRegexRaw:
-          pattern: "hyperdx.dashboards.rbac.create is false"
+          pattern: "clickstack.dashboards.rbac.create is false"

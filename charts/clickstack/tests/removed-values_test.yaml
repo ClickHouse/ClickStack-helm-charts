@@ -21,7 +21,7 @@ tests:
             appUserPassword: secret
     asserts:
       - failedTemplate:
-          errorPattern: "- clickhouse.config: set ClickHouse credentials in hyperdx.secrets \\(CLICKHOUSE_PASSWORD, CLICKHOUSE_APP_PASSWORD\\)\\n- hyperdx.replicas: use hyperdx.deployment.replicas\\n- mongodb.password: use hyperdx.secrets.MONGODB_PASSWORD\\n- tasks: use hyperdx.tasks$"
+          errorPattern: "- clickhouse.config: set ClickHouse credentials in clickstack.secrets \\(CLICKHOUSE_PASSWORD, CLICKHOUSE_APP_PASSWORD\\)\\n- hyperdx.replicas: use clickstack.deployment.replicas\\n- mongodb.password: use clickstack.secrets.MONGODB_PASSWORD\\n- tasks: use clickstack.tasks$"
 
   - it: should fail on the 1.x frontendUrl key
     set:
@@ -29,7 +29,7 @@ tests:
         frontendUrl: https://hyperdx.example.com
     asserts:
       - failedTemplate:
-          errorPattern: "hyperdx.frontendUrl: use hyperdx.config.FRONTEND_URL"
+          errorPattern: "hyperdx.frontendUrl: use clickstack.config.FRONTEND_URL"
 
   - it: should fail on removed in-cluster database settings
     set:
@@ -54,7 +54,7 @@ tests:
     set:
       clickhouse:
         port: 8124
-      hyperdx:
+      clickstack:
         deployment:
           replicas: 2
         tasks:
@@ -137,81 +137,81 @@ tests:
       - failedTemplate:
           errorPattern: "- global\\.keepPVC: remove\\ it;\\ operator\\-managed\\ PVCs\\ are\\ always\\ kept\\ on\\ uninstall(\n|$)"
       - failedTemplate:
-          errorPattern: "- tasks: use\\ hyperdx\\.tasks(\n|$)"
+          errorPattern: "- tasks: use\\ clickstack\\.tasks(\n|$)"
       - failedTemplate:
-          errorPattern: "- otel: configure\\ the\\ otel\\-collector\\ subchart,\\ and\\ set\\ collector\\ env\\ vars\\ in\\ hyperdx\\.config\\ and\\ hyperdx\\.secrets(\n|$)"
+          errorPattern: "- otel: configure\\ the\\ otel\\-collector\\ subchart,\\ and\\ set\\ collector\\ env\\ vars\\ in\\ clickstack\\.config\\ and\\ clickstack\\.secrets(\n|$)"
       - failedTemplate:
-          errorPattern: "- hyperdx\\.apiKey: use\\ hyperdx\\.secrets\\.HYPERDX_API_KEY(\n|$)"
+          errorPattern: "- hyperdx\\.apiKey: use\\ clickstack\\.secrets\\.HYPERDX_API_KEY(\n|$)"
       - failedTemplate:
-          errorPattern: "- hyperdx\\.apiPort: use\\ hyperdx\\.ports\\.api(\n|$)"
+          errorPattern: "- hyperdx\\.apiPort: use\\ clickstack\\.ports\\.api(\n|$)"
       - failedTemplate:
-          errorPattern: "- hyperdx\\.appPort: use\\ hyperdx\\.ports\\.app(\n|$)"
+          errorPattern: "- hyperdx\\.appPort: use\\ clickstack\\.ports\\.app(\n|$)"
       - failedTemplate:
-          errorPattern: "- hyperdx\\.opampPort: use\\ hyperdx\\.ports\\.opamp(\n|$)"
+          errorPattern: "- hyperdx\\.opampPort: use\\ clickstack\\.ports\\.opamp(\n|$)"
       - failedTemplate:
-          errorPattern: "- hyperdx\\.appUrl: use\\ hyperdx\\.config\\.FRONTEND_URL(\n|$)"
+          errorPattern: "- hyperdx\\.appUrl: use\\ clickstack\\.config\\.FRONTEND_URL(\n|$)"
       - failedTemplate:
-          errorPattern: "- hyperdx\\.frontendUrl: use\\ hyperdx\\.config\\.FRONTEND_URL(\n|$)"
+          errorPattern: "- hyperdx\\.frontendUrl: use\\ clickstack\\.config\\.FRONTEND_URL(\n|$)"
       - failedTemplate:
-          errorPattern: "- hyperdx\\.logLevel: use\\ hyperdx\\.config\\.HYPERDX_LOG_LEVEL(\n|$)"
+          errorPattern: "- hyperdx\\.logLevel: use\\ clickstack\\.config\\.HYPERDX_LOG_LEVEL(\n|$)"
       - failedTemplate:
-          errorPattern: "- hyperdx\\.usageStatsEnabled: use\\ hyperdx\\.config\\.USAGE_STATS_ENABLED\\ \\(a\\ string,\\ e\\.g\\.\\ \"false\"\\)(\n|$)"
+          errorPattern: "- hyperdx\\.usageStatsEnabled: use\\ clickstack\\.config\\.USAGE_STATS_ENABLED\\ \\(a\\ string,\\ e\\.g\\.\\ \"false\"\\)(\n|$)"
       - failedTemplate:
-          errorPattern: "- hyperdx\\.otelExporterEndpoint: use\\ hyperdx\\.config\\.OTEL_EXPORTER_OTLP_ENDPOINT(\n|$)"
+          errorPattern: "- hyperdx\\.otelExporterEndpoint: use\\ clickstack\\.config\\.OTEL_EXPORTER_OTLP_ENDPOINT(\n|$)"
       - failedTemplate:
-          errorPattern: "- hyperdx\\.mongoUri: use\\ hyperdx\\.config\\.MONGO_URI(\n|$)"
+          errorPattern: "- hyperdx\\.mongoUri: use\\ clickstack\\.config\\.MONGO_URI(\n|$)"
       - failedTemplate:
-          errorPattern: "- hyperdx\\.ingress\\.ingressClassName: move\\ into\\ hyperdx\\.ingress\\.spec,\\ and\\ nginx\\ proxy\\ settings\\ into\\ hyperdx\\.ingress\\.annotations(\n|$)"
+          errorPattern: "- hyperdx\\.ingress\\.ingressClassName: move\\ into\\ clickstack\\.ingress\\.spec,\\ and\\ nginx\\ proxy\\ settings\\ into\\ clickstack\\.ingress\\.annotations(\n|$)"
       - failedTemplate:
-          errorPattern: "- hyperdx\\.ingress\\.host: move\\ into\\ hyperdx\\.ingress\\.spec,\\ and\\ nginx\\ proxy\\ settings\\ into\\ hyperdx\\.ingress\\.annotations(\n|$)"
+          errorPattern: "- hyperdx\\.ingress\\.host: move\\ into\\ clickstack\\.ingress\\.spec,\\ and\\ nginx\\ proxy\\ settings\\ into\\ clickstack\\.ingress\\.annotations(\n|$)"
       - failedTemplate:
-          errorPattern: "- hyperdx\\.ingress\\.path: move\\ into\\ hyperdx\\.ingress\\.spec,\\ and\\ nginx\\ proxy\\ settings\\ into\\ hyperdx\\.ingress\\.annotations(\n|$)"
+          errorPattern: "- hyperdx\\.ingress\\.path: move\\ into\\ clickstack\\.ingress\\.spec,\\ and\\ nginx\\ proxy\\ settings\\ into\\ clickstack\\.ingress\\.annotations(\n|$)"
       - failedTemplate:
-          errorPattern: "- hyperdx\\.ingress\\.pathType: move\\ into\\ hyperdx\\.ingress\\.spec,\\ and\\ nginx\\ proxy\\ settings\\ into\\ hyperdx\\.ingress\\.annotations(\n|$)"
+          errorPattern: "- hyperdx\\.ingress\\.pathType: move\\ into\\ clickstack\\.ingress\\.spec,\\ and\\ nginx\\ proxy\\ settings\\ into\\ clickstack\\.ingress\\.annotations(\n|$)"
       - failedTemplate:
-          errorPattern: "- hyperdx\\.ingress\\.tls: move\\ into\\ hyperdx\\.ingress\\.spec,\\ and\\ nginx\\ proxy\\ settings\\ into\\ hyperdx\\.ingress\\.annotations(\n|$)"
+          errorPattern: "- hyperdx\\.ingress\\.tls: move\\ into\\ clickstack\\.ingress\\.spec,\\ and\\ nginx\\ proxy\\ settings\\ into\\ clickstack\\.ingress\\.annotations(\n|$)"
       - failedTemplate:
-          errorPattern: "- hyperdx\\.ingress\\.proxyBodySize: move\\ into\\ hyperdx\\.ingress\\.spec,\\ and\\ nginx\\ proxy\\ settings\\ into\\ hyperdx\\.ingress\\.annotations(\n|$)"
+          errorPattern: "- hyperdx\\.ingress\\.proxyBodySize: move\\ into\\ clickstack\\.ingress\\.spec,\\ and\\ nginx\\ proxy\\ settings\\ into\\ clickstack\\.ingress\\.annotations(\n|$)"
       - failedTemplate:
-          errorPattern: "- hyperdx\\.ingress\\.proxyConnectTimeout: move\\ into\\ hyperdx\\.ingress\\.spec,\\ and\\ nginx\\ proxy\\ settings\\ into\\ hyperdx\\.ingress\\.annotations(\n|$)"
+          errorPattern: "- hyperdx\\.ingress\\.proxyConnectTimeout: move\\ into\\ clickstack\\.ingress\\.spec,\\ and\\ nginx\\ proxy\\ settings\\ into\\ clickstack\\.ingress\\.annotations(\n|$)"
       - failedTemplate:
-          errorPattern: "- hyperdx\\.ingress\\.proxySendTimeout: move\\ into\\ hyperdx\\.ingress\\.spec,\\ and\\ nginx\\ proxy\\ settings\\ into\\ hyperdx\\.ingress\\.annotations(\n|$)"
+          errorPattern: "- hyperdx\\.ingress\\.proxySendTimeout: move\\ into\\ clickstack\\.ingress\\.spec,\\ and\\ nginx\\ proxy\\ settings\\ into\\ clickstack\\.ingress\\.annotations(\n|$)"
       - failedTemplate:
-          errorPattern: "- hyperdx\\.ingress\\.proxyReadTimeout: move\\ into\\ hyperdx\\.ingress\\.spec,\\ and\\ nginx\\ proxy\\ settings\\ into\\ hyperdx\\.ingress\\.annotations(\n|$)"
+          errorPattern: "- hyperdx\\.ingress\\.proxyReadTimeout: move\\ into\\ clickstack\\.ingress\\.spec,\\ and\\ nginx\\ proxy\\ settings\\ into\\ clickstack\\.ingress\\.annotations(\n|$)"
       - failedTemplate:
-          errorPattern: "- hyperdx\\.image: use\\ hyperdx\\.deployment\\.image(\n|$)"
+          errorPattern: "- hyperdx\\.image: use\\ clickstack\\.deployment\\.image(\n|$)"
       - failedTemplate:
-          errorPattern: "- hyperdx\\.replicas: use\\ hyperdx\\.deployment\\.replicas(\n|$)"
+          errorPattern: "- hyperdx\\.replicas: use\\ clickstack\\.deployment\\.replicas(\n|$)"
       - failedTemplate:
-          errorPattern: "- hyperdx\\.livenessProbe: use\\ hyperdx\\.deployment\\.livenessProbe(\n|$)"
+          errorPattern: "- hyperdx\\.livenessProbe: use\\ clickstack\\.deployment\\.livenessProbe(\n|$)"
       - failedTemplate:
-          errorPattern: "- hyperdx\\.readinessProbe: use\\ hyperdx\\.deployment\\.readinessProbe(\n|$)"
+          errorPattern: "- hyperdx\\.readinessProbe: use\\ clickstack\\.deployment\\.readinessProbe(\n|$)"
       - failedTemplate:
-          errorPattern: "- hyperdx\\.nodeSelector: use\\ hyperdx\\.deployment\\.nodeSelector(\n|$)"
+          errorPattern: "- hyperdx\\.nodeSelector: use\\ clickstack\\.deployment\\.nodeSelector(\n|$)"
       - failedTemplate:
-          errorPattern: "- hyperdx\\.tolerations: use\\ hyperdx\\.deployment\\.tolerations(\n|$)"
+          errorPattern: "- hyperdx\\.tolerations: use\\ clickstack\\.deployment\\.tolerations(\n|$)"
       - failedTemplate:
-          errorPattern: "- hyperdx\\.annotations: use\\ hyperdx\\.deployment\\.annotations(\n|$)"
+          errorPattern: "- hyperdx\\.annotations: use\\ clickstack\\.deployment\\.annotations(\n|$)"
       - failedTemplate:
-          errorPattern: "- hyperdx\\.labels: use\\ hyperdx\\.deployment\\.labels(\n|$)"
+          errorPattern: "- hyperdx\\.labels: use\\ clickstack\\.deployment\\.labels(\n|$)"
       - failedTemplate:
-          errorPattern: "- hyperdx\\.env: use\\ hyperdx\\.deployment\\.env(\n|$)"
+          errorPattern: "- hyperdx\\.env: use\\ clickstack\\.deployment\\.env(\n|$)"
       - failedTemplate:
-          errorPattern: "- hyperdx\\.waitForMongodb: use\\ hyperdx\\.deployment\\.waitForMongodb(\n|$)"
+          errorPattern: "- hyperdx\\.waitForMongodb: use\\ clickstack\\.deployment\\.waitForMongodb(\n|$)"
       - failedTemplate:
-          errorPattern: "- hyperdx\\.useExistingConfigSecret: use\\ hyperdx\\.deployment\\.useExistingConfigSecret(\n|$)"
+          errorPattern: "- hyperdx\\.useExistingConfigSecret: use\\ clickstack\\.deployment\\.useExistingConfigSecret(\n|$)"
       - failedTemplate:
-          errorPattern: "- hyperdx\\.existingConfigSecret: use\\ hyperdx\\.deployment\\.existingConfigSecret(\n|$)"
+          errorPattern: "- hyperdx\\.existingConfigSecret: use\\ clickstack\\.deployment\\.existingConfigSecret(\n|$)"
       - failedTemplate:
-          errorPattern: "- hyperdx\\.existingConfigConnectionsKey: use\\ hyperdx\\.deployment\\.existingConfigConnectionsKey(\n|$)"
+          errorPattern: "- hyperdx\\.existingConfigConnectionsKey: use\\ clickstack\\.deployment\\.existingConfigConnectionsKey(\n|$)"
       - failedTemplate:
-          errorPattern: "- hyperdx\\.existingConfigSourcesKey: use\\ hyperdx\\.deployment\\.existingConfigSourcesKey(\n|$)"
+          errorPattern: "- hyperdx\\.existingConfigSourcesKey: use\\ clickstack\\.deployment\\.existingConfigSourcesKey(\n|$)"
       - failedTemplate:
-          errorPattern: "- hyperdx\\.defaultConnections: use\\ hyperdx\\.deployment\\.defaultConnections(\n|$)"
+          errorPattern: "- hyperdx\\.defaultConnections: use\\ clickstack\\.deployment\\.defaultConnections(\n|$)"
       - failedTemplate:
-          errorPattern: "- hyperdx\\.defaultSources: use\\ hyperdx\\.deployment\\.defaultSources(\n|$)"
+          errorPattern: "- hyperdx\\.defaultSources: use\\ clickstack\\.deployment\\.defaultSources(\n|$)"
       - failedTemplate:
-          errorPattern: "- mongodb\\.password: use\\ hyperdx\\.secrets\\.MONGODB_PASSWORD(\n|$)"
+          errorPattern: "- mongodb\\.password: use\\ clickstack\\.secrets\\.MONGODB_PASSWORD(\n|$)"
       - failedTemplate:
           errorPattern: "- mongodb\\.image: configure\\ the\\ MongoDBCommunity\\ resource\\ under\\ mongodb\\.spec(\n|$)"
       - failedTemplate:
@@ -231,7 +231,7 @@ tests:
       - failedTemplate:
           errorPattern: "- clickhouse\\.prometheus\\.endpoint: remove\\ it;\\ only\\ clickhouse\\.prometheus\\.port\\ is\\ read(\n|$)"
       - failedTemplate:
-          errorPattern: "- clickhouse\\.config: set\\ ClickHouse\\ credentials\\ in\\ hyperdx\\.secrets\\ \\(CLICKHOUSE_PASSWORD,\\ CLICKHOUSE_APP_PASSWORD\\)(\n|$)"
+          errorPattern: "- clickhouse\\.config: set\\ ClickHouse\\ credentials\\ in\\ clickstack\\.secrets\\ \\(CLICKHOUSE_PASSWORD,\\ CLICKHOUSE_APP_PASSWORD\\)(\n|$)"
       - failedTemplate:
           errorPattern: "- clickhouse\\.image: configure\\ the\\ ClickHouseCluster\\ resource\\ under\\ clickhouse\\.cluster\\.spec(\n|$)"
       - failedTemplate:

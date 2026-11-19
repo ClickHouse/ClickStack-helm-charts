@@ -1,6 +1,7 @@
-{{- if .Values.hyperdx.ingress.enabled }}
-{{- if not .Values.hyperdx.ingress.spec }}
-{{- fail "hyperdx.ingress.spec is required when ingress is enabled" }}
+{{- include "clickstack.normalizeValues" . -}}
+{{- if .Values.clickstack.ingress.enabled }}
+{{- if not .Values.clickstack.ingress.spec }}
+{{- fail "clickstack.ingress.spec is required when ingress is enabled" }}
 {{- end }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -8,15 +9,15 @@ metadata:
   name: {{ include "clickstack.hyperdx.fullname" . }}-ingress
   labels:
     {{- include "clickstack.labels" . | nindent 4 }}
-  {{- with .Values.hyperdx.ingress.annotations }}
+  {{- with .Values.clickstack.ingress.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
   {{- end }}
-{{- with .Values.hyperdx.ingress.spec }}
+{{- with .Values.clickstack.ingress.spec }}
 spec:
   {{- toYaml . | nindent 2 }}
 {{- end }}
-{{- range .Values.hyperdx.ingress.additionalIngresses }}
+{{- range .Values.clickstack.ingress.additionalIngresses }}
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress

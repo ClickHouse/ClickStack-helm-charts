@@ -22,6 +22,39 @@ Create a default fully qualified app name.
 {{- end }}
 
 {{/*
+Accept the deprecated top-level `hyperdx` values key: overlay it onto `clickstack` (hyperdx wins, and a
+null deletes the key as a Helm override would), then alias `hyperdx` to the result so tpl strings that
+still read .Values.hyperdx keep working. Every template includes this first; only the first call acts.
+*/}}
+{{- define "clickstack.normalizeValues" -}}
+{{- if not (hasKey .Values "hyperdxKeyUsed") -}}
+{{- $legacy := .Values.hyperdx -}}
+{{- $_ := set .Values "hyperdxKeyUsed" (kindIs "map" $legacy) -}}
+{{- /* --reuse-values from a release made before the rename has hyperdx values but no clickstack defaults. */ -}}
+{{- if not (kindIs "map" .Values.clickstack) -}}
+{{- $_ = set .Values "clickstack" dict -}}
+{{- end -}}
+{{- if kindIs "map" $legacy -}}
+{{- include "clickstack.overlayValues" (dict "dst" .Values.clickstack "src" $legacy) -}}
+{{- end -}}
+{{- $_ = set .Values "hyperdx" .Values.clickstack -}}
+{{- end -}}
+{{- end -}}
+
+{{- define "clickstack.overlayValues" -}}
+{{- $dst := .dst -}}
+{{- range $key, $value := .src -}}
+{{- if kindIs "invalid" $value -}}
+{{- $_ := unset $dst $key -}}
+{{- else if and (kindIs "map" $value) (kindIs "map" (index $dst $key)) -}}
+{{- include "clickstack.overlayValues" (dict "dst" (index $dst $key) "src" $value) -}}
+{{- else -}}
+{{- $_ := set $dst $key $value -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
 HyperDX app resource name. When fullnameOverride is set the user expects full
 control over naming, so the -app suffix is omitted. Without the override the
 suffix is kept for backward compatibility.
@@ -39,7 +72,7 @@ HyperDX ServiceAccount name. Shared by the Deployment, ServiceAccount, and
 dashboard-provisioner RBAC subject so the three can never drift out of sync.
 */}}
 {{- define "clickstack.hyperdx.serviceAccountName" -}}
-{{- .Values.hyperdx.serviceAccount.name | default (include "clickstack.hyperdx.fullname" .) -}}
+{{- .Values.clickstack.serviceAccount.name | default (include "clickstack.hyperdx.fullname" .) -}}
 {{- end -}}
 
 {{/*
@@ -67,44 +100,44 @@ user's setting (passwords, replicas, opt-outs) would fall back to the default.
 {{- $removed := dict
   "global.storageClassName" "set storageClassName in the volume claim specs under mongodb.spec, clickhouse.keeper.spec and clickhouse.cluster.spec"
   "global.keepPVC" "remove it; operator-managed PVCs are always kept on uninstall"
-  "tasks" "use hyperdx.tasks"
-  "otel" "configure the otel-collector subchart, and set collector env vars in hyperdx.config and hyperdx.secrets"
-  "hyperdx.apiKey" "use hyperdx.secrets.HYPERDX_API_KEY"
-  "hyperdx.apiPort" "use hyperdx.ports.api"
-  "hyperdx.appPort" "use hyperdx.ports.app"
-  "hyperdx.opampPort" "use hyperdx.ports.opamp"
-  "hyperdx.appUrl" "use hyperdx.config.FRONTEND_URL"
-  "hyperdx.frontendUrl" "use hyperdx.config.FRONTEND_URL"
-  "hyperdx.logLevel" "use hyperdx.config.HYPERDX_LOG_LEVEL"
-  "hyperdx.usageStatsEnabled" "use hyperdx.config.USAGE_STATS_ENABLED (a string, e.g. \"false\")"
-  "hyperdx.otelExporterEndpoint" "use hyperdx.config.OTEL_EXPORTER_OTLP_ENDPOINT"
-  "hyperdx.mongoUri" "use hyperdx.config.MONGO_URI"
-  "hyperdx.ingress.ingressClassName" "move into hyperdx.ingress.spec, and nginx proxy settings into hyperdx.ingress.annotations"
-  "hyperdx.ingress.host" "move into hyperdx.ingress.spec, and nginx proxy settings into hyperdx.ingress.annotations"
-  "hyperdx.ingress.path" "move into hyperdx.ingress.spec, and nginx proxy settings into hyperdx.ingress.annotations"
-  "hyperdx.ingress.pathType" "move into hyperdx.ingress.spec, and nginx proxy settings into hyperdx.ingress.annotations"
-  "hyperdx.ingress.tls" "move into hyperdx.ingress.spec, and nginx proxy settings into hyperdx.ingress.annotations"
-  "hyperdx.ingress.proxyBodySize" "move into hyperdx.ingress.spec, and nginx proxy settings into hyperdx.ingress.annotations"
-  "hyperdx.ingress.proxyConnectTimeout" "move into hyperdx.ingress.spec, and nginx proxy settings into hyperdx.ingress.annotations"
-  "hyperdx.ingress.proxySendTimeout" "move into hyperdx.ingress.spec, and nginx proxy settings into hyperdx.ingress.annotations"
-  "hyperdx.ingress.proxyReadTimeout" "move into hyperdx.ingress.spec, and nginx proxy settings into hyperdx.ingress.annotations"
-  "hyperdx.image" "use hyperdx.deployment.image"
-  "hyperdx.replicas" "use hyperdx.deployment.replicas"
-  "hyperdx.livenessProbe" "use hyperdx.deployment.livenessProbe"
-  "hyperdx.readinessProbe" "use hyperdx.deployment.readinessProbe"
-  "hyperdx.nodeSelector" "use hyperdx.deployment.nodeSelector"
-  "hyperdx.tolerations" "use hyperdx.deployment.tolerations"
-  "hyperdx.annotations" "use hyperdx.deployment.annotations"
-  "hyperdx.labels" "use hyperdx.deployment.labels"
-  "hyperdx.env" "use hyperdx.deployment.env"
-  "hyperdx.waitForMongodb" "use hyperdx.deployment.waitForMongodb"
-  "hyperdx.useExistingConfigSecret" "use hyperdx.deployment.useExistingConfigSecret"
-  "hyperdx.existingConfigSecret" "use hyperdx.deployment.existingConfigSecret"
-  "hyperdx.existingConfigConnectionsKey" "use hyperdx.deployment.existingConfigConnectionsKey"
-  "hyperdx.existingConfigSourcesKey" "use hyperdx.deployment.existingConfigSourcesKey"
-  "hyperdx.defaultConnections" "use hyperdx.deployment.defaultConnections"
-  "hyperdx.defaultSources" "use hyperdx.deployment.defaultSources"
-  "mongodb.password" "use hyperdx.secrets.MONGODB_PASSWORD"
+  "tasks" "use clickstack.tasks"
+  "otel" "configure the otel-collector subchart, and set collector env vars in clickstack.config and clickstack.secrets"
+  "hyperdx.apiKey" "use clickstack.secrets.HYPERDX_API_KEY"
+  "hyperdx.apiPort" "use clickstack.ports.api"
+  "hyperdx.appPort" "use clickstack.ports.app"
+  "hyperdx.opampPort" "use clickstack.ports.opamp"
+  "hyperdx.appUrl" "use clickstack.config.FRONTEND_URL"
+  "hyperdx.frontendUrl" "use clickstack.config.FRONTEND_URL"
+  "hyperdx.logLevel" "use clickstack.config.HYPERDX_LOG_LEVEL"
+  "hyperdx.usageStatsEnabled" "use clickstack.config.USAGE_STATS_ENABLED (a string, e.g. \"false\")"
+  "hyperdx.otelExporterEndpoint" "use clickstack.config.OTEL_EXPORTER_OTLP_ENDPOINT"
+  "hyperdx.mongoUri" "use clickstack.config.MONGO_URI"
+  "hyperdx.ingress.ingressClassName" "move into clickstack.ingress.spec, and nginx proxy settings into clickstack.ingress.annotations"
+  "hyperdx.ingress.host" "move into clickstack.ingress.spec, and nginx proxy settings into clickstack.ingress.annotations"
+  "hyperdx.ingress.path" "move into clickstack.ingress.spec, and nginx proxy settings into clickstack.ingress.annotations"
+  "hyperdx.ingress.pathType" "move into clickstack.ingress.spec, and nginx proxy settings into clickstack.ingress.annotations"
+  "hyperdx.ingress.tls" "move into clickstack.ingress.spec, and nginx proxy settings into clickstack.ingress.annotations"
+  "hyperdx.ingress.proxyBodySize" "move into clickstack.ingress.spec, and nginx proxy settings into clickstack.ingress.annotations"
+  "hyperdx.ingress.proxyConnectTimeout" "move into clickstack.ingress.spec, and nginx proxy settings into clickstack.ingress.annotations"
+  "hyperdx.ingress.proxySendTimeout" "move into clickstack.ingress.spec, and nginx proxy settings into clickstack.ingress.annotations"
+  "hyperdx.ingress.proxyReadTimeout" "move into clickstack.ingress.spec, and nginx proxy settings into clickstack.ingress.annotations"
+  "hyperdx.image" "use clickstack.deployment.image"
+  "hyperdx.replicas" "use clickstack.deployment.replicas"
+  "hyperdx.livenessProbe" "use clickstack.deployment.livenessProbe"
+  "hyperdx.readinessProbe" "use clickstack.deployment.readinessProbe"
+  "hyperdx.nodeSelector" "use clickstack.deployment.nodeSelector"
+  "hyperdx.tolerations" "use clickstack.deployment.tolerations"
+  "hyperdx.annotations" "use clickstack.deployment.annotations"
+  "hyperdx.labels" "use clickstack.deployment.labels"
+  "hyperdx.env" "use clickstack.deployment.env"
+  "hyperdx.waitForMongodb" "use clickstack.deployment.waitForMongodb"
+  "hyperdx.useExistingConfigSecret" "use clickstack.deployment.useExistingConfigSecret"
+  "hyperdx.existingConfigSecret" "use clickstack.deployment.existingConfigSecret"
+  "hyperdx.existingConfigConnectionsKey" "use clickstack.deployment.existingConfigConnectionsKey"
+  "hyperdx.existingConfigSourcesKey" "use clickstack.deployment.existingConfigSourcesKey"
+  "hyperdx.defaultConnections" "use clickstack.deployment.defaultConnections"
+  "hyperdx.defaultSources" "use clickstack.deployment.defaultSources"
+  "mongodb.password" "use clickstack.secrets.MONGODB_PASSWORD"
   "mongodb.image" "configure the MongoDBCommunity resource under mongodb.spec"
   "mongodb.port" "configure the MongoDBCommunity resource under mongodb.spec"
   "mongodb.strategy" "configure the MongoDBCommunity resource under mongodb.spec"
@@ -114,7 +147,7 @@ user's setting (passwords, replicas, opt-outs) would fall back to the default.
   "mongodb.livenessProbe" "configure the MongoDBCommunity resource under mongodb.spec"
   "mongodb.readinessProbe" "configure the MongoDBCommunity resource under mongodb.spec"
   "clickhouse.prometheus.endpoint" "remove it; only clickhouse.prometheus.port is read"
-  "clickhouse.config" "set ClickHouse credentials in hyperdx.secrets (CLICKHOUSE_PASSWORD, CLICKHOUSE_APP_PASSWORD)"
+  "clickhouse.config" "set ClickHouse credentials in clickstack.secrets (CLICKHOUSE_PASSWORD, CLICKHOUSE_APP_PASSWORD)"
   "clickhouse.image" "configure the ClickHouseCluster resource under clickhouse.cluster.spec"
   "clickhouse.terminationGracePeriodSeconds" "configure the ClickHouseCluster resource under clickhouse.cluster.spec"
   "clickhouse.resources" "configure the ClickHouseCluster resource under clickhouse.cluster.spec"
@@ -150,56 +183,56 @@ or unwatched inline dashboards when the release namespace is excluded, malformed
 configMaps entries, and volume/mount names that collide with the provisioner's.
 */}}
 {{- define "clickstack.hyperdx.validateDashboards" -}}
-{{- $dashboards := default (dict) .Values.hyperdx.dashboards -}}
+{{- $dashboards := default (dict) .Values.clickstack.dashboards -}}
 {{- if $dashboards.enabled -}}
-{{- if and (not .Values.hyperdx.serviceAccount.create) (not .Values.hyperdx.serviceAccount.name) -}}
-{{- fail "hyperdx.dashboards: the dashboard watcher needs a ServiceAccount to bind RBAC to; set hyperdx.serviceAccount.create=true or provide hyperdx.serviceAccount.name" -}}
+{{- if and (not .Values.clickstack.serviceAccount.create) (not .Values.clickstack.serviceAccount.name) -}}
+{{- fail "clickstack.dashboards: the dashboard watcher needs a ServiceAccount to bind RBAC to; set clickstack.serviceAccount.create=true or provide clickstack.serviceAccount.name" -}}
 {{- end -}}
 {{- $namespaces := default (list) $dashboards.namespaces -}}
 {{- if not (kindIs "slice" $namespaces) -}}
-{{- fail "hyperdx.dashboards.namespaces: must be a list of namespace names" -}}
+{{- fail "clickstack.dashboards.namespaces: must be a list of namespace names" -}}
 {{- end -}}
 {{- range $namespaces -}}
 {{- if not (kindIs "string" .) -}}
-{{- fail "hyperdx.dashboards.namespaces: entries must be quoted strings" -}}
+{{- fail "clickstack.dashboards.namespaces: entries must be quoted strings" -}}
 {{- end -}}
 {{- end -}}
 {{- if and (ne (include "clickstack.hyperdx.dashboardsIncludeReleaseNamespace" .) "true") (not $namespaces) -}}
-{{- fail "hyperdx.dashboards.includeReleaseNamespace: false requires at least one entry in hyperdx.dashboards.namespaces (otherwise the watcher has nothing to watch)" -}}
+{{- fail "clickstack.dashboards.includeReleaseNamespace: false requires at least one entry in clickstack.dashboards.namespaces (otherwise the watcher has nothing to watch)" -}}
 {{- end -}}
 {{- if and $dashboards.configMaps (ne (include "clickstack.hyperdx.dashboardsClusterWide" .) "true") (not (has .Release.Namespace (include "clickstack.hyperdx.effectiveNamespaces" . | splitList ","))) -}}
-{{- fail "hyperdx.dashboards.configMaps: inline dashboards are created in the release namespace, which includeReleaseNamespace: false excludes from discovery; list the release namespace in hyperdx.dashboards.namespaces or ship the dashboards as labeled ConfigMaps in a watched namespace" -}}
+{{- fail "clickstack.dashboards.configMaps: inline dashboards are created in the release namespace, which includeReleaseNamespace: false excludes from discovery; list the release namespace in clickstack.dashboards.namespaces or ship the dashboards as labeled ConfigMaps in a watched namespace" -}}
 {{- end -}}
 {{- if and (eq (include "clickstack.hyperdx.dashboardsClusterWide" .) "true") (gt (len $namespaces) 1) -}}
-{{- fail "hyperdx.dashboards.namespaces: \"ALL\" cannot be combined with specific namespaces (it already grants cluster-wide discovery)" -}}
+{{- fail "clickstack.dashboards.namespaces: \"ALL\" cannot be combined with specific namespaces (it already grants cluster-wide discovery)" -}}
 {{- end -}}
 {{- range $namespaces -}}
 {{- if not (trim .) -}}
-{{- fail "hyperdx.dashboards.namespaces: entries must be non-empty namespace names" -}}
+{{- fail "clickstack.dashboards.namespaces: entries must be non-empty namespace names" -}}
 {{- end -}}
 {{- if and (ne . "ALL") (eq (upper (trim .)) "ALL") -}}
-{{- fail "hyperdx.dashboards.namespaces: use exactly \"ALL\" (uppercase, no surrounding spaces) for cluster-wide discovery" -}}
+{{- fail "clickstack.dashboards.namespaces: use exactly \"ALL\" (uppercase, no surrounding spaces) for cluster-wide discovery" -}}
 {{- end -}}
 {{- if and (ne . "ALL") (not (regexMatch "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$" (trim .))) -}}
-{{- fail "hyperdx.dashboards.namespaces: entries must be valid DNS-1123 labels (lowercase alphanumeric and '-')" -}}
+{{- fail "clickstack.dashboards.namespaces: entries must be valid DNS-1123 labels (lowercase alphanumeric and '-')" -}}
 {{- end -}}
 {{- end -}}
 {{- range $key, $value := (default (dict) $dashboards.configMaps) -}}
 {{- if not (kindIs "string" $value) -}}
-{{- fail (printf "hyperdx.dashboards.configMaps[%s]: value must be a JSON string — use a YAML block scalar (|)" $key) -}}
+{{- fail (printf "clickstack.dashboards.configMaps[%s]: value must be a JSON string — use a YAML block scalar (|)" $key) -}}
 {{- end -}}
 {{- if not (regexMatch "^[A-Za-z0-9][A-Za-z0-9._-]*\\.json$" $key) -}}
-{{- fail (printf "hyperdx.dashboards.configMaps: key %q must be a valid ConfigMap key ending in .json (the provisioner only reads *.json files)" $key) -}}
+{{- fail (printf "clickstack.dashboards.configMaps: key %q must be a valid ConfigMap key ending in .json (the provisioner only reads *.json files)" $key) -}}
 {{- end -}}
 {{- end -}}
-{{- range (default (list) .Values.hyperdx.deployment.volumes) -}}
+{{- range (default (list) .Values.clickstack.deployment.volumes) -}}
 {{- if eq (get . "name") "dashboards" -}}
-{{- fail "hyperdx.deployment.volumes: the name \"dashboards\" is reserved by the dashboard provisioner" -}}
+{{- fail "clickstack.deployment.volumes: the name \"dashboards\" is reserved by the dashboard provisioner" -}}
 {{- end -}}
 {{- end -}}
-{{- range (default (list) .Values.hyperdx.deployment.volumeMounts) -}}
+{{- range (default (list) .Values.clickstack.deployment.volumeMounts) -}}
 {{- if or (eq (get . "name") "dashboards") (eq (get . "mountPath") "/dashboards") -}}
-{{- fail "hyperdx.deployment.volumeMounts: the name \"dashboards\" and mountPath \"/dashboards\" are reserved by the dashboard provisioner" -}}
+{{- fail "clickstack.deployment.volumeMounts: the name \"dashboards\" and mountPath \"/dashboards\" are reserved by the dashboard provisioner" -}}
 {{- end -}}
 {{- end -}}
 {{- end -}}
@@ -212,7 +245,7 @@ comma-joined. Single source for both the watcher NAMESPACE env and the per-names
 RBAC objects so watch scope and granted scope can't drift.
 */}}
 {{- define "clickstack.hyperdx.effectiveNamespaces" -}}
-{{- $raw := default (list) (default (dict) .Values.hyperdx.dashboards).namespaces -}}
+{{- $raw := default (list) (default (dict) .Values.clickstack.dashboards).namespaces -}}
 {{- $namespaces := ternary $raw (list) (kindIs "slice" $raw) -}}
 {{- $base := ternary (list .Release.Namespace) (list) (eq (include "clickstack.hyperdx.dashboardsIncludeReleaseNamespace" .) "true") -}}
 {{- $trimmed := list -}}
@@ -228,7 +261,7 @@ Role-vs-ClusterRole choice in the RBAC template and the watcher NAMESPACE env in
 Deployment, so the granted scope and the watched scope can't diverge. Renders "true" or "".
 */}}
 {{- define "clickstack.hyperdx.dashboardsClusterWide" -}}
-{{- $namespaces := default (list) (default (dict) .Values.hyperdx.dashboards).namespaces -}}
+{{- $namespaces := default (list) (default (dict) .Values.clickstack.dashboards).namespaces -}}
 {{- if and (kindIs "slice" $namespaces) (has "ALL" $namespaces) }}true{{- end -}}
 {{- end -}}
 
@@ -251,7 +284,7 @@ key (e.g. an upgrade with --reuse-values from a chart version without it) keeps 
 chart default of true. Renders "true" or "".
 */}}
 {{- define "clickstack.hyperdx.dashboardsIncludeReleaseNamespace" -}}
-{{- $dashboards := default (dict) .Values.hyperdx.dashboards -}}
+{{- $dashboards := default (dict) .Values.clickstack.dashboards -}}
 {{- if or (not (hasKey $dashboards "includeReleaseNamespace")) $dashboards.includeReleaseNamespace }}true{{- end -}}
 {{- end -}}
 
@@ -261,7 +294,7 @@ with --reuse-values that only sets dashboards.enabled) keeps the chart default o
 true rather than silently deploying a watcher with no read access. Renders "true" or "".
 */}}
 {{- define "clickstack.hyperdx.dashboardsRbacCreate" -}}
-{{- $rbac := default (dict) (default (dict) .Values.hyperdx.dashboards).rbac -}}
+{{- $rbac := default (dict) (default (dict) .Values.clickstack.dashboards).rbac -}}
 {{- if or (not (hasKey $rbac "create")) $rbac.create }}true{{- end -}}
 {{- end -}}
 
@@ -336,14 +369,14 @@ ClickHouse headless service name. The operator creates a headless service named 
 
 {{/*
 Whether the ClickHouse PromQL config is injected into the ClickHouseCluster CR.
-Needs hyperdx.promql.enabled and a ClickHouse server image of 26.6 or newer, the
+Needs clickstack.promql.enabled and a ClickHouse server image of 26.6 or newer, the
 first release with the prometheus_api_v1 handler. The tag is read from
 clickhouse.cluster.spec.containerTemplate.image.tag; a four-part ClickHouse version
 and an image-variant suffix such as "-alpine" are reduced to semver first. A tag
 that carries no version (e.g. "latest") is assumed new enough. Renders "true" or "".
 */}}
 {{- define "clickstack.clickhouse.promqlEnabled" -}}
-{{- if .Values.hyperdx.promql.enabled -}}
+{{- if .Values.clickstack.promql.enabled -}}
 {{- $tag := toString (dig "containerTemplate" "image" "tag" "" .Values.clickhouse.cluster.spec) -}}
 {{- $version := regexFind "^[0-9]+\\.[0-9]+(\\.[0-9]+)?" $tag -}}
 {{- if or (not $version) (semverCompare ">= 26.6" $version) }}true{{- end -}}
@@ -360,7 +393,7 @@ repeated because ClickHouse ignores its legacy prometheus.endpoint settings once
 handlers block exists.
 */}}
 {{- define "clickstack.clickhouse.promqlSettings" -}}
-{{- $database := .Values.hyperdx.config.HYPERDX_OTEL_EXPORTER_CLICKHOUSE_DATABASE | default "default" }}
+{{- $database := .Values.clickstack.config.HYPERDX_OTEL_EXPORTER_CLICKHOUSE_DATABASE | default "default" }}
 extraConfig:
   prometheus:
     handlers:
@@ -408,10 +441,10 @@ metadata:
   labels:
     {{- include "clickstack.labels" . | nindent 4 }}
 data:
-  {{- range $k, $v := .Values.hyperdx.config }}
+  {{- range $k, $v := .Values.clickstack.config }}
   {{ $k }}: {{ tpl (toString $v) $ | quote }}
   {{- end }}
-  {{- if and .Values.global.otelCollector.customConfig (not (hasKey .Values.hyperdx.config "CUSTOM_OTELCOL_CONFIG_FILE")) }}
+  {{- if and .Values.global.otelCollector.customConfig (not (hasKey .Values.clickstack.config "CUSTOM_OTELCOL_CONFIG_FILE")) }}
   CUSTOM_OTELCOL_CONFIG_FILE: "/etc/otelcol-contrib/custom/custom.config.yaml"
   {{- end }}
 {{- end }}
@@ -429,7 +462,7 @@ metadata:
     {{- include "clickstack.labels" . | nindent 4 }}
 type: Opaque
 stringData:
-  {{- range $k, $v := .Values.hyperdx.secrets }}
+  {{- range $k, $v := .Values.clickstack.secrets }}
   {{ $k }}: {{ tpl (toString $v) $ | quote }}
   {{- end }}
 {{- end }}
