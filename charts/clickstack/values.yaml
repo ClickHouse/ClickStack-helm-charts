@@ -99,13 +99,16 @@ hyperdx:
     #     { "name": "Kubernetes Overview", "tiles": [...] }
     # Sidecar is a lightweight ConfigMap watcher; bump (esp. memory) for very large
     # dashboard sets or wide `namespaces: [ALL]` discovery to avoid OOMKill.
+    # Even idle it needs more than 64Mi: with a handful of small dashboards its working set
+    # is about 72Mi and peaks near 95Mi, so the limit leaves headroom above that peak and
+    # the request reserves about the working set.
     resources:
       limits:
         cpu: 50m
-        memory: 64Mi
+        memory: 128Mi
       requests:
         cpu: 10m
-        memory: 32Mi
+        memory: 64Mi
 
   # -- Shared non-sensitive environment variables (clickstack-config ConfigMap).
   # Used by HyperDX and OTEL collector via envFrom. Values support tpl expressions.
@@ -505,7 +508,7 @@ otel-collector:
   mode: deployment
   image:
     repository: docker.clickhouse.com/clickhouse/clickstack-otel-collector
-    tag: "2.45.0"
+    tag: "2.46.0"
   extraEnvsFrom:
     - configMapRef:
         name: clickstack-config
