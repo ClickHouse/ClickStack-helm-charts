@@ -93,6 +93,89 @@ the namespaced Role and the cluster-scoped ClusterRole branches.
 {{- end -}}
 
 {{/*
+Fail on 1.x and 2.x values that later charts moved or removed. The chart ignores them, so a
+user's setting (passwords, replicas, opt-outs) would fall back to the default.
+*/}}
+{{- define "clickstack.validateRemovedValues" -}}
+{{- $removed := dict
+  "global.storageClassName" "set storageClassName in the volume claim specs under mongodb.spec, clickhouse.keeper.spec and clickhouse.cluster.spec"
+  "global.keepPVC" "remove it; operator-managed PVCs are always kept on uninstall"
+  "tasks" "use clickstack.tasks"
+  "otel" "configure the otel-collector subchart, and set collector env vars in clickstack.config and clickstack.secrets"
+  "hyperdx.apiKey" "use clickstack.secrets.HYPERDX_API_KEY"
+  "hyperdx.apiPort" "use clickstack.ports.api"
+  "hyperdx.appPort" "use clickstack.ports.app"
+  "hyperdx.opampPort" "use clickstack.ports.opamp"
+  "hyperdx.appUrl" "use clickstack.config.FRONTEND_URL"
+  "hyperdx.frontendUrl" "use clickstack.config.FRONTEND_URL"
+  "hyperdx.logLevel" "use clickstack.config.HYPERDX_LOG_LEVEL"
+  "hyperdx.usageStatsEnabled" "use clickstack.config.USAGE_STATS_ENABLED (a string, e.g. \"false\")"
+  "hyperdx.otelExporterEndpoint" "use clickstack.config.OTEL_EXPORTER_OTLP_ENDPOINT"
+  "hyperdx.mongoUri" "use clickstack.config.MONGO_URI"
+  "hyperdx.ingress.ingressClassName" "move into clickstack.ingress.spec, and nginx proxy settings into clickstack.ingress.annotations"
+  "hyperdx.ingress.host" "move into clickstack.ingress.spec, and nginx proxy settings into clickstack.ingress.annotations"
+  "hyperdx.ingress.path" "move into clickstack.ingress.spec, and nginx proxy settings into clickstack.ingress.annotations"
+  "hyperdx.ingress.pathType" "move into clickstack.ingress.spec, and nginx proxy settings into clickstack.ingress.annotations"
+  "hyperdx.ingress.tls" "move into clickstack.ingress.spec, and nginx proxy settings into clickstack.ingress.annotations"
+  "hyperdx.ingress.proxyBodySize" "move into clickstack.ingress.spec, and nginx proxy settings into clickstack.ingress.annotations"
+  "hyperdx.ingress.proxyConnectTimeout" "move into clickstack.ingress.spec, and nginx proxy settings into clickstack.ingress.annotations"
+  "hyperdx.ingress.proxySendTimeout" "move into clickstack.ingress.spec, and nginx proxy settings into clickstack.ingress.annotations"
+  "hyperdx.ingress.proxyReadTimeout" "move into clickstack.ingress.spec, and nginx proxy settings into clickstack.ingress.annotations"
+  "hyperdx.image" "use clickstack.deployment.image"
+  "hyperdx.replicas" "use clickstack.deployment.replicas"
+  "hyperdx.livenessProbe" "use clickstack.deployment.livenessProbe"
+  "hyperdx.readinessProbe" "use clickstack.deployment.readinessProbe"
+  "hyperdx.nodeSelector" "use clickstack.deployment.nodeSelector"
+  "hyperdx.tolerations" "use clickstack.deployment.tolerations"
+  "hyperdx.annotations" "use clickstack.deployment.annotations"
+  "hyperdx.labels" "use clickstack.deployment.labels"
+  "hyperdx.env" "use clickstack.deployment.env"
+  "hyperdx.waitForMongodb" "use clickstack.deployment.waitForMongodb"
+  "hyperdx.useExistingConfigSecret" "use clickstack.deployment.useExistingConfigSecret"
+  "hyperdx.existingConfigSecret" "use clickstack.deployment.existingConfigSecret"
+  "hyperdx.existingConfigConnectionsKey" "use clickstack.deployment.existingConfigConnectionsKey"
+  "hyperdx.existingConfigSourcesKey" "use clickstack.deployment.existingConfigSourcesKey"
+  "hyperdx.defaultConnections" "use clickstack.deployment.defaultConnections"
+  "hyperdx.defaultSources" "use clickstack.deployment.defaultSources"
+  "mongodb.password" "use clickstack.secrets.MONGODB_PASSWORD"
+  "mongodb.image" "configure the MongoDBCommunity resource under mongodb.spec"
+  "mongodb.port" "configure the MongoDBCommunity resource under mongodb.spec"
+  "mongodb.strategy" "configure the MongoDBCommunity resource under mongodb.spec"
+  "mongodb.nodeSelector" "configure the MongoDBCommunity resource under mongodb.spec"
+  "mongodb.tolerations" "configure the MongoDBCommunity resource under mongodb.spec"
+  "mongodb.persistence" "configure the MongoDBCommunity resource under mongodb.spec"
+  "mongodb.livenessProbe" "configure the MongoDBCommunity resource under mongodb.spec"
+  "mongodb.readinessProbe" "configure the MongoDBCommunity resource under mongodb.spec"
+  "clickhouse.prometheus.endpoint" "remove it; only clickhouse.prometheus.port is read"
+  "clickhouse.config" "set ClickHouse credentials in clickstack.secrets (CLICKHOUSE_PASSWORD, CLICKHOUSE_APP_PASSWORD)"
+  "clickhouse.image" "configure the ClickHouseCluster resource under clickhouse.cluster.spec"
+  "clickhouse.terminationGracePeriodSeconds" "configure the ClickHouseCluster resource under clickhouse.cluster.spec"
+  "clickhouse.resources" "configure the ClickHouseCluster resource under clickhouse.cluster.spec"
+  "clickhouse.livenessProbe" "configure the ClickHouseCluster resource under clickhouse.cluster.spec"
+  "clickhouse.readinessProbe" "configure the ClickHouseCluster resource under clickhouse.cluster.spec"
+  "clickhouse.startupProbe" "configure the ClickHouseCluster resource under clickhouse.cluster.spec"
+  "clickhouse.nodeSelector" "configure the ClickHouseCluster resource under clickhouse.cluster.spec"
+  "clickhouse.tolerations" "configure the ClickHouseCluster resource under clickhouse.cluster.spec"
+  "clickhouse.service" "configure the ClickHouseCluster resource under clickhouse.cluster.spec"
+  "clickhouse.persistence" "configure the ClickHouseCluster resource under clickhouse.cluster.spec"
+-}}
+{{- $found := list -}}
+{{- range $path := keys $removed | sortAlpha -}}
+{{- $node := $.Values -}}
+{{- range $key := splitList "." $path -}}
+{{- $node = index (ternary $node (dict) (kindIs "map" $node)) $key -}}
+{{- end -}}
+{{- /* A null value is how users clear a key, so it counts as unset. */ -}}
+{{- if not (kindIs "invalid" $node) -}}
+{{- $found = append $found (printf "%s: %s" $path (index $removed $path)) -}}
+{{- end -}}
+{{- end -}}
+{{- if $found -}}
+{{- fail (printf "these values from chart 1.x or 2.x are no longer read, see docs/UPGRADE.md:\n- %s" (join "\n- " $found)) -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
 Fail fast on invalid dashboards input instead of surfacing Go template panics or
 API-server rejections: unusable ServiceAccount config, a non-list or ill-typed
 namespaces value, the contradictory ALL-plus-named-namespaces scope, malformed
@@ -260,6 +343,68 @@ ClickHouse headless service name. The operator creates a headless service named 
 */}}
 {{- define "clickstack.clickhouse.svc" -}}
 {{- printf "%s-clickhouse-headless" (include "clickstack.clickhouse.fullname" .) -}}
+{{- end }}
+
+{{/*
+Whether the ClickHouse PromQL config is injected into the ClickHouseCluster CR.
+Needs clickstack.promql.enabled and a ClickHouse server image of 26.6 or newer, the
+first release with the prometheus_api_v1 handler. The tag is read from
+clickhouse.cluster.spec.containerTemplate.image.tag; a four-part ClickHouse version
+and an image-variant suffix such as "-alpine" are reduced to semver first. A tag
+that carries no version (e.g. "latest") is assumed new enough. Renders "true" or "".
+*/}}
+{{- define "clickstack.clickhouse.promqlEnabled" -}}
+{{- if .Values.clickstack.promql.enabled -}}
+{{- $tag := toString (dig "containerTemplate" "image" "tag" "" .Values.clickhouse.cluster.spec) -}}
+{{- $version := regexFind "^[0-9]+\\.[0-9]+(\\.[0-9]+)?" $tag -}}
+{{- if or (not $version) (semverCompare ">= 26.6" $version) }}true{{- end -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+ClickHouse settings that back PromQL, merged under the user's
+clickhouse.cluster.spec.settings by clickhouse/cluster.yaml. Mirrors the upstream
+ClickStack config.xml/users.xml: Prometheus remote write/read into the TimeSeries
+table the otel-collector creates, the Prometheus HTTP API on the main HTTP port, and
+the experimental setting the TimeSeries engine needs. The metrics handler is
+repeated because ClickHouse ignores its legacy prometheus.endpoint settings once a
+handlers block exists.
+*/}}
+{{- define "clickstack.clickhouse.promqlSettings" -}}
+{{- $database := .Values.clickstack.config.HYPERDX_OTEL_EXPORTER_CLICKHOUSE_DATABASE | default "default" }}
+extraConfig:
+  prometheus:
+    handlers:
+      metrics_handler:
+        url: /metrics
+        handler:
+          type: expose_metrics
+          metrics: true
+          asynchronous_metrics: true
+          events: true
+          errors: true
+      remote_write_handler:
+        url: /write
+        handler:
+          type: remote_write
+          database: {{ $database | quote }}
+          table: metrics_ts
+      remote_read_handler:
+        url: /read
+        handler:
+          type: remote_read
+          database: {{ $database | quote }}
+          table: metrics_ts
+  http_handlers:
+    rule:
+      url_prefix: /prometheus/api/v1
+      handler:
+        type: prometheus_api_v1
+    defaults: ""
+extraUsersConfig:
+  profiles:
+    default:
+      allow_experimental_time_series_table: 1
 {{- end }}
 
 {{/*

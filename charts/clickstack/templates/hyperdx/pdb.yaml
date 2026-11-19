@@ -13,7 +13,12 @@ metadata:
     {{- end -}}
     {{- end }}
 spec:
-  minAvailable: {{ .Values.clickstack.podDisruptionBudget.minAvailable | default 1 }}
+  {{- with .Values.clickstack.podDisruptionBudget.minAvailable }}
+  minAvailable: {{ . }}
+  {{- else }}
+  {{- /* Unlike minAvailable: 1, this still lets a single replica be evicted, so node drains finish. */}}
+  maxUnavailable: {{ .Values.clickstack.podDisruptionBudget.maxUnavailable | default 1 }}
+  {{- end }}
   selector:
     matchLabels:
       {{- include "clickstack.selectorLabels" . | nindent 6 }}

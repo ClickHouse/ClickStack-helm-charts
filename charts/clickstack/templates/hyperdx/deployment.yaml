@@ -143,7 +143,7 @@ spec:
             {{- end }}
             {{- if $dashboards.enabled }}
             # read-only: the HyperDX provisioner only reads .json files here, never writes
-            # (hyperdxio/hyperdx#1962); the watcher sidecar owns writes to the shared volume.
+            # (ClickHouse/ClickStack#1962); the watcher sidecar owns writes to the shared volume.
             - name: dashboards
               mountPath: /dashboards
               readOnly: true

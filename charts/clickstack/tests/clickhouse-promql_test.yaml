@@ -1,0 +1,231 @@
+suite: Test ClickHouse PromQL Settings
+templates:
+  - clickhouse/cluster.yaml
+
+tests:
+  - it: should inject Prometheus remote write and read handlers by default
+    asserts:
+      - equal:
+          path: spec.settings.extraConfig.prometheus.handlers.remote_write_handler.url
+          value: /write
+      - equal:
+          path: spec.settings.extraConfig.prometheus.handlers.remote_write_handler.handler
+          value:
+            type: remote_write
+            database: default
+            table: metrics_ts
+      - equal:
+          path: spec.settings.extraConfig.prometheus.handlers.remote_read_handler.url
+          value: /read
+      - equal:
+          path: spec.settings.extraConfig.prometheus.handlers.remote_read_handler.handler.type
+          value: remote_read
+
+  - it: should keep the metrics handler once a handlers block exists
+    asserts:
+      - equal:
+          path: spec.settings.extraConfig.prometheus.handlers.metrics_handler.url
+          value: /metrics
+      - equal:
+          path: spec.settings.extraConfig.prometheus.handlers.metrics_handler.handler.type
+          value: expose_metrics
+
+  - it: should expose the Prometheus HTTP API on the main HTTP port
+    asserts:
+      - equal:
+          path: spec.settings.extraConfig.http_handlers.rule.url_prefix
+          value: /prometheus/api/v1
+      - equal:
+          path: spec.settings.extraConfig.http_handlers.rule.handler.type
+          value: prometheus_api_v1
+      - equal:
+          path: spec.settings.extraConfig.http_handlers.defaults
+          value: ""
+
+  - it: should enable the TimeSeries table engine on the default profile
+    asserts:
+      - equal:
+          path: spec.settings.extraUsersConfig.profiles.default.allow_experimental_time_series_table
+          value: 1
+
+  - it: should keep the existing extraConfig and users next to the injected settings
+    asserts:
+      - equal:
+          path: spec.settings.extraConfig.max_connections
+          value: 4096
+      - equal:
+          path: spec.settings.extraConfig.query_log.ttl
+          value: event_date + INTERVAL 30 DAY DELETE
+      - isNotNull:
+          path: spec.settings.extraUsersConfig.users.app
+      - isNotNull:
+          path: spec.settings.extraUsersConfig.users.otelcollector
+
+  - it: should point remote write at the configured collector database
+    set:
+      clickstack:
+        config:
+          HYPERDX_OTEL_EXPORTER_CLICKHOUSE_DATABASE: otel
+    asserts:
+      - equal:
+          path: spec.settings.extraConfig.prometheus.handlers.remote_write_handler.handler.database
+          value: otel
+      - equal:
+          path: spec.settings.extraConfig.prometheus.handlers.remote_read_handler.handler.database
+          value: otel
+
+  - it: should fall back to the default database when the collector database is empty
+    set:
+      clickstack:
+        config:
+          HYPERDX_OTEL_EXPORTER_CLICKHOUSE_DATABASE: ""
+    asserts:
+      - equal:
+          path: spec.settings.extraConfig.prometheus.handlers.remote_write_handler.handler.database
+          value: default
+
+  - it: should let user settings win over the injected ones
+    set:
+      clickhouse:
+        cluster:
+          spec:
+            settings:
+              extraConfig:
+                prometheus:
+                  handlers:
+                    remote_write_handler:
+                      handler:
+                        table: custom_ts
+              extraUsersConfig:
+                profiles:
+                  default:
+                    allow_experimental_time_series_table: 0
+                    max_memory_usage: 1000000
+    asserts:
+      - equal:
+          path: spec.settings.extraConfig.prometheus.handlers.remote_write_handler.handler.table
+          value: custom_ts
+      - equal:
+          path: spec.settings.extraConfig.prometheus.handlers.remote_write_handler.handler.type
+          value: remote_write
+      - equal:
+          path: spec.settings.extraUsersConfig.profiles.default.allow_experimental_time_series_table
+          value: 0
+      - equal:
+          path: spec.settings.extraUsersConfig.profiles.default.max_memory_usage
+          value: 1000000
+
+  - it: should inject settings when the spec has no settings block
+    set:
+      clickhouse:
+        cluster:
+          spec:
+            settings: null
+    asserts:
+      - isNull:
+          path: spec.settings.extraUsersConfig.users
+      - equal:
+          path: spec.settings.extraConfig.http_handlers.rule.handler.type
+          value: prometheus_api_v1
+      - equal:
+          path: spec.settings.extraUsersConfig.profiles.default.allow_experimental_time_series_table
+          value: 1
+
+  - it: should inject settings when settings has no extraConfig or extraUsersConfig
+    set:
+      clickhouse:
+        cluster:
+          spec:
+            settings:
+              extraConfig: null
+              extraUsersConfig: null
+    asserts:
+      - equal:
+          path: spec.settings.logger.level
+          value: information
+      - equal:
+          path: spec.settings.extraConfig.http_handlers.rule.handler.type
+          value: prometheus_api_v1
+      - equal:
+          path: spec.settings.extraUsersConfig.profiles.default.allow_experimental_time_series_table
+          value: 1
+
+  - it: should not inject settings when PromQL is disabled
+    set:
+      clickstack:
+        promql:
+          enabled: false
+    asserts:
+      - isNull:
+          path: spec.settings.extraConfig.prometheus
+      - isNull:
+          path: spec.settings.extraConfig.http_handlers
+      - isNull:
+          path: spec.settings.extraUsersConfig.profiles
+      - equal:
+          path: spec.settings.extraConfig.max_connections
+          value: 4096
+
+  - it: should not inject settings on a ClickHouse image older than 26.6
+    set:
+      clickhouse:
+        cluster:
+          spec:
+            containerTemplate:
+              image:
+                tag: "25.7-alpine"
+    asserts:
+      - isNull:
+          path: spec.settings.extraConfig.prometheus
+      - isNull:
+          path: spec.settings.extraConfig.http_handlers
+      - isNull:
+          path: spec.settings.extraUsersConfig.profiles
+
+  - it: should not inject settings on a four-part tag just below 26.6
+    set:
+      clickhouse:
+        cluster:
+          spec:
+            containerTemplate:
+              image:
+                tag: "26.5.9.2"
+    asserts:
+      - isNull:
+          path: spec.settings.extraConfig.prometheus
+
+  - it: should inject settings on a two-part tag at 26.6
+    set:
+      clickhouse:
+        cluster:
+          spec:
+            containerTemplate:
+              image:
+                tag: "26.6"
+    asserts:
+      - isNotNull:
+          path: spec.settings.extraConfig.prometheus
+
+  - it: should inject settings on a tag without a version number
+    set:
+      clickhouse:
+        cluster:
+          spec:
+            containerTemplate:
+              image:
+                tag: latest
+    asserts:
+      - isNotNull:
+          path: spec.settings.extraConfig.prometheus
+
+  - it: should inject settings when no image tag is set
+    set:
+      clickhouse:
+        cluster:
+          spec:
+            containerTemplate:
+              image:
+                tag: null
+    asserts:
+      - isNotNull:
+          path: spec.settings.extraConfig.prometheus

@@ -1,6 +1,3 @@
 {{- include "clickstack.normalizeValues" . -}}
-{{- /* Ignoring the 1.x key would turn usage stats back on for users who opted out. */ -}}
-{{- if hasKey .Values.clickstack "usageStatsEnabled" }}
-{{- fail "hyperdx.usageStatsEnabled was removed in chart 2.0. Set clickstack.config.USAGE_STATS_ENABLED (a string, e.g. \"false\") instead." }}
-{{- end }}
+{{- include "clickstack.validateRemovedValues" . }}
 {{- include "clickstack.hyperdx.configmap" . }}

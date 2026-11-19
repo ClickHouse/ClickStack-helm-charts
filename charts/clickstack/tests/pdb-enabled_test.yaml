@@ -9,5 +9,5 @@ tests:
       - isKind:
           of: PodDisruptionBudget
       - equal:
-          path: spec.minAvailable
+          path: spec.maxUnavailable
           value: 1

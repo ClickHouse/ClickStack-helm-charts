@@ -5,9 +5,16 @@ Each section lists what changes when you upgrade to that chart version and anyth
 ## Unreleased
 
 - The top-level `hyperdx` values key is now `clickstack`. Values files and `--set hyperdx.*` flags still work and print a deprecation warning in the install notes; move them under `clickstack` before a future chart version removes `hyperdx`. Where both keys set the same value, `hyperdx` wins. Rendered resources don't change. `--reuse-values` keeps the release's stored `hyperdx` values, which then override anything you move under `clickstack`, so do the upgrade that moves them with `-f <your values file>` instead.
-- `helm upgrade` fails while your values still set the 1.x key `hyperdx.usageStatsEnabled`, which the chart has ignored since 2.0. Remove it, and set `clickstack.config.USAGE_STATS_ENABLED: "false"` to opt out of usage stats.
+
+## 3.7.0
+
+- PromQL is on by default via `hyperdx.promql.enabled`. The chart adds Prometheus remote write/read handlers, the `prometheus_api_v1` HTTP handler and the experimental `allow_experimental_time_series_table` setting to the ClickHouse config, so the ClickHouse pods restart once. If you pin `clickhouse.cluster.spec.containerTemplate.image.tag` to a version older than 26.6, the ClickHouse settings are skipped but the HyperDX PromQL UI still shows; set `hyperdx.promql.enabled: false` there. New installs also get a `PromQL` default source; existing sources are not modified.
+
+## 3.6.0
+
+- `helm upgrade` fails while your values still set the 1.x key `hyperdx.usageStatsEnabled`, which the chart has ignored since 2.0. Remove it, and set `hyperdx.config.USAGE_STATS_ENABLED: "false"` to opt out of usage stats.
 - The ClickHouse system log tables' TTL rises from 7 to 30 days, to match the ClickHouse operator's default. ClickHouse recreates each of those tables and keeps the old rows in a renamed `system.<table>_N` table; drop it once you no longer need it.
-- The Next.js server and browser no longer send HyperDX's own telemetry unless `clickstack.config.NEXT_PUBLIC_OTEL_EXPORTER_OTLP_ENDPOINT` is set to a collector URL browsers can reach. Set `clickstack.config.HDX_EXPORTER_ENABLED: "true"` to keep the server's telemetry.
+- The Next.js server and browser no longer send HyperDX's own telemetry unless `hyperdx.config.NEXT_PUBLIC_OTEL_EXPORTER_OTLP_ENDPOINT` is set to a collector URL browsers can reach. Set `hyperdx.config.HDX_EXPORTER_ENABLED: "true"` to keep the server's telemetry.
 
 ## 3.5.0
 
@@ -41,7 +48,7 @@ This guide covers migrating from the inline-template ClickStack chart (v1.x) to 
 ### Prerequisites
 
 - Back up your data before upgrading (MongoDB, ClickHouse PVCs)
-- Review your current `values.yaml` overrides -- most keys have moved or been renamed
+- Review your current `values.yaml` overrides -- most keys have moved or been renamed. Rendering fails while any 1.x key the chart no longer reads is still set, and the error lists each one with its replacement
 
 ### Two-Phase Installation
 
@@ -54,6 +61,8 @@ helm install clickstack-operators clickstack/clickstack-operators
 # Phase 2: Install ClickStack
 helm install my-clickstack clickstack/clickstack
 ```
+
+These commands use the `clickstack` Helm repo. To install from GHCR instead, replace `clickstack/<chart>` with `oci://ghcr.io/clickhouse/charts/<chart>`. See the [Quick Start](../README.md#quick-start).
 
 Uninstall in reverse order:
 
@@ -100,7 +109,7 @@ clickhouse:
 | MongoDB | Inline Deployment + Service + PVC | [MongoDB Kubernetes Operator (MCK)](https://github.com/mongodb/mongodb-kubernetes) managing a `MongoDBCommunity` CR |
 | ClickHouse | Inline Deployment + Service + ConfigMaps + PVCs | [ClickHouse Operator](https://clickhouse.com/docs/clickhouse-operator/overview) managing `ClickHouseCluster` + `KeeperCluster` CRs |
 | OTEL Collector | Inline Deployment + Service (`otel.*` block) | [Official OpenTelemetry Collector Helm chart](https://github.com/open-telemetry/opentelemetry-helm-charts) (`otel-collector:` subchart). No separate `otel:` block -- env vars live in `hyperdx.config`/`hyperdx.secrets` |
-| HyperDX values | Flat keys under `hyperdx.*` plus top-level `tasks:` and `appUrl` | Reorganised by K8s resource type under `hyperdx.*` (see below) |
+| HyperDX values | Flat keys under `hyperdx.*` plus top-level `tasks:` | Reorganised by K8s resource type under `hyperdx.*` (see below) |
 | hdx-oss-v2 | Deprecated legacy chart | Removed entirely |
 
 ### HyperDX Values Reorganisation
@@ -114,10 +123,9 @@ hyperdx:
     app: 3000
     opamp: 4320
 
-  frontendUrl: "http://localhost:3000"   # Replaces the removed appUrl
-
   config:         # → clickstack-config ConfigMap (non-sensitive env vars)
     APP_PORT: "3000"
+    FRONTEND_URL: "http://localhost:3000"   # Replaces hyperdx.appUrl and hyperdx.frontendUrl
     HYPERDX_LOG_LEVEL: "info"
     # ... full list in values.yaml
 
@@ -138,7 +146,7 @@ hyperdx:
 
 | Before | After |
 |--------|-------|
-| `appUrl` | Removed. Use `hyperdx.frontendUrl` (defaults to `http://localhost:3000`) |
+| `hyperdx.appUrl`, `hyperdx.frontendUrl` | `hyperdx.config.FRONTEND_URL` (defaults to `http://localhost:3000`) |
 | `tasks.*` (top-level) | `hyperdx.tasks.*` |
 | `mongodb.password` | `hyperdx.secrets.MONGODB_PASSWORD` |
 | `clickhouse.config.users.appUserPassword` | `hyperdx.secrets.CLICKHOUSE_APP_PASSWORD` |
@@ -146,10 +154,13 @@ hyperdx:
 | `otel.*` env overrides | `hyperdx.config.*` (non-sensitive) and `hyperdx.secrets.*` (sensitive) |
 | `hyperdx.apiKey` | `hyperdx.secrets.HYPERDX_API_KEY` |
 | `hyperdx.logLevel` | `hyperdx.config.HYPERDX_LOG_LEVEL` |
-| `hyperdx.usageStatsEnabled` | `hyperdx.config.USAGE_STATS_ENABLED` (a string). Rendering fails while the old key is set |
+| `hyperdx.usageStatsEnabled` | `hyperdx.config.USAGE_STATS_ENABLED` (a string) |
 | `hyperdx.otelExporterEndpoint` | `hyperdx.config.OTEL_EXPORTER_OTLP_ENDPOINT` |
 | `hyperdx.mongoUri` | `hyperdx.config.MONGO_URI` |
 | `hyperdx.apiPort`, `hyperdx.appPort`, `hyperdx.opampPort` | `hyperdx.ports.api`, `hyperdx.ports.app`, `hyperdx.ports.opamp` |
+| `hyperdx.ingress.host`, `ingressClassName`, `path`, `pathType`, `tls` | `hyperdx.ingress.spec`, a verbatim Ingress spec (`ingressClassName`, `rules`, `tls`) |
+| `hyperdx.ingress.proxyBodySize`, `proxyConnectTimeout`, `proxySendTimeout`, `proxyReadTimeout` | nginx annotations in `hyperdx.ingress.annotations`, e.g. `nginx.ingress.kubernetes.io/proxy-body-size: "100m"` |
+| `hyperdx.image`, `replicas`, `livenessProbe`, `readinessProbe`, `nodeSelector`, `tolerations`, `annotations`, `labels`, `env`, `waitForMongodb`, `useExistingConfigSecret`, `existingConfigSecret`, `existingConfigConnectionsKey`, `existingConfigSourcesKey`, `defaultConnections`, `defaultSources` | The same key under `hyperdx.deployment` |
 
 #### Unified ConfigMap and Secret
 

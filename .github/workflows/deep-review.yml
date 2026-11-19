@@ -472,7 +472,7 @@ jobs:
       - name: Run deep review
         id: review
         if: steps.gate.outputs.should_review == 'true'
-        uses: anthropics/claude-code-action@9eb012b6d0900c2b9eede65ee1758cec4d2973e9 # v1.0.270
+        uses: anthropics/claude-code-action@4fa93a88de49bbef68b10eb15aabedf28ca0e1ed # v1.0.271
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }} # bypasses OIDC auth (required for pull_request_target)

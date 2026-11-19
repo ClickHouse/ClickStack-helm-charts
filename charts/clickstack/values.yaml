@@ -43,6 +43,14 @@ clickstack:
     app: 3000
     opamp: 4320
 
+  # -- PromQL support. Turns on the HyperDX PromQL UI and API, adds the PromQL default source,
+  # and configures ClickHouse with Prometheus remote write/read handlers, the `prometheus_api_v1`
+  # HTTP handler and `allow_experimental_time_series_table` (an experimental ClickHouse setting).
+  # The ClickHouse part needs ClickHouse 26.6 or newer and is skipped when
+  # `clickhouse.cluster.spec.containerTemplate.image.tag` is an older version.
+  promql:
+    enabled: true
+
   # -- Dashboard provisioning: upserts dashboard JSON into MongoDB (matched by name, never deletes).
   # Provide dashboards inline via configMaps, or label ConfigMaps hyperdx.io/dashboard: "true"
   # for a k8s-sidecar watcher to discover.
@@ -82,13 +90,16 @@ clickstack:
     #     { "name": "Kubernetes Overview", "tiles": [...] }
     # Sidecar is a lightweight ConfigMap watcher; bump (esp. memory) for very large
     # dashboard sets or wide `namespaces: [ALL]` discovery to avoid OOMKill.
+    # Even idle it needs more than 64Mi: with a handful of small dashboards its working set
+    # is about 72Mi and peaks near 95Mi, so the limit leaves headroom above that peak and
+    # the request reserves about the working set.
     resources:
       limits:
         cpu: 50m
-        memory: 64Mi
+        memory: 128Mi
       requests:
         cpu: 10m
-        memory: 32Mi
+        memory: 64Mi
 
   # -- Shared non-sensitive environment variables (clickstack-config ConfigMap).
   # Used by HyperDX and OTEL collector via envFrom. Values support tpl expressions.
@@ -130,6 +141,9 @@ clickstack:
     CLICKHOUSE_SERVER_ENDPOINT: '{{ include "clickstack.clickhouse.svc" . }}:{{ .Values.clickhouse.nativePort }}'
     CLICKHOUSE_PROMETHEUS_METRICS_ENDPOINT: '{{ include "clickstack.clickhouse.svc" . }}:{{ .Values.clickhouse.prometheus.port }}'
     OPAMP_SERVER_URL: 'http://{{ include "clickstack.hyperdx.fullname" . }}:{{ .Values.clickstack.ports.opamp }}'
+    # PromQL feature flags, driven by clickstack.promql.enabled.
+    ENABLE_PROMQL: '{{ if .Values.clickstack.promql.enabled }}true{{ else }}false{{ end }}'
+    NEXT_PUBLIC_ENABLE_PROMQL: '{{ if .Values.clickstack.promql.enabled }}true{{ else }}false{{ end }}'
 
   # -- Shared sensitive environment variables (clickstack-secret).
   # Set to null to skip Secret creation (requires mongodb, clickhouse, and otel-collector disabled).
@@ -298,6 +312,16 @@ clickstack:
           "resourceAttributesExpression": "ResourceAttributes",
           "connection": "Local ClickHouse",
           "traceSourceId": "Traces"
+        },
+        {
+          "from": {
+            "databaseName": "default",
+            "tableName": "metrics_ts"
+          },
+          "kind": "promql",
+          "timestampValueExpression": "timestamp",
+          "name": "PromQL",
+          "connection": "Local ClickHouse"
         }
       ]
 
@@ -317,7 +341,8 @@ clickstack:
     spec: {}
     additionalIngresses: []
 
-  # -- PodDisruptionBudget for the HyperDX Deployment.
+  # -- PodDisruptionBudget for the HyperDX Deployment. Defaults to maxUnavailable: 1, which never blocks
+  # a node drain; set minAvailable or maxUnavailable to override.
   podDisruptionBudget:
     enabled: false
 
@@ -394,7 +419,7 @@ clickhouse:
       containerTemplate:
         image:
           repository: clickhouse/clickhouse-keeper
-          tag: "26.8.36.3-alpine"
+          tag: "26.8.37.168-alpine"
       replicas: 1
       dataVolumeClaimSpec:
         accessModes:
@@ -408,7 +433,7 @@ clickhouse:
       containerTemplate:
         image:
           repository: clickhouse/clickhouse-server
-          tag: "26.8.36.3-alpine"
+          tag: "26.8.37.168-alpine"
         resources:
           requests:
             cpu: 500m
@@ -432,7 +457,9 @@ clickhouse:
               password: '{{ .Values.clickstack.secrets.CLICKHOUSE_APP_PASSWORD }}'
               profile: default
               grants:
-                - query: "GRANT SHOW ON *.*, SELECT ON system.*, SELECT ON default.*"
+                # The prometheus_api_v1 handler reads via the timeSeriesSelector() table function,
+                # and ClickHouse gates every table function behind CREATE TEMPORARY TABLE.
+                - query: "GRANT SHOW ON *.*, SELECT ON system.*, SELECT ON default.*, CREATE TEMPORARY TABLE ON *.*"
             otelcollector:
               password: '{{ .Values.clickstack.secrets.CLICKHOUSE_PASSWORD }}'
               profile: default
@@ -472,7 +499,7 @@ otel-collector:
   mode: deployment
   image:
     repository: docker.clickhouse.com/clickhouse/clickstack-otel-collector
-    tag: "2.39.1"
+    tag: "2.46.0"
   extraEnvsFrom:
     - configMapRef:
         name: clickstack-config
