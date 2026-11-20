@@ -51,6 +51,7 @@ All flags default to `false` and timeout defaults to `300` if omitted.
 | `NAMESPACE` | Kubernetes namespace | `default` |
 | `SUITE_DIR` | Absolute path to suite directory | `/path/to/integration-tests/my-new-suite` |
 | `REPO_ROOT` | Absolute path to repo root | `/path/to/ClickStack-helm-charts` |
+| `PRE_UPGRADE_DATABASE` | After an upgrade, the ClickHouse database the base release wrote to (from its `clickstack-config`). Empty on a fresh install | `default` |
 
 The script should `exit 0` on success, `exit 1` on failure.
 
@@ -79,18 +80,23 @@ On failure, the CI workflow collects pod status, events, logs, and resource desc
 
 On pull requests every suite also runs a second time as `integration-test (<suite>, upgrade)`. That run installs the charts and `values.yaml` from the PR's base branch and passes that branch's `assert.sh`. It then upgrades to the PR's charts and values with `--wait` and runs the PR's `assert.sh`. The `helm diff` of the upgrade is written to the job summary. A suite that doesn't exist on the base branch passes the upgrade run without testing anything.
 
-To run it locally, point `UPGRADE_FROM` at a checkout of the older ref. The diff is skipped unless the `helm-diff` plugin is installed.
+PRs also run each suite as `integration-test (<suite>, upgrade-template)`. It is the same as the upgrade run, except that the PR's chart is rendered with `helm template` and applied with `kubectl apply --server-side`, as Argo CD and other GitOps tools do. Without cluster access the chart's `lookup` calls return nothing, which is how an install that predates a new default (such as the `otel` database) would see it. The harness then restarts the release's Deployments, since `.Release.Revision` stays 1 and nothing else would roll the otel-collector.
+
+Before either upgrade the harness records the base release's ClickHouse database in `PRE_UPGRADE_DATABASE`. The `full-stack` assert checks that new data still lands in that database after the upgrade, and on a fresh install that the database and its tables are Replicated.
+
+To run it locally, point `UPGRADE_FROM` at a checkout of the older ref, and set `UPGRADE_METHOD=template` for the GitOps-style upgrade. The diff is skipped unless the `helm-diff` plugin is installed.
 
 ```bash
 git worktree add /tmp/clickstack-main origin/main
 UPGRADE_FROM=/tmp/clickstack-main ./integration-tests/run-suite.sh api-only
+UPGRADE_FROM=/tmp/clickstack-main UPGRADE_METHOD=template ./integration-tests/run-suite.sh full-stack
 ```
 
 ## Existing suites
 
 ### `full-stack`
 
-Deploys the complete ClickStack platform with all subcharts (MongoDB, ClickHouse, OTEL collector). Runs the comprehensive smoke test (`scripts/smoke-test.sh`) which verifies OTEL ingestion into ClickHouse and runs Playwright e2e tests (user registration + log search).
+Deploys the complete ClickStack platform with all subcharts (MongoDB, ClickHouse, OTEL collector). Runs the comprehensive smoke test (`scripts/smoke-test.sh`) which verifies OTEL ingestion into ClickHouse and runs Playwright e2e tests (user registration + log search). Fresh installs also check that the ClickStack database and its MergeTree tables use Replicated engines; upgrades check that new data still lands in the database the base release used.
 
 ### `api-only`
 
