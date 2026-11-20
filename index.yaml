@@ -8,6 +8,45 @@ entries:
         - name: Chart Source
           url: https://github.com/ClickHouse/ClickStack-helm-charts
         - name: Upstream Project
+          url: https://github.com/ClickHouse/ClickStack
+        - name: Upgrade Guide
+          url: https://github.com/ClickHouse/ClickStack-helm-charts/blob/main/docs/UPGRADE.md
+    apiVersion: v2
+    appVersion: 2.46.0
+    created: "2026-11-20T04:03:57.512497201Z"
+    dependencies:
+    - alias: otel-collector
+      condition: otel-collector.enabled
+      name: opentelemetry-collector
+      repository: oci://ghcr.io/open-telemetry/opentelemetry-helm-charts
+      version: ~0.146.0
+    description: A Helm chart for ClickStack - Full-stack observability with ClickHouse,
+      OpenTelemetry, and HyperDX
+    digest: a1992a26fe34adc372e8dc9f6d7708ba576b181a3ffec740bff7b88a9edfc6e9
+    home: https://clickhouse.com/docs/use-cases/observability/clickstack
+    icon: https://raw.githubusercontent.com/ClickHouse/ClickStack/main/packages/app/public/favicons/clickstack/favicon.svg
+    keywords:
+    - observability
+    - opentelemetry
+    - clickhouse
+    - logs
+    - traces
+    - metrics
+    name: clickstack
+    sources:
+    - https://github.com/ClickHouse/ClickStack-helm-charts
+    - https://github.com/ClickHouse/ClickStack
+    type: application
+    urls:
+    - https://github.com/ClickHouse/ClickStack-helm-charts/releases/download/clickstack-3.8.0/clickstack-3.8.0.tgz
+    version: 3.8.0
+  - annotations:
+      artifacthub.io/category: monitoring-logging
+      artifacthub.io/license: MIT
+      artifacthub.io/links: |
+        - name: Chart Source
+          url: https://github.com/ClickHouse/ClickStack-helm-charts
+        - name: Upstream Project
           url: https://github.com/hyperdxio/hyperdx
         - name: Upgrade Guide
           url: https://github.com/ClickHouse/ClickStack-helm-charts/blob/main/docs/UPGRADE.md
@@ -814,4 +853,4 @@ entries:
     urls:
     - https://github.com/hyperdxio/helm-charts/releases/download/hdx-oss-v2-0.1.0/hdx-oss-v2-0.1.0.tgz
     version: 0.1.0
-generated: "2026-11-18T20:16:49.310237849Z"
+generated: "2026-11-20T04:03:57.670845215Z"
