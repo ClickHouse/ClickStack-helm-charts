@@ -157,3 +157,22 @@ tests:
       - equal:
           path: data.LEGACY_ONLY
           value: "from-hyperdx"
+
+  - it: should point the collector at the app's OpAMP server by default
+    release:
+      name: rel
+    asserts:
+      - equal:
+          path: data.OPAMP_SERVER_URL
+          value: http://rel-clickstack-app:4320
+
+  # An empty OPAMP_SERVER_URL makes the collector run standalone from its built-in config.
+  - it: should leave OPAMP_SERVER_URL empty when OpAMP is disabled
+    set:
+      clickstack:
+        opamp:
+          enabled: false
+    asserts:
+      - equal:
+          path: data.OPAMP_SERVER_URL
+          value: ""

@@ -22,9 +22,11 @@ spec:
       targetPort: {{ .Values.clickstack.ports.api }}
       name: api
     {{- end }}
+    {{- if include "clickstack.opampEnabled" . }}
     - port: {{ .Values.clickstack.ports.opamp }}
       targetPort: {{ .Values.clickstack.ports.opamp }}
       name: opamp
+    {{- end }}
   selector:
     {{- include "clickstack.selectorLabels" . | nindent 4 }}
     app: {{ include "clickstack.fullname" . }}

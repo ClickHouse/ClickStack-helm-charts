@@ -110,8 +110,10 @@ spec:
               containerPort: {{ .Values.clickstack.ports.app }}
             - name: api-port
               containerPort: {{ .Values.clickstack.ports.api }}
+            {{- if include "clickstack.opampEnabled" . }}
             - name: opamp-port
               containerPort: {{ .Values.clickstack.ports.opamp }}
+            {{- end }}
           {{- if .Values.clickstack.deployment.resources }}
           resources:
             {{- toYaml .Values.clickstack.deployment.resources | nindent 12 }}

@@ -601,3 +601,15 @@ tests:
       - lengthEqual:
           path: spec.template.spec.imagePullSecrets
           count: 3
+
+  - it: should not open the OpAMP container port when OpAMP is disabled
+    set:
+      clickstack:
+        opamp:
+          enabled: false
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].ports
+          content:
+            name: opamp-port
+          any: true
