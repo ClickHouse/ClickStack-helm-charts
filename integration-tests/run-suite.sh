@@ -29,12 +29,22 @@ TIMEOUT=$(read_config '.timeout' '300')
 
 # Optional checkout of an older ref: install its chart first, then upgrade to this checkout.
 UPGRADE_FROM="${UPGRADE_FROM:-}"
+# How the upgrade is applied: "helm" runs helm upgrade; "template" pipes helm template into
+# kubectl apply, as Argo CD and other GitOps tools do, so the chart's lookup calls see nothing.
+UPGRADE_METHOD="${UPGRADE_METHOD:-helm}"
+case "$UPGRADE_METHOD" in
+    helm|template) ;;
+    *) echo "ERROR: UPGRADE_METHOD must be 'helm' or 'template', got '$UPGRADE_METHOD'"; exit 1 ;;
+esac
 BASE_ROOT="${UPGRADE_FROM:-$REPO_ROOT}"
 BASE_SUITE_DIR="$BASE_ROOT/integration-tests/$SUITE_NAME"
 if [ -n "$UPGRADE_FROM" ] && [ ! -f "$BASE_SUITE_DIR/values.yaml" ]; then
     echo "Suite '$SUITE_NAME' does not exist in $BASE_ROOT, nothing to upgrade from"
     exit 0
 fi
+# Database the base release writes ClickStack tables to, recorded before an upgrade. Empty on a
+# fresh install. The post-upgrade assert.sh checks that new data still lands there.
+export PRE_UPGRADE_DATABASE=""
 
 echo "=== Integration test suite: $SUITE_NAME ==="
 echo "Release:        $RELEASE_NAME"
@@ -43,6 +53,9 @@ echo "Operators:      $NEEDS_OPERATORS"
 echo "Local storage:  $NEEDS_LOCAL_STORAGE"
 echo "Timeout:        ${TIMEOUT}s"
 echo "Upgrade from:   ${UPGRADE_FROM:-none}"
+if [ -n "$UPGRADE_FROM" ]; then
+    echo "Upgrade method: $UPGRADE_METHOD"
+fi
 echo ""
 
 echo "--- Creating Kind cluster: $CLUSTER_NAME ---"
@@ -112,6 +125,24 @@ show_upgrade_diff() {
     } >>"$out"
 }
 
+# Upgrade the way GitOps tools do: render without cluster access and apply the manifests.
+template_upgrade() {
+    local selector="app.kubernetes.io/instance=$RELEASE_NAME"
+    echo "--- helm template | kubectl apply ClickStack chart from $REPO_ROOT ---"
+    helm dependency build "$REPO_ROOT/charts/clickstack"
+    helm template "$RELEASE_NAME" "$REPO_ROOT/charts/clickstack" \
+        -n "$NAMESPACE" -f "$SUITE_DIR/values.yaml" \
+        | kubectl apply -n "$NAMESPACE" --server-side --force-conflicts -f -
+    # Pods whose template didn't change keep running with the old config, and .Release.Revision is
+    # always 1 here, so the otel-collector doesn't roll. Restart the release's Deployments, as a
+    # later image bump or node drain would, so the asserts see what the new config does.
+    kubectl rollout restart deployment -n "$NAMESPACE" -l "$selector"
+    for deployment in $(kubectl get deployment -n "$NAMESPACE" -l "$selector" -o name); do
+        kubectl rollout status "$deployment" -n "$NAMESPACE" --timeout="${TIMEOUT}s"
+    done
+    echo ""
+}
+
 if [ "$NEEDS_OPERATORS" = "true" ]; then
     deploy_operators "$BASE_ROOT" install
 fi
@@ -127,12 +158,19 @@ deploy_chart "$BASE_ROOT" "$BASE_SUITE_DIR" install
 if [ -n "$UPGRADE_FROM" ]; then
     # Prove the old release works before upgrading it, so a failure after the upgrade is the upgrade's fault.
     run_assert "$UPGRADE_FROM" "$BASE_SUITE_DIR"
+    PRE_UPGRADE_DATABASE=$(kubectl get configmap clickstack-config -n "$NAMESPACE" \
+        -o jsonpath='{.data.HYPERDX_OTEL_EXPORTER_CLICKHOUSE_DATABASE}' 2>/dev/null || true)
+    echo "Database before upgrade: ${PRE_UPGRADE_DATABASE:-none}"
     if [ "$NEEDS_OPERATORS" = "true" ]; then
         deploy_operators "$REPO_ROOT" upgrade
     fi
-    show_upgrade_diff
-    # --wait so assert.sh checks the new pods, not old ones that are still Ready.
-    deploy_chart "$REPO_ROOT" "$SUITE_DIR" upgrade --wait
+    if [ "$UPGRADE_METHOD" = "template" ]; then
+        template_upgrade
+    else
+        show_upgrade_diff
+        # --wait so assert.sh checks the new pods, not old ones that are still Ready.
+        deploy_chart "$REPO_ROOT" "$SUITE_DIR" upgrade --wait
+    fi
 fi
 
 run_assert "$REPO_ROOT" "$SUITE_DIR"

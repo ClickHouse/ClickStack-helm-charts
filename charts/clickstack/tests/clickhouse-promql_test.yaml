@@ -12,7 +12,7 @@ tests:
           path: spec.settings.extraConfig.prometheus.handlers.remote_write_handler.handler
           value:
             type: remote_write
-            database: default
+            database: otel
             table: metrics_ts
       - equal:
           path: spec.settings.extraConfig.prometheus.handlers.remote_read_handler.url
