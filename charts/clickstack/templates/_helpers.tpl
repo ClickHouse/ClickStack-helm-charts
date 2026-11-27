@@ -289,6 +289,16 @@ chart default of true. Renders "true" or "".
 {{- end -}}
 
 {{/*
+Whether the collector is managed over OpAMP. A missing key (e.g. an upgrade with
+--reuse-values from a chart version without it) keeps the chart default of true.
+Renders "true" or "".
+*/}}
+{{- define "clickstack.opampEnabled" -}}
+{{- $opamp := default (dict) .Values.clickstack.opamp -}}
+{{- if or (not (hasKey $opamp "enabled")) $opamp.enabled }}true{{- end -}}
+{{- end -}}
+
+{{/*
 Whether the chart creates the watcher's RBAC. Missing rbac subtree (e.g. an upgrade
 with --reuse-values that only sets dashboards.enabled) keeps the chart default of
 true rather than silently deploying a watcher with no read access. Renders "true" or "".

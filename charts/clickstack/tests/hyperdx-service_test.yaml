@@ -186,3 +186,29 @@ tests:
       - equal:
           path: spec.ports[1].targetPort
           value: 9000
+
+  # EE's OpAMP server only manages ClickStack Cloud collectors, so EE installs turn it off.
+  - it: should not expose the OpAMP port when OpAMP is disabled
+    set:
+      clickstack:
+        opamp:
+          enabled: false
+    asserts:
+      - notContains:
+          path: spec.ports
+          content:
+            name: opamp
+          any: true
+
+  # --reuse-values from a chart version without clickstack.opamp keeps OpAMP on.
+  - it: should expose the OpAMP port when clickstack.opamp is missing
+    set:
+      clickstack:
+        opamp: null
+    asserts:
+      - contains:
+          path: spec.ports
+          content:
+            name: opamp
+            port: 4320
+            targetPort: 4320

@@ -43,6 +43,13 @@ clickstack:
     app: 3000
     opamp: 4320
 
+  # -- OpAMP management of the OTel collector. Set false with the HyperDX EE image: EE's OpAMP
+  # server only manages ClickStack Cloud collectors, so the collector runs standalone from its
+  # built-in config and the OpAMP port is not exposed. The standalone collector does not check
+  # HyperDX ingestion keys: set clickstack.secrets.OTLP_AUTH_TOKEN to require a bearer token on OTLP.
+  opamp:
+    enabled: true
+
   # -- PromQL support. Turns on the HyperDX PromQL UI and API, adds the PromQL default source,
   # and configures ClickHouse with Prometheus remote write/read handlers, the `prometheus_api_v1`
   # HTTP handler and `allow_experimental_time_series_table` (an experimental ClickHouse setting).
@@ -150,7 +157,7 @@ clickstack:
     CLICKHOUSE_ENDPOINT: 'tcp://{{ include "clickstack.clickhouse.svc" . }}:{{ .Values.clickhouse.nativePort }}?dial_timeout=10s'
     CLICKHOUSE_SERVER_ENDPOINT: '{{ include "clickstack.clickhouse.svc" . }}:{{ .Values.clickhouse.nativePort }}'
     CLICKHOUSE_PROMETHEUS_METRICS_ENDPOINT: '{{ include "clickstack.clickhouse.svc" . }}:{{ .Values.clickhouse.prometheus.port }}'
-    OPAMP_SERVER_URL: 'http://{{ include "clickstack.hyperdx.fullname" . }}:{{ .Values.clickstack.ports.opamp }}'
+    OPAMP_SERVER_URL: '{{ if include "clickstack.opampEnabled" . }}http://{{ include "clickstack.hyperdx.fullname" . }}:{{ .Values.clickstack.ports.opamp }}{{ end }}'
     # PromQL feature flags, driven by clickstack.promql.enabled.
     ENABLE_PROMQL: '{{ if .Values.clickstack.promql.enabled }}true{{ else }}false{{ end }}'
     NEXT_PUBLIC_ENABLE_PROMQL: '{{ if .Values.clickstack.promql.enabled }}true{{ else }}false{{ end }}'
