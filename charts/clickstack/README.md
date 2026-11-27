@@ -1,6 +1,6 @@
 # clickstack
 
-![Version: 3.8.0](https://img.shields.io/badge/Version-3.8.0-informational?style=flat)
+![Version: 3.8.1](https://img.shields.io/badge/Version-3.8.1-informational?style=flat)
 ![Build Status](https://github.com/ClickHouse/ClickStack-helm-charts/actions/workflows/helm-test.yaml/badge.svg)
 [![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/clickstack)](https://artifacthub.io/packages/helm/clickstack/clickstack)
 
