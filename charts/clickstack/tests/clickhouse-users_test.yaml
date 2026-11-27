@@ -16,7 +16,7 @@ tests:
   - it: should grant the app user CREATE TEMPORARY TABLE for PromQL queries
     asserts:
       - matchRegex:
-          path: spec.settings.extraUsersConfig.users.app.grants[0].query
+          path: spec.settings.extraUsersConfig.users.app.grants.query[0]
           pattern: CREATE TEMPORARY TABLE ON \*\.\*
 
   - it: should include otelcollector user in extraUsersConfig
@@ -40,3 +40,108 @@ tests:
       - equal:
           path: spec.settings.extraUsersConfig.users.otelcollector.password
           value: "test-otel-pass"
+
+  # A YAML list of grants becomes repeated <grants> elements, and ClickHouse reads only the first.
+  - it: should render a list of grants as one grants block with every query
+    set:
+      clickhouse:
+        cluster:
+          spec:
+            settings:
+              extraUsersConfig:
+                users:
+                  ruler:
+                    profile: default
+                    grants:
+                      - query: "GRANT ALL ON alert_state.*"
+                      - query: "GRANT SELECT, INSERT ON default.*"
+                      - "GRANT SELECT ON system.*"
+    asserts:
+      - equal:
+          path: spec.settings.extraUsersConfig.users.ruler.grants
+          value:
+            query:
+              - "GRANT ALL ON alert_state.*"
+              - "GRANT SELECT, INSERT ON default.*"
+              - "GRANT SELECT ON system.*"
+
+  - it: should leave grants already written as a query list unchanged
+    set:
+      clickhouse:
+        cluster:
+          spec:
+            settings:
+              extraUsersConfig:
+                users:
+                  ruler:
+                    grants:
+                      query:
+                        - "GRANT SELECT ON default.*"
+    asserts:
+      - equal:
+          path: spec.settings.extraUsersConfig.users.ruler.grants
+          value:
+            query:
+              - "GRANT SELECT ON default.*"
+
+  - it: should render a list of grants when PromQL is disabled
+    set:
+      clickstack:
+        promql:
+          enabled: false
+    asserts:
+      - equal:
+          path: spec.settings.extraUsersConfig.users.otelcollector.grants.query[0]
+          value: "GRANT SELECT,INSERT,CREATE,SHOW ON default.*"
+
+  - it: should fail on a grants entry with no query
+    set:
+      clickhouse:
+        cluster:
+          spec:
+            settings:
+              extraUsersConfig:
+                users:
+                  ruler:
+                    grants:
+                      - privilege: SELECT
+    asserts:
+      - failedTemplate:
+          errorMessage: 'clickhouse user "ruler": each grants entry must be a query string or a map with a query key'
+
+
+  - it: should flatten a grants entry whose query is a list
+    set:
+      clickhouse:
+        cluster:
+          spec:
+            settings:
+              extraUsersConfig:
+                users:
+                  ruler:
+                    grants:
+                      - query: ["GRANT SELECT ON default.*", "GRANT SELECT ON system.*"]
+                      - "GRANT INSERT ON default.*"
+    asserts:
+      - equal:
+          path: spec.settings.extraUsersConfig.users.ruler.grants.query
+          value:
+            - "GRANT SELECT ON default.*"
+            - "GRANT SELECT ON system.*"
+            - "GRANT INSERT ON default.*"
+
+  # An empty query block makes ClickHouse reject the whole users config.
+  - it: should leave an empty grants list unchanged
+    set:
+      clickhouse:
+        cluster:
+          spec:
+            settings:
+              extraUsersConfig:
+                users:
+                  ruler:
+                    grants: []
+    asserts:
+      - equal:
+          path: spec.settings.extraUsersConfig.users.ruler.grants
+          value: []

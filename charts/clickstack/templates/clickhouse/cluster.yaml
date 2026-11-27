@@ -9,6 +9,24 @@
 {{- $_ := set $settings "extraUsersConfig" (mergeOverwrite (dict) $promql.extraUsersConfig (default (dict) $settings.extraUsersConfig)) }}
 {{- $_ := set $spec "settings" $settings }}
 {{- end }}
+{{- /* ClickHouse reads only the first of repeated <grants> elements, which is what a YAML
+       list of grants becomes, so render a list as one grants block of queries. */}}
+{{- $users := dig "settings" "extraUsersConfig" "users" (dict) $spec }}
+{{- range $name, $user := $users }}
+{{- if and (kindIs "map" $user) (kindIs "slice" $user.grants) (not (empty $user.grants)) }}
+{{- $queries := list }}
+{{- range $user.grants }}
+{{- if kindIs "string" . }}
+{{- $queries = append $queries . }}
+{{- else if and (kindIs "map" .) (hasKey . "query") }}
+{{- $queries = concat $queries (ternary .query (list .query) (kindIs "slice" .query)) }}
+{{- else }}
+{{- fail (printf "clickhouse user %q: each grants entry must be a query string or a map with a query key" $name) }}
+{{- end }}
+{{- end }}
+{{- $_ := set $user "grants" (dict "query" $queries) }}
+{{- end }}
+{{- end }}
 apiVersion: clickhouse.com/v1alpha1
 kind: ClickHouseCluster
 metadata:
